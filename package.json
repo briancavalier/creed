@@ -5,7 +5,7 @@
   "main": "Promise.js",
   "scripts": {
     "build": "browserify -t babelify -o Promise.js -s truth --no-detect-globals src/Promise.js",
-    "test": "npm build && promises-aplus-tests test/aplus.js"
+    "test": "npm run build && promises-aplus-tests test/aplus.js"
   },
   "author": "brian@hovercraftstudios.com",
   "license": "MIT",

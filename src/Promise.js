@@ -10,7 +10,10 @@ let taskQueue = new Scheduler(async);
 let handlers = createHandlers(isPromise, handlerForPromise, registerRejection, taskQueue);
 let { handlerFor, handlerForMaybeThenable, Deferred, Fulfilled, Rejected, Async, Never } = handlers;
 
-export class Promise {
+import createResolver from './resolver';
+let runResolver = createResolver(Deferred);
+
+class Promise {
     constructor(handler) {
         this._handler = handler;
     }
@@ -22,6 +25,14 @@ export class Promise {
     catch(r) {
         return this.then(null, r);
     }
+}
+
+function isPromise(x) {
+    return x instanceof Promise;
+}
+
+function handlerForPromise(p) {
+    return p._handler.join();
 }
 
 function then(f, r, h) {
@@ -45,25 +56,25 @@ class Then {
     }
 
     fulfilled(handler) {
-        return runAction(this.f, handler, this.next);
+        return runThen(this.f, handler, this.next);
     }
 
     rejected(handler) {
-        return runAction(this.r, handler, this.next);
+        return runThen(this.r, handler, this.next);
     }
 }
 
-function runAction(f, handler, next) {
+function runThen(f, handler, next) {
     if(typeof f !== 'function') {
         next.become(handler);
         return false;
     }
 
-    tryCatchNext(f, handler.value, next);
+    tryMapNext(f, handler.value, next);
     return true;
 }
 
-function tryCatchNext(f, x, next) {
+function tryMapNext(f, x, next) {
     try {
         next.resolve(f(x));
     } catch(e) {
@@ -71,20 +82,17 @@ function tryCatchNext(f, x, next) {
     }
 }
 
-function isPromise(x) {
-    return x instanceof Promise;
-}
-
-function handlerForPromise(p) {
-    return p._handler.join();
-}
-
 export function promise(f) {
-    return new Promise(new Resolver(f));
+    return new Promise(runResolver(f));
 }
 
 export function resolve(x) {
-    return isPromise(x) ? x : new Promise(new Async(handlerFor(x)));
+    if (isPromise(x)) {
+        return x;
+    }
+
+    let h = handlerFor(x);
+    return new Promise((h.state() & PENDING) > 0 ? h : new Async(h));
 }
 
 export function reject(x) {
@@ -116,21 +124,6 @@ export function never() {
 
 function maybeThenable(x) {
     return (typeof x === 'object' || typeof x === 'function') && x !== null;
-}
-
-class Resolver extends Deferred {
-    constructor(f) {
-        super();
-        init(f, x => this.resolve(x), e => this.reject(e));
-    }
-}
-
-function init(f, resolve, reject) {
-    try {
-        f(resolve, reject);
-    } catch (e) {
-        reject(e);
-    }
 }
 
 class All extends Deferred {
@@ -262,12 +255,14 @@ function visitRemaining(promises, start, handler) {
     }
 }
 
+// (a -> b) -> (Promise a -> Promise b)
 export function lift(f) {
     return function(...args) {
         return applyp(f, this, args);
     }
 }
 
+// (a -> b) -> Promise a -> Promise b
 export function merge(f, ...args) {
     return applyp(f, this, args);
 }
@@ -294,8 +289,8 @@ class Merge extends All {
 
 // Node-style async function to promise-returning function
 // (a -> (err -> value)) -> (a -> Promise)
-import createDenodeify from './node';
-let runNode = createDenodeify(Deferred);
+import createNode from './node';
+let runNode = createNode(Deferred);
 
 export function denodeify(f) {
     return function(...args) {
@@ -305,10 +300,10 @@ export function denodeify(f) {
 
 // Generator to coroutine
 // Generator -> (a -> Promise)
-import createStepper from './co.js';
-let runCo = createStepper(handlerFor, Deferred);
+import createCo from './co.js';
+let runCo = createCo(handlerFor, Deferred);
 
-export function task(generator) {
+export function co(generator) {
     return function(...args) {
         return runGenerator(generator, this, args);
     };
@@ -318,7 +313,7 @@ function runGenerator(generator, thisArg, args) {
     return new Promise(runCo(generator.apply(thisArg, args)));
 }
 
-(function(TruthPromise, Resolver, resolve, reject, all, race) {
+(function(TruthPromise, runResolver, resolve, reject, all, race) {
 
     var g;
     if(typeof self !== 'undefined') {
@@ -332,7 +327,7 @@ function runGenerator(generator, thisArg, args) {
     if(typeof g.Promise !== 'function') {
         g.Promise = class Promise extends TruthPromise {
             constructor(f) {
-                super(new Resolver(f));
+                super(runResolver(f));
             }
         };
 
@@ -342,4 +337,4 @@ function runGenerator(generator, thisArg, args) {
         Promise.race    = race;
     }
 
-}(Promise, Resolver, resolve, reject, all, race));
+}(Promise, runResolver, resolve, reject, all, race));
