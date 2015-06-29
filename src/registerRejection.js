@@ -3,19 +3,16 @@ import isNode from './isNode';
 import { HANDLED } from './state';
 
 let rejections = [];
-let rejectionTask = null;
 let emitRejection = initEmitRejection();
 
 export default function registerRejection(rejected) {
-    rejections.push(rejected);
-    if(rejectionTask === null) {
-        rejectionTask = setTimeout(reportRejections, 1);
+    if(rejections.length === 0) {
+        setTimeout(reportRejections, 1);
     }
+    rejections.push(rejected);
 }
 
 function reportRejections() {
-    rejectionTask = null;
-
     while(rejections.length > 0) {
         let rejection = rejections.shift();
         if((rejection.state() & HANDLED) === 0) {
