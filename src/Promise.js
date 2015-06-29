@@ -10,9 +10,6 @@ let taskQueue = new Scheduler(async);
 let handlers = createHandlers(isPromise, handlerForPromise, registerRejection, taskQueue);
 let { handlerFor, handlerForMaybeThenable, Deferred, Fulfilled, Rejected, Async, Never } = handlers;
 
-import createResolver from './resolver';
-let runResolver = createResolver(Deferred);
-
 class Promise {
     constructor(handler) {
         this._handler = handler;
@@ -86,6 +83,18 @@ export function promise(f) {
     return new Promise(runResolver(f));
 }
 
+function runResolver(f) {
+    let h = new Deferred();
+
+    try {
+        f(x => h.resolve(x), e => h.reject(e));
+    } catch (e) {
+        h.reject(e);
+    }
+
+    return h;
+}
+
 export function resolve(x) {
     if (isPromise(x)) {
         return x;
@@ -127,61 +136,62 @@ function maybeThenable(x) {
 }
 
 class All extends Deferred {
-    constructor(array) {
+    constructor(promises) {
         super();
-        this.pending = array.length;
-        this.resolveAll(array);
+        this.pending = getLength(promises);
+        this.resolveAll(new Array(this.pending), promises);
     }
 
-    resolveAll(array) {
-        let results = new Array(this.pending);
+    resolveAll(results, promises) {
         let i = 0;
-        for(let x of array) {
+        for(let x of promises) {
             if(maybeThenable(x)) {
-                this.handleAt(results, i, x);
+                let h = handlerForMaybeThenable(x);
+                let s = h.state();
+
+                if(!this.isPending()) {
+                    (s & FULFILLED) === 0 && silenceRejection(h);
+                } else if ((s & FULFILLED) > 0) {
+                    this.fulfillAt(results, i, h.value);
+                } else if ((s & REJECTED) > 0) {
+                    this.rejectAt(h);
+                } else {
+                    h.when(new SettleAt(this, results, i));
+                }
             } else {
                 this.fulfillAt(results, i, x);
-            }
-
-            if(this.pending === 0) {
-                break;
             }
 
             ++i;
         }
 
-        this.check(results);
-    }
-
-    handleAt(results, i, x) {
-        let h = handlerForMaybeThenable(x);
-        let s = h.state();
-
-        if((s & FULFILLED) > 0) {
-            this.fulfillAt(results, i, h.value);
-        } else if((s & REJECTED) > 0) {
-            this.rejectAt(h);
-        } else {
-            h.when(new SettleAt(this, results, i));
+        if(i === 0) {
+            this.fulfill(results);
         }
     }
 
     fulfillAt(results, i, x) {
         results[i] = x;
-        this.pending--;
-        this.check(results);
-    }
-
-    rejectAt(handler) {
-        this.pending = 0;
-        this.become(handler);
-    }
-
-    check(results) {
-        if(this.isPending() && this.pending === 0) {
+        if(--this.pending === 0 && this.isPending()) {
             this.fulfill(results);
         }
     }
+
+    rejectAt(handler) {
+        this.become(handler);
+    }
+}
+
+function getLength(x) {
+    if(Array.isArray(x)) {
+        return x.length;
+    }
+    let i = 0;
+    for(let _ in x) {
+        ++i;
+        console.log(i);
+    }
+    return i;
 }
 
 class SettleAt {
@@ -241,16 +251,20 @@ class Race extends Deferred {
     }
 }
 
-const silenceRejection = {
+const rejectionSilencer = {
     rejected()  { return true; },
     fulfilled() { return true; }
 };
+
+function silenceRejection(rejection) {
+    rejection.when(rejectionSilencer);
+}
 
 function visitRemaining(promises, start, handler) {
     for(let i=start, l = promises.length; i<l; ++i) {
         let h = handlerFor(promises[i]);
         if (h !== handler && (h.state() & FULFILLED) === 0) {
-            h.when(silenceRejection);
+            silenceRejection(h);
         }
     }
 }
