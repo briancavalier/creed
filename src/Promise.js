@@ -3,12 +3,15 @@ import Scheduler from './Scheduler';
 import async from './async';
 import createHandlers from './handlers';
 import registerRejection from './registerRejection';
+import maybeThenable from './maybeThenable';
 import { PENDING, RESOLVED, FULFILLED, REJECTED, SETTLED, HANDLED } from './state';
+
+import delay from './delay';
 
 let taskQueue = new Scheduler(async);
 
-let handlers = createHandlers(isPromise, handlerForPromise, registerRejection, taskQueue);
-let { handlerFor, handlerForMaybeThenable, Deferred, Fulfilled, Rejected, Async, Never } = handlers;
+let { handlerFor, handlerForMaybeThenable, Deferred, Fulfilled, Rejected, Async, Never }
+    = createHandlers(isPromise, handlerForPromise, registerRejection, taskQueue);
 
 class Promise {
     constructor(handler) {
@@ -16,11 +19,17 @@ class Promise {
     }
 
     then(f, r) {
-        return new Promise(then(f, r, this._handler));
+        let handler = then(Deferred, f, r, handlerForPromise(this));
+        return new this.constructor(handler);
     }
 
     catch(r) {
         return this.then(null, r);
+    }
+
+    delay(ms) {
+        let handler = delay(ms, handlerForPromise(this), new Deferred());
+        return new this.constructor(handler);
     }
 }
 
@@ -29,10 +38,10 @@ function isPromise(x) {
 }
 
 function handlerForPromise(p) {
-    return p._handler.join();
+    return p._handler;
 }
 
-function then(f, r, h) {
+function then(Deferred, f, r, h) {
     let s = h.state();
 
     if(((s & FULFILLED) > 0 && typeof f !== 'function') ||
@@ -40,9 +49,9 @@ function then(f, r, h) {
         return h;
     }
 
-    let handler = new Deferred();
-    h.when(new Then(f, r, handler));
-    return handler;
+    let d = new Deferred();
+    h.when(new Then(f, r, d));
+    return d;
 }
 
 class Then {
@@ -108,165 +117,129 @@ export function reject(x) {
     return new Promise(new Async(new Rejected(x)));
 }
 
-export function all(promises) {
-    if(typeof promises !== 'object' || promises === null) {
-        return reject(new TypeError('non-iterable passed to all()'));
-    }
-
-    return new Promise(new All(promises));
-}
-
-export function race(promises) {
-    if(typeof promises !== 'object' || promises === null) {
-        return reject(new TypeError('non-iterable passed to race()'));
-    }
-
-    return promises.length === 0 ? never()
-        : new Promise(new Race(promises));
-}
-
 let neverPromise = new Promise(new Never());
 
 export function never() {
     return neverPromise;
 }
 
-function maybeThenable(x) {
-    return (typeof x === 'object' || typeof x === 'function') && x !== null;
+import createIterable from './iterable';
+let Iterable = createIterable(handlerForMaybeThenable, Deferred, Fulfilled);
+
+export function all(promises) {
+    checkIterable('all', promises);
+
+    var n = countPending(promises);
+    let a = new All(n, new Array(n));
+    return new Promise(new Iterable(a, promises))
 }
 
-class All extends Deferred {
-    constructor(promises) {
-        super();
-        this.pending = getLength(promises);
-        this.resolveAll(new Array(this.pending), promises);
+class All {
+    constructor(n, results) {
+        this.pending = n;
+        this.results = results;
     }
 
-    resolveAll(results, promises) {
-        let i = 0;
-        for(let x of promises) {
-            if(maybeThenable(x)) {
-                let h = handlerForMaybeThenable(x);
-                let s = h.state();
-
-                if(!this.isPending()) {
-                    (s & FULFILLED) === 0 && silenceRejection(h);
-                } else if ((s & FULFILLED) > 0) {
-                    this.fulfillAt(results, i, h.value);
-                } else if ((s & REJECTED) > 0) {
-                    this.rejectAt(h);
-                } else {
-                    h.when(new SettleAt(this, results, i));
-                }
-            } else {
-                this.fulfillAt(results, i, x);
-            }
-
-            ++i;
-        }
-
-        if(i === 0) {
-            this.fulfill(results);
-        }
+    ignored(_, i, h) {
+        silenceRejection(h);
     }
 
-    fulfillAt(results, i, x) {
-        results[i] = x;
-        if(--this.pending === 0 && this.isPending()) {
-            this.fulfill(results);
+    fulfilled(iterable, i, h) {
+        this.results[i] = h.value;
+        if(--this.pending === 0 && iterable.isPending()) {
+            iterable.fulfill(this.results);
         }
+        return true;
     }
 
-    rejectAt(handler) {
-        this.become(handler);
+    rejected(iterable, i, h) {
+        iterable.become(h);
+        return false;
     }
 }
 
-function getLength(x) {
-    if(Array.isArray(x)) {
-        return x.length;
+export function race(promises) {
+    checkIterable('race', promises);
+
+    return new Promise(new Iterable(new Race(), promises));
+}
+
+class Race {
+    ignored(_, i, h) {
+        silenceRejection(h);
     }
+
+    fulfilled(iterable, i, h) {
+        iterable.become(h);
+        return true;
+    }
+
+    rejected(iterable, i, h) {
+        iterable.become(h);
+        return false;
+    }
+}
+
+export function settle(promises) {
+    checkIterable('settle', promises);
+
+    let n = countPending(promises);
+    let s = new Settle(n, new Array(n));
+    return new Promise(new Iterable(s, promises));
+}
+
+class Settle {
+    constructor(n, results) {
+        this.pending = n;
+        this.results = results;
+    }
+
+    ignored() {}
+
+    fulfilled(iterable, i, h) {
+        return this.settleAt(iterable, i, new Promise(h));
+    }
+
+    rejected(iterable, i, h) {
+        silenceRejection(h);
+        return this.settleAt(iterable, i, new Promise(h));
+    }
+
+    settleAt(iterable, i, state) {
+        this.results[i] = state;
+        if(--this.pending === 0 && iterable.isPending()) {
+            iterable.fulfill(this.results);
+        }
+        return true;
+    }
+}
+
+function countPending(promises) {
+    if (Array.isArray(promises)) {
+        return promises.length;
+    }
+
     let i = 0;
-    for(let _ in x) {
+    for(let _ of promises) {
         ++i;
-        console.log(i);
     }
     return i;
 }
 
-class SettleAt {
-    constructor(all, results, index) {
-        this.all = all;
-        this.results = results;
-        this.index = index;
-    }
-
-    fulfilled(handler) {
-        this.all.fulfillAt(this.results, this.index, handler.value);
-        return true;
-    }
-
-    rejected(handler) {
-        this.all.rejectAt(handler);
-        return true;
+function checkIterable(kind, x) {
+    if(typeof x !== 'object' || x === null) {
+        throw new TypeError('non-iterable passed to ' + kind);
     }
 }
 
-class Race extends Deferred {
-    constructor(array) {
-        super();
-        this.resolveRace(array);
-    }
-
-    resolveRace(array) {
-        let i = 0;
-        for(let x of array) {
-            if(maybeThenable(x)) {
-                let h = handlerForMaybeThenable(x);
-                if((h.state() & SETTLED) > 0) {
-                    visitRemaining(array, i+1, h);
-                    this.become(h);
-                    break;
-                }
-
-                h.when(this);
-            } else {
-                visitRemaining(array, i+1, void 0);
-                this.fulfill(x);
-                break;
-            }
-
-            ++i;
-        }
-    }
-
-    fulfilled(handler) {
-        this.become(handler);
-        return true;
-    }
-
-    rejected(handler) {
-        this.become(handler);
-        return true;
-    }
+function silenceRejection(h) {
+    (h.state() & FULFILLED) === 0 && h.when(rejectionSilencer);
 }
 
-const rejectionSilencer = {
-    rejected()  { return true; },
-    fulfilled() { return true; }
-};
+const rejectionSilencer = { rejected: always, fulfilled: always };
 
-function silenceRejection(rejection) {
-    rejection.when(rejectionSilencer);
-}
-
-function visitRemaining(promises, start, handler) {
-    for(let i=start, l = promises.length; i<l; ++i) {
-        let h = handlerFor(promises[i]);
-        if (h !== handler && (h.state() & FULFILLED) === 0) {
-            silenceRejection(h);
-        }
-    }
+function always() {
+    return true;
 }
 
 // (a -> b) -> (Promise a -> Promise b)
@@ -282,40 +255,62 @@ export function merge(f, ...args) {
 }
 
 function applyp(f, thisArg, args) {
-    return new Promise(new Merge(f, thisArg, args));
+    return new Promise(runMerge(f, thisArg, args));
 }
 
-class Merge extends All {
-    constructor(f, c, promises) {
-        super(promises);
+function runMerge(f, thisArg, args) {
+    let n = args.length;
+    let m = new Merge(f, thisArg, n, new Array(n));
+    return new Iterable(m, args);
+}
+
+class Merge {
+    constructor(f, c, n, results) {
         this.f = f;
         this.c = c;
+        this.pending = n;
+        this.results = results;
     }
 
-    fulfill(results) {
+    ignored(_, i, h) {
+        silenceRejection(h);
+    }
+
+    fulfilled(iterable, i, h) {
+        this.results[i] = h.value;
+        if(--this.pending === 0 && iterable.isPending()) {
+            this.merge(this.f, this.c, this.results, iterable);
+        }
+        return true;
+    }
+
+    rejected(iterable, i, h) {
+        iterable.become(h);
+        return false;
+    }
+
+    merge(f, c, args, iterable) {
         try {
-            this.resolve(this.f.apply(this.c, results));
+            iterable.resolve(f.apply(c, args));
         } catch(e) {
-            this.reject(e);
+            iterable.reject(e);
         }
     }
 }
 
 // Node-style async function to promise-returning function
 // (a -> (err -> value)) -> (a -> Promise)
-import createNode from './node';
-let runNode = createNode(Deferred);
+import runNode from './node';
 
 export function denodeify(f) {
     return function(...args) {
-        return new Promise(runNode(f, this, args));
+        return new Promise(runNode(f, this, args, new Deferred()));
     };
 }
 
 // Generator to coroutine
 // Generator -> (a -> Promise)
-import createCo from './co.js';
-let runCo = createCo(handlerFor, Deferred);
+import runCo from './co.js';
 
 export function co(generator) {
     return function(...args) {
@@ -324,7 +319,9 @@ export function co(generator) {
 }
 
 function runGenerator(generator, thisArg, args) {
-    return new Promise(runCo(generator.apply(thisArg, args)));
+    var iterator = generator.apply(thisArg, args);
+    var d = new Deferred();
+    return new Promise(runCo(handlerFor, d, iterator));
 }
 
 (function(TruthPromise, runResolver, resolve, reject, all, race) {

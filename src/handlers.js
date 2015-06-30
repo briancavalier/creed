@@ -190,13 +190,13 @@ export default function(isPromise, handlerForPromise, registerRejection, taskQue
 
     function handlerFor(x) {
         if(isPromise(x)) {
-            return handlerForPromise(x);
+            return handlerForPromise(x).join();
         }
         return maybeThenable(x) ? handleForUntrusted(x) : new Fulfilled(x);
     }
 
     function handlerForMaybeThenable(x) {
-        return isPromise(x) ? handlerForPromise(x) : handleForUntrusted(x);
+        return isPromise(x) ? handlerForPromise(x).join() : handleForUntrusted(x);
     }
 
     function handleForUntrusted(x) {
