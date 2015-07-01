@@ -3,30 +3,30 @@ import { isPending } from './refTypes';
 import silenceRejection from './silenceRejection';
 import maybeThenable from './maybeThenable';
 
-export default function(handlerForMaybeThenable, itemHandler, promises, deferred) {
+export default function(handlerForMaybeThenable, itemHandler, promises, ref) {
     let i = 0;
     for(let x of promises) {
         if(maybeThenable(x)) {
             let h = handlerForMaybeThenable(x);
             let s = h.state();
 
-            if(!isPending(deferred)) {
+            if(!isPending(ref)) {
                 silenceRejection(h);
             } else if ((s & FULFILLED) > 0) {
-                itemHandler.fulfillAt(deferred, i, h);
+                itemHandler.fulfillAt(ref, i, h);
             } else if ((s & REJECTED) > 0) {
-                itemHandler.rejectAt(deferred, i, h);
+                itemHandler.rejectAt(ref, i, h);
             } else {
-                h.when(new SettleAt(itemHandler, i, deferred));
+                h.when(new SettleAt(itemHandler, i, ref));
             }
         } else {
-            itemHandler.valueAt(deferred, i, x);
+            itemHandler.valueAt(ref, i, x);
         }
 
         ++i;
     }
 
-    return deferred;
+    return ref;
 }
 
 class SettleAt {
