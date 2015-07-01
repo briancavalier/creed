@@ -1,6 +1,7 @@
 import { FULFILLED, REJECTED } from './state';
-import maybeThenable from './maybeThenable';
 import { isPending } from './refTypes';
+import silenceRejection from './silenceRejection';
+import maybeThenable from './maybeThenable';
 
 export default function(handlerForMaybeThenable, itemHandler, promises, deferred) {
     let i = 0;
@@ -10,7 +11,7 @@ export default function(handlerForMaybeThenable, itemHandler, promises, deferred
             let s = h.state();
 
             if(!isPending(deferred)) {
-                itemHandler.ignoreAt(deferred, i, h);
+                silenceRejection(h);
             } else if ((s & FULFILLED) > 0) {
                 itemHandler.fulfillAt(deferred, i, h);
             } else if ((s & REJECTED) > 0) {

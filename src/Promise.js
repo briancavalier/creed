@@ -1,9 +1,10 @@
 'use strict';
 import Scheduler from './Scheduler';
 import async from './async';
-import { makeRefTypes, isPending } from './refTypes';
 import registerRejection from './registerRejection';
 import maybeThenable from './maybeThenable';
+import silenceRejection from './silenceRejection';
+import { makeRefTypes, isPending } from './refTypes';
 import { PENDING, RESOLVED, FULFILLED, REJECTED, SETTLED, HANDLED } from './state';
 
 import delay from './delay';
@@ -144,10 +145,6 @@ class All {
         this.results = results;
     }
 
-    ignoreAt(_, i, h) {
-        silenceRejection(h);
-    }
-
     valueAt(iterable, i, x) {
         this.results[i] = x;
         if(--this.pending === 0 && isPending(iterable)) {
@@ -173,10 +170,6 @@ export function race(promises) {
 }
 
 class Race {
-    ignoreAt(_, i, h) {
-        silenceRejection(h);
-    }
-
     valueAt(iterable, i, x) {
         iterable.fulfill(x);
     }
@@ -206,8 +199,6 @@ class Settle {
         this.results = results;
     }
 
-    ignoreAt() {}
-
     valueAt(iterable, i, x) {
         return this.settleAt(iterable, i, new Promise(new Fulfilled(x)));
     }
@@ -230,6 +221,38 @@ class Settle {
     }
 }
 
+export function any(promises) {
+    checkIterable('any', promises);
+
+    let n = countPending(promises);
+    let s = new Any(n);
+    return new Promise(iterableRef(s, promises));
+}
+
+class Any {
+    constructor(n) {
+        this.pending = n;
+    }
+
+    valueAt(iterable, i, x) {
+        iterable.fulfill(x);
+    }
+
+    fulfillAt(iterable, i, h) {
+        iterable.become(h);
+        return true;
+    }
+
+    rejectAt(iterable, i, h) {
+        if(--this.pending === 0 && isPending(iterable)) {
+            iterable.become(h);
+        } else {
+            silenceRejection(h);
+        }
+        return false;
+    }
+}
+
 function countPending(promises) {
     if (Array.isArray(promises)) {
         return promises.length;
@@ -246,16 +269,6 @@ function checkIterable(kind, x) {
     if(typeof x !== 'object' || x === null) {
         throw new TypeError('non-iterable passed to ' + kind);
     }
-}
-
-function silenceRejection(h) {
-    (h.state() & FULFILLED) === 0 && h.when(rejectionSilencer);
-}
-
-const rejectionSilencer = { rejected: always, fulfilled: always };
-
-function always() {
-    return true;
 }
 
 // (a -> b) -> (Promise a -> Promise b)
@@ -286,10 +299,6 @@ class Merge {
         this.c = c;
         this.pending = n;
         this.results = results;
-    }
-
-    ignoreAt(_, i, h) {
-        silenceRejection(h);
     }
 
     valueAt(iterable, i, x) {
