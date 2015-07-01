@@ -1,7 +1,7 @@
 'use strict';
 import Scheduler from './Scheduler';
 import async from './async';
-import createHandlers from './handlers';
+import { makeRefTypes, isPending } from './refTypes';
 import registerRejection from './registerRejection';
 import maybeThenable from './maybeThenable';
 import { PENDING, RESOLVED, FULFILLED, REJECTED, SETTLED, HANDLED } from './state';
@@ -11,7 +11,7 @@ import delay from './delay';
 let taskQueue = new Scheduler(async);
 
 let { handlerFor, handlerForMaybeThenable, Deferred, Fulfilled, Rejected, Async, Never }
-    = createHandlers(isPromise, handlerForPromise, registerRejection, taskQueue);
+    = makeRefTypes(isPromise, handlerForPromise, registerRejection, taskQueue);
 
 class Promise {
     constructor(handler) {
@@ -123,15 +123,19 @@ export function never() {
     return neverPromise;
 }
 
-import createIterable from './iterable';
-let Iterable = createIterable(handlerForMaybeThenable, Deferred, Fulfilled);
+import resolveIterable from './iterable';
+//let Iterable = createIterable(handlerForMaybeThenable, Deferred, Fulfilled);
+
+function iterableRef(handler, promises) {
+    return resolveIterable(handlerForMaybeThenable, handler, promises, new Deferred());
+}
 
 export function all(promises) {
     checkIterable('all', promises);
 
     var n = countPending(promises);
     let a = new All(n, new Array(n));
-    return new Promise(new Iterable(a, promises))
+    return new Promise(iterableRef(a, promises))
 }
 
 class All {
@@ -140,19 +144,23 @@ class All {
         this.results = results;
     }
 
-    ignored(_, i, h) {
+    ignoreAt(_, i, h) {
         silenceRejection(h);
     }
 
-    fulfilled(iterable, i, h) {
-        this.results[i] = h.value;
-        if(--this.pending === 0 && iterable.isPending()) {
+    valueAt(iterable, i, x) {
+        this.results[i] = x;
+        if(--this.pending === 0 && isPending(iterable)) {
             iterable.fulfill(this.results);
         }
+    }
+
+    fulfillAt(iterable, i, h) {
+        this.valueAt(iterable, i, h.value);
         return true;
     }
 
-    rejected(iterable, i, h) {
+    rejectAt(iterable, i, h) {
         iterable.become(h);
         return false;
     }
@@ -161,20 +169,24 @@ class All {
 export function race(promises) {
     checkIterable('race', promises);
 
-    return new Promise(new Iterable(new Race(), promises));
+    return new Promise(iterableRef(new Race(), promises));
 }
 
 class Race {
-    ignored(_, i, h) {
+    ignoreAt(_, i, h) {
         silenceRejection(h);
     }
 
-    fulfilled(iterable, i, h) {
+    valueAt(iterable, i, x) {
+        iterable.fulfill(x);
+    }
+
+    fulfillAt(iterable, i, h) {
         iterable.become(h);
         return true;
     }
 
-    rejected(iterable, i, h) {
+    rejectAt(iterable, i, h) {
         iterable.become(h);
         return false;
     }
@@ -185,7 +197,7 @@ export function settle(promises) {
 
     let n = countPending(promises);
     let s = new Settle(n, new Array(n));
-    return new Promise(new Iterable(s, promises));
+    return new Promise(iterableRef(s, promises));
 }
 
 class Settle {
@@ -194,20 +206,24 @@ class Settle {
         this.results = results;
     }
 
-    ignored() {}
+    ignoreAt() {}
 
-    fulfilled(iterable, i, h) {
+    valueAt(iterable, i, x) {
+        return this.settleAt(iterable, i, new Promise(new Fulfilled(x)));
+    }
+
+    fulfillAt(iterable, i, h) {
         return this.settleAt(iterable, i, new Promise(h));
     }
 
-    rejected(iterable, i, h) {
+    rejectAt(iterable, i, h) {
         silenceRejection(h);
         return this.settleAt(iterable, i, new Promise(h));
     }
 
     settleAt(iterable, i, state) {
         this.results[i] = state;
-        if(--this.pending === 0 && iterable.isPending()) {
+        if(--this.pending === 0 && isPending(iterable)) {
             iterable.fulfill(this.results);
         }
         return true;
@@ -261,7 +277,7 @@ function applyp(f, thisArg, args) {
 function runMerge(f, thisArg, args) {
     let n = args.length;
     let m = new Merge(f, thisArg, n, new Array(n));
-    return new Iterable(m, args);
+    return iterableRef(m, args);
 }
 
 class Merge {
@@ -272,19 +288,23 @@ class Merge {
         this.results = results;
     }
 
-    ignored(_, i, h) {
+    ignoreAt(_, i, h) {
         silenceRejection(h);
     }
 
-    fulfilled(iterable, i, h) {
-        this.results[i] = h.value;
-        if(--this.pending === 0 && iterable.isPending()) {
+    valueAt(iterable, i, x) {
+        this.results[i] = x;
+        if(--this.pending === 0 && isPending(iterable)) {
             this.merge(this.f, this.c, this.results, iterable);
         }
+    }
+
+    fulfillAt(iterable, i, h) {
+        this.valueAt(iterable, i, h.value);
         return true;
     }
 
-    rejected(iterable, i, h) {
+    rejectAt(iterable, i, h) {
         iterable.become(h);
         return false;
     }

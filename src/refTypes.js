@@ -1,7 +1,36 @@
 'use strict';
+import maybeThenable from './maybeThenable';
 import { PENDING, RESOLVED, FULFILLED, REJECTED, SETTLED, HANDLED } from './state';
 
-export default function(isPromise, handlerForPromise, registerRejection, taskQueue) {
+export function isPending(ref) {
+    return (ref.state() & PENDING) > 0;
+}
+
+export function isFulfilled(ref) {
+    return (ref.state() & FULFILLED) > 0;
+}
+
+export function isRejected(ref) {
+    return (ref.state() & REJECTED) > 0;
+}
+
+export function getValue(ref) {
+    if(!isFulfilled(ref)) {
+        throw new TypeError('not fulfilled');
+    }
+
+    return ref.value;
+}
+
+export function getReason(ref) {
+    if(!isRejected(ref)) {
+        throw new TypeError('not rejected');
+    }
+
+    return ref.value;
+}
+
+export function makeRefTypes(isPromise, handlerForPromise, registerRejection, taskQueue) {
 
     class Deferred {
         constructor() {
@@ -15,7 +44,7 @@ export default function(isPromise, handlerForPromise, registerRejection, taskQue
         }
 
         when(action) {
-            if (this.isPending()) {
+            if (isPending(this)) {
                 if (this.consumers === void 0) {
                     this.consumers = [action];
                 } else {
@@ -27,7 +56,7 @@ export default function(isPromise, handlerForPromise, registerRejection, taskQue
         }
 
         join() {
-            if (this.isPending()) {
+            if (isPending(this)) {
                 return this;
             }
 
@@ -44,7 +73,7 @@ export default function(isPromise, handlerForPromise, registerRejection, taskQue
         }
 
         become(handler) {
-            if(!this.isPending()) {
+            if(!isPending(this)) {
                 return;
             }
 
@@ -53,10 +82,6 @@ export default function(isPromise, handlerForPromise, registerRejection, taskQue
             if(this.consumers !== void 0) {
                 taskQueue.enqueue(this);
             }
-        }
-
-        isPending() {
-            return (this.state() & PENDING) > 0;
         }
 
         resolve(x) {
@@ -68,7 +93,7 @@ export default function(isPromise, handlerForPromise, registerRejection, taskQue
         }
 
         reject(e) {
-            if(!this.isPending()) {
+            if(!isPending(this)) {
                 return;
             }
 
@@ -178,14 +203,25 @@ export default function(isPromise, handlerForPromise, registerRejection, taskQue
         become() {}
     }
 
+    class Never {
+        constructor() {}
+
+        state() {
+            return PENDING;
+        }
+
+        when() {}
+
+        join() {
+            return this;
+        }
+
+        become() {}
+    }
+
     return {
-        handlerFor: handlerFor,
-        handlerForMaybeThenable: handlerForMaybeThenable,
-        Deferred: Deferred,
-        Fulfilled: Fulfilled,
-        Rejected: Rejected,
-        Async: Async,
-        Never: Never
+        handlerFor, handlerForMaybeThenable,
+        Deferred, Fulfilled, Rejected, Async, Never
     };
 
     function handlerFor(x) {
@@ -211,26 +247,6 @@ export default function(isPromise, handlerForPromise, registerRejection, taskQue
     function cycle() {
         return new Rejected(new TypeError('resolution cycle'));
     }
-}
-
-class Never {
-    constructor() {}
-
-    state() {
-        return PENDING;
-    }
-
-    when() {}
-
-    join() {
-        return this;
-    }
-
-    become() {}
-}
-
-function maybeThenable(x) {
-    return (typeof x === 'object' || typeof x === 'function') && x !== null;
 }
 
 class Continuation {
