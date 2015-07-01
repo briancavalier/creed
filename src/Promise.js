@@ -9,10 +9,23 @@ import { PENDING, RESOLVED, FULFILLED, REJECTED, SETTLED, HANDLED } from './stat
 
 import delay from './delay';
 
+import resolveIterable from './iterable';
+import All from './All';
+import Any from './Any';
+import Race from './Race';
+import Merge from './Merge';
+
+import runNode from './node';
+import runCo from './co.js';
+
 let taskQueue = new Scheduler(async);
 
 let { handlerFor, handlerForMaybeThenable, Deferred, Fulfilled, Rejected, Async, Never }
     = makeRefTypes(isPromise, handlerForPromise, registerRejection, taskQueue);
+
+//----------------------------------------------------------------
+// Promise
+//----------------------------------------------------------------
 
 class Promise {
     constructor(handler) {
@@ -40,6 +53,45 @@ function isPromise(x) {
 
 function handlerForPromise(p) {
     return p._handler;
+}
+
+//----------------------------------------------------------------
+// Creating promises
+//----------------------------------------------------------------
+
+export function resolve(x) {
+    if (isPromise(x)) {
+        return x;
+    }
+
+    let h = handlerFor(x);
+    return new Promise((h.state() & PENDING) > 0 ? h : new Async(h));
+}
+
+export function reject(x) {
+    return new Promise(new Async(new Rejected(x)));
+}
+
+export function promise(f) {
+    return new Promise(runResolver(f));
+}
+
+function runResolver(f) {
+    let h = new Deferred();
+
+    try {
+        f(x => h.resolve(x), e => h.reject(e));
+    } catch (e) {
+        h.reject(e);
+    }
+
+    return h;
+}
+
+let neverPromise = new Promise(new Never());
+
+export function never() {
+    return neverPromise;
 }
 
 function then(Deferred, f, r, h) {
@@ -89,78 +141,19 @@ function tryMapNext(f, x, next) {
     }
 }
 
-export function promise(f) {
-    return new Promise(runResolver(f));
-}
+//----------------------------------------------------------------
+// Arrays & Iterables
+//----------------------------------------------------------------
 
-function runResolver(f) {
-    let h = new Deferred();
-
-    try {
-        f(x => h.resolve(x), e => h.reject(e));
-    } catch (e) {
-        h.reject(e);
-    }
-
-    return h;
-}
-
-export function resolve(x) {
-    if (isPromise(x)) {
-        return x;
-    }
-
-    let h = handlerFor(x);
-    return new Promise((h.state() & PENDING) > 0 ? h : new Async(h));
-}
-
-export function reject(x) {
-    return new Promise(new Async(new Rejected(x)));
-}
-
-let neverPromise = new Promise(new Never());
-
-export function never() {
-    return neverPromise;
-}
-
-import resolveIterable from './iterable';
-//let Iterable = createIterable(handlerForMaybeThenable, Deferred, Fulfilled);
-
-function iterableRef(handler, promises) {
-    return resolveIterable(handlerForMaybeThenable, handler, promises, new Deferred());
+function iterableRef(handler, iterable) {
+    return resolveIterable(handlerForMaybeThenable, handler, iterable, new Deferred());
 }
 
 export function all(promises) {
     checkIterable('all', promises);
 
-    var n = countPending(promises);
-    let a = new All(n, new Array(n));
-    return new Promise(iterableRef(a, promises))
-}
-
-class All {
-    constructor(n, results) {
-        this.pending = n;
-        this.results = results;
-    }
-
-    valueAt(iterable, i, x) {
-        this.results[i] = x;
-        if(--this.pending === 0 && isPending(iterable)) {
-            iterable.fulfill(this.results);
-        }
-    }
-
-    fulfillAt(iterable, i, h) {
-        this.valueAt(iterable, i, h.value);
-        return true;
-    }
-
-    rejectAt(iterable, i, h) {
-        iterable.become(h);
-        return false;
-    }
+    let n = countPending(promises);
+    return new Promise(iterableRef(new All(n), promises));
 }
 
 export function race(promises) {
@@ -169,87 +162,46 @@ export function race(promises) {
     return new Promise(iterableRef(new Race(), promises));
 }
 
-class Race {
-    valueAt(iterable, i, x) {
-        iterable.fulfill(x);
-    }
+export function any(promises) {
+    checkIterable('any', promises);
 
-    fulfillAt(iterable, i, h) {
-        iterable.become(h);
-        return true;
-    }
-
-    rejectAt(iterable, i, h) {
-        iterable.become(h);
-        return false;
-    }
+    let n = countPending(promises);
+    return new Promise(iterableRef(new Any(n), promises));
 }
 
 export function settle(promises) {
     checkIterable('settle', promises);
 
     let n = countPending(promises);
-    let s = new Settle(n, new Array(n));
-    return new Promise(iterableRef(s, promises));
+    return new Promise(iterableRef(new Settle(n), promises));
 }
 
+// TODO: Find a way to move this out to its own module
 class Settle {
-    constructor(n, results) {
-        this.pending = n;
-        this.results = results;
-    }
-
-    valueAt(iterable, i, x) {
-        return this.settleAt(iterable, i, new Promise(new Fulfilled(x)));
-    }
-
-    fulfillAt(iterable, i, h) {
-        return this.settleAt(iterable, i, new Promise(h));
-    }
-
-    rejectAt(iterable, i, h) {
-        silenceRejection(h);
-        return this.settleAt(iterable, i, new Promise(h));
-    }
-
-    settleAt(iterable, i, state) {
-        this.results[i] = state;
-        if(--this.pending === 0 && isPending(iterable)) {
-            iterable.fulfill(this.results);
-        }
-        return true;
-    }
-}
-
-export function any(promises) {
-    checkIterable('any', promises);
-
-    let n = countPending(promises);
-    let s = new Any(n);
-    return new Promise(iterableRef(s, promises));
-}
-
-class Any {
     constructor(n) {
         this.pending = n;
+        this.results = new Array(n);
     }
 
-    valueAt(iterable, i, x) {
-        iterable.fulfill(x);
+    valueAt(ref, i, x) {
+        return this.settleAt(ref, i, new Promise(new Fulfilled(x)));
     }
 
-    fulfillAt(iterable, i, h) {
-        iterable.become(h);
-        return true;
+    fulfillAt(ref, i, h) {
+        return this.settleAt(ref, i, new Promise(h));
     }
 
-    rejectAt(iterable, i, h) {
-        if(--this.pending === 0 && isPending(iterable)) {
-            iterable.become(h);
-        } else {
-            silenceRejection(h);
+    rejectAt(ref, i, h) {
+        silenceRejection(h);
+        return this.settleAt(ref, i, new Promise(h));
+    }
+
+    settleAt(ref, i, state) {
+        this.results[i] = state;
+        if(--this.pending === 0 && isPending(ref)) {
+            ref.fulfill(this.results);
         }
-        return false;
+        return true;
     }
 }
 
@@ -258,6 +210,9 @@ function countPending(promises) {
         return promises.length;
     }
 
+    // TODO: Need a better solution
+    // This will consume a generator iterator, and pretty much
+    // make it useless.
     let i = 0;
     for(let _ of promises) {
         ++i;
@@ -270,6 +225,10 @@ function checkIterable(kind, x) {
         throw new TypeError('non-iterable passed to ' + kind);
     }
 }
+
+//----------------------------------------------------------------
+// Lifting
+//----------------------------------------------------------------
 
 // (a -> b) -> (Promise a -> Promise b)
 export function lift(f) {
@@ -288,59 +247,27 @@ function applyp(f, thisArg, args) {
 }
 
 function runMerge(f, thisArg, args) {
-    let n = args.length;
-    let m = new Merge(f, thisArg, n, new Array(n));
-    return iterableRef(m, args);
+    return iterableRef(new Merge(f, thisArg, args.length), args);
 }
 
-class Merge {
-    constructor(f, c, n, results) {
-        this.f = f;
-        this.c = c;
-        this.pending = n;
-        this.results = results;
-    }
-
-    valueAt(iterable, i, x) {
-        this.results[i] = x;
-        if(--this.pending === 0 && isPending(iterable)) {
-            this.merge(this.f, this.c, this.results, iterable);
-        }
-    }
-
-    fulfillAt(iterable, i, h) {
-        this.valueAt(iterable, i, h.value);
-        return true;
-    }
-
-    rejectAt(iterable, i, h) {
-        iterable.become(h);
-        return false;
-    }
-
-    merge(f, c, args, iterable) {
-        try {
-            iterable.resolve(f.apply(c, args));
-        } catch(e) {
-            iterable.reject(e);
-        }
-    }
-}
+//----------------------------------------------------------------
+// Convert node-style async
+//----------------------------------------------------------------
 
 // Node-style async function to promise-returning function
 // (a -> (err -> value)) -> (a -> Promise)
-import runNode from './node';
-
 export function denodeify(f) {
     return function(...args) {
         return new Promise(runNode(f, this, args, new Deferred()));
     };
 }
 
+//----------------------------------------------------------------
+// Generators
+//----------------------------------------------------------------
+
 // Generator to coroutine
 // Generator -> (a -> Promise)
-import runCo from './co.js';
-
 export function co(generator) {
     return function(...args) {
         return runGenerator(generator, this, args);
@@ -352,6 +279,10 @@ function runGenerator(generator, thisArg, args) {
     var d = new Deferred();
     return new Promise(runCo(handlerFor, d, iterator));
 }
+
+//----------------------------------------------------------------
+// ES6 Promise polyfill
+//----------------------------------------------------------------
 
 (function(TruthPromise, runResolver, resolve, reject, all, race) {
 

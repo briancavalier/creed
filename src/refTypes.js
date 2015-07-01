@@ -69,7 +69,7 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
                 }
             }
 
-            return h;
+            return this.handler = h;
         }
 
         become(handler) {
