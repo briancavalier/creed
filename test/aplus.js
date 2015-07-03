@@ -1,4 +1,4 @@
-var truth = require('../Promise');
+var truth = require('../truth');
 
 process.addListener('unhandledRejection', function(){});
 

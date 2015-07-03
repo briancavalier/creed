@@ -2,18 +2,16 @@
   "name": "truth",
   "version": "1.0.0",
   "description": "",
-  "main": "Promise.js",
+  "main": "truth.js",
   "scripts": {
-    "build": "browserify -t babelify -o Promise.js -s truth --no-detect-globals src/Promise.js",
+    "build": "babel -d lib src && browserify -o build/truth.js -s truth --no-detect-globals truth.js && uglifyjs  build/truth.js --compress --mangle -o build/truth.min.js",
     "test": "npm run build && promises-aplus-tests test/aplus.js"
   },
   "author": "brian@hovercraftstudios.com",
   "license": "MIT",
   "devDependencies": {
     "babel": "^5.5.8",
-    "babelify": "^6.1.2",
     "browserify": "^10.2.4",
-    "mocha": "^2.2.5",
-    "uglifyify": "^3.0.1"
+    "mocha": "^2.2.5"
   }
 }
