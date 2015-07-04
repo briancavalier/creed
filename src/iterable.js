@@ -43,7 +43,6 @@ class SettleAt {
 
     fulfilled(handler) {
         this.handler.fulfillAt(this.next, this.index, handler, this.state);
-        return true;
     }
 
     rejected(handler) {

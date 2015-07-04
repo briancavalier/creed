@@ -1,21 +1,25 @@
-export default function delay(ms, handler, deferred) {
-    handler.when(new Delay(ms, deferred));
-    return deferred;
+export default function delay(Deferred, ms, handler) {
+    if(ms <= 0) {
+        return handler;
+    }
+
+    let ref = new Deferred();
+    handler.when(new Delay(ms, ref));
+    return ref;
 }
 
 class Delay {
-    constructor(time, next) {
+    constructor(time, ref) {
         this.time = time;
-        this.next = next;
+        this.ref = ref;
     }
 
     fulfilled(handler) {
-        setTimeout(fulfillDelayed, this.time, handler, this.next);
-        return true;
+        setTimeout(fulfillDelayed, this.time, handler, this.ref);
     }
 
     rejected(handler) {
-        this.next.become(handler);
+        this.ref.become(handler);
         return false;
     }
 }

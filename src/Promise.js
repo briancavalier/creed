@@ -9,10 +9,11 @@ import { PENDING, RESOLVED, FULFILLED, REJECTED, SETTLED, HANDLED } from './stat
 
 import delay from './delay';
 
-import resolveIterable from './iterable';
 import Any from './Any';
 import Race from './Race';
 import Merge from './Merge';
+import Settle from './Settle';
+import resolveIterable from './iterable';
 
 import runNode from './node';
 import runCo from './co.js';
@@ -41,7 +42,7 @@ class Promise {
     }
 
     delay(ms) {
-        let handler = delay(ms, handlerForPromise(this), new Deferred());
+        let handler = delay(Deferred, ms, handlerForPromise(this));
         return new this.constructor(handler);
     }
 }
@@ -144,16 +145,16 @@ function tryMapNext(f, x, next) {
 // Arrays & Iterables
 //----------------------------------------------------------------
 
+export function all(promises) {
+    checkIterable('all', promises);
+    return new Promise(iterableRef(new Merge(allHandler), promises));
+}
+
 const allHandler = {
     merge(ref, args) {
         ref.fulfill(args);
     }
 };
-
-export function all(promises) {
-    checkIterable('all', promises);
-    return new Promise(iterableRef(new Merge(allHandler), promises));
-}
 
 export function race(promises) {
     checkIterable('race', promises);
@@ -167,46 +168,15 @@ export function any(promises) {
 
 export function settle(promises) {
     checkIterable('settle', promises);
-    return new Promise(iterableRef(new Settle(), promises));
+    return new Promise(iterableRef(new Settle(stateForRef, stateForValue), promises));
 }
 
-// TODO: Find a way to move this out to its own module
-class Settle {
-    init(promises) {
-        let n = Array.isArray(promises) ? promises.length : 0;
-        return { done: false, pending: 0, results: new Array(n) };
-    }
+function stateForRef(ref) {
+    return new Promise(ref);
+}
 
-    valueAt(ref, i, x, state) {
-        this.settleAt(ref, i, new Fulfilled(x), state);
-    }
-
-    fulfillAt(ref, i, h, state) {
-        this.settleAt(ref, i, h, state);
-    }
-
-    rejectAt(ref, i, h, state) {
-        silenceRejection(h);
-        this.settleAt(ref, i, h, state);
-    }
-
-    settleAt(ref, i, h, state) {
-        state.results[i] = new Promise(h);
-        --state.pending;
-        this.check(ref, state);
-    }
-
-    complete(total, ref, state) {
-        state.done = true;
-        state.pending += total;
-        this.check(ref, state);
-    }
-
-    check(ref, state) {
-        if(state.done && state.pending === 0) {
-            ref.fulfill(state.results);
-        }
-    }
+function stateForValue(x) {
+    return resolve(x);
 }
 
 function iterableRef(handler, iterable) {

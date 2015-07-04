@@ -19,7 +19,7 @@ export function getValue(ref) {
         throw new TypeError('not fulfilled');
     }
 
-    return ref.value;
+    return ref.join().value;
 }
 
 export function getReason(ref) {
@@ -27,7 +27,7 @@ export function getReason(ref) {
         throw new TypeError('not rejected');
     }
 
-    return ref.value;
+    return ref.join().value;
 }
 
 export function makeRefTypes(isPromise, handlerForPromise, registerRejection, taskQueue) {
@@ -40,23 +40,24 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
         }
 
         state() {
-            return this._state;
+            return this.isResolved() ? this.handler.join().state() : this._state;
         }
 
         when(action) {
-            if (isPending(this)) {
-                if (this.consumers === void 0) {
-                    this.consumers = [action];
-                } else {
-                    this.consumers.push(action);
-                }
-            } else {
+            if (this.isResolved(this)) {
                 taskQueue.enqueue(new Continuation(action, this.handler));
+                return;
+            }
+
+            if (this.consumers === void 0) {
+                this.consumers = [action];
+            } else {
+                this.consumers.push(action);
             }
         }
 
         join() {
-            if (isPending(this)) {
+            if (!this.isResolved(this)) {
                 return this;
             }
 
@@ -73,15 +74,19 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
         }
 
         become(handler) {
-            if(!isPending(this)) {
+            if(this.isResolved()) {
                 return;
             }
 
-            this._state = RESOLVED;
+            this._state |= RESOLVED;
             this.handler = handler;
             if(this.consumers !== void 0) {
                 taskQueue.enqueue(this);
             }
+        }
+
+        isResolved() {
+            return (this._state & RESOLVED) > 0;
         }
 
         resolve(x) {
@@ -93,7 +98,7 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
         }
 
         reject(e) {
-            if(!isPending(this)) {
+            if(this.isResolved()) {
                 return;
             }
 
@@ -127,8 +132,6 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
         join() {
             return this;
         }
-
-        become() {}
     }
 
     class Rejected {
@@ -151,8 +154,6 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
         join() {
             return this;
         }
-
-        become() {}
     }
 
     class Thenable extends Deferred {
@@ -199,8 +200,6 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
             }
             return h;
         }
-
-        become() {}
     }
 
     class Never {
@@ -215,8 +214,6 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
         join() {
             return this;
         }
-
-        become() {}
     }
 
     return {

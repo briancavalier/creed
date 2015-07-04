@@ -29,9 +29,9 @@ function reportRejection(rejection) {
 function initEmitRejection() {
     /*global process, self, CustomEvent*/
     if(isNode() && typeof process.emit === 'function') {
-        // Returning falsy here means to call the default
-        // onPotentiallyUnhandledRejection API.  This is safe even in
-        // browserify since process.emit always returns falsy in browserify:
+        // Returning falsy here means to call the default reportRejection API.
+        // This is safe even in browserify since process.emit always returns
+        // falsy in browserify:
         // https://github.com/defunctzombie/node-process/blob/master/browser.js#L40-L46
         return function(type, rejection) {
             return type === 'unhandledRejection'
@@ -40,14 +40,13 @@ function initEmitRejection() {
         };
     } else if(typeof self !== 'undefined' && typeof CustomEvent === 'function') {
         return (function(noop, self, CustomEvent) {
-            var hasCustomEvent = false;
+            let hasCustomEvent = false;
             try {
-                var ev = new CustomEvent('unhandledRejection');
-                hasCustomEvent = ev instanceof CustomEvent;
+                hasCustomEvent = new CustomEvent('unhandledRejection') instanceof CustomEvent;
             } catch (e) {}
 
             return !hasCustomEvent ? noop : function(type, rejection) {
-                var ev = new CustomEvent(type, {
+                let ev = new CustomEvent(type, {
                     detail: {
                         reason: rejection.value,
                         key: rejection

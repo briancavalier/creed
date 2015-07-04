@@ -29,13 +29,12 @@ class Next {
     }
 
     fulfilled(handler) {
-        var iterator = this.iterator;
+        let iterator = this.iterator;
         coStep(this.handlerFor, iterator.next, handler.value, iterator, this.next);
-        return true;
     }
 
     rejected(handler) {
-        var iterator = this.iterator;
+        let iterator = this.iterator;
         coStep(this.handlerFor, iterator.throw, handler.value, iterator, this.next);
         return true;
     }
