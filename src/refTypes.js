@@ -156,11 +156,10 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
         }
     }
 
-    class Thenable extends Deferred {
-        constructor(then, thenable) {
-            super();
-            taskQueue.enqueue(new Assimilate(then, thenable, x => this.resolve(x), e => this.reject(e)));
-        }
+    function extract(then, thenable) {
+        let d = new Deferred();
+        taskQueue.enqueue(new Assimilate(then, thenable, x => d.resolve(x), e => d.reject(e)));
+        return d;
     }
 
     class Assimilate {
@@ -235,7 +234,7 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
     function handleForUntrusted(x) {
         try {
             let then = x.then;
-            return typeof then === 'function' ? new Thenable(then, x) : new Fulfilled(x);
+            return typeof then === 'function' ? extract(then, x) : new Fulfilled(x);
         } catch(e) {
             return new Rejected(e);
         }
