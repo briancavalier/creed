@@ -4,25 +4,33 @@ import silenceRejection from './silenceRejection';
 import { isPending } from './refTypes.js';
 
 export default class Any {
-    constructor(n) {
-        this.pending = n;
+    init() {
+        return { done: false, pending: 0 };
     }
 
-    valueAt(ref, i, x) {
+    valueAt(ref, i, x, state) {
         ref.fulfill(x);
     }
 
-    fulfillAt(ref, i, h) {
+    fulfillAt(ref, i, h, state) {
         ref.become(h);
-        return true;
     }
 
-    rejectAt(ref, i, h) {
-        if(--this.pending === 0 && isPending(ref)) {
-            ref.become(h);
-        } else {
-            silenceRejection(h);
+    rejectAt(ref, i, h, state) {
+        --state.pending;
+        silenceRejection(h);
+        this.check(ref, state);
+    }
+
+    complete(total, ref, state) {
+        state.done = true;
+        state.pending += total;
+        this.check(ref, state);
+    }
+
+    check(ref, state) {
+        if(state.done && state.pending === 0) {
+            ref.reject(new Error());
         }
-        return false;
     }
 }

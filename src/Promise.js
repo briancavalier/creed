@@ -10,7 +10,6 @@ import { PENDING, RESOLVED, FULFILLED, REJECTED, SETTLED, HANDLED } from './stat
 import delay from './delay';
 
 import resolveIterable from './iterable';
-import All from './All';
 import Any from './Any';
 import Race from './Race';
 import Merge from './Merge';
@@ -145,79 +144,73 @@ function tryMapNext(f, x, next) {
 // Arrays & Iterables
 //----------------------------------------------------------------
 
-function iterableRef(handler, iterable) {
-    return resolveIterable(handlerForMaybeThenable, handler, iterable, new Deferred());
-}
+const allHandler = {
+    merge(ref, args) {
+        ref.fulfill(args);
+    }
+};
 
 export function all(promises) {
     checkIterable('all', promises);
-
-    let n = countPending(promises);
-    return new Promise(iterableRef(new All(n), promises));
+    return new Promise(iterableRef(new Merge(allHandler), promises));
 }
 
 export function race(promises) {
     checkIterable('race', promises);
-
     return new Promise(iterableRef(new Race(), promises));
 }
 
 export function any(promises) {
     checkIterable('any', promises);
-
-    let n = countPending(promises);
-    return new Promise(iterableRef(new Any(n), promises));
+    return new Promise(iterableRef(new Any(), promises));
 }
 
 export function settle(promises) {
     checkIterable('settle', promises);
-
-    let n = countPending(promises);
-    return new Promise(iterableRef(new Settle(n), promises));
+    return new Promise(iterableRef(new Settle(), promises));
 }
 
 // TODO: Find a way to move this out to its own module
 class Settle {
-    constructor(n) {
-        this.pending = n;
-        this.results = new Array(n);
+    init(promises) {
+        let n = Array.isArray(promises) ? promises.length : 0;
+        return { done: false, pending: 0, results: new Array(n) };
     }
 
-    valueAt(ref, i, x) {
-        return this.settleAt(ref, i, new Promise(new Fulfilled(x)));
+    valueAt(ref, i, x, state) {
+        this.settleAt(ref, i, new Fulfilled(x), state);
     }
 
-    fulfillAt(ref, i, h) {
-        return this.settleAt(ref, i, new Promise(h));
+    fulfillAt(ref, i, h, state) {
+        this.settleAt(ref, i, h, state);
     }
 
-    rejectAt(ref, i, h) {
+    rejectAt(ref, i, h, state) {
         silenceRejection(h);
-        return this.settleAt(ref, i, new Promise(h));
+        this.settleAt(ref, i, h, state);
     }
 
-    settleAt(ref, i, state) {
-        this.results[i] = state;
-        if(--this.pending === 0 && isPending(ref)) {
-            ref.fulfill(this.results);
+    settleAt(ref, i, h, state) {
+        state.results[i] = new Promise(h);
+        --state.pending;
+        this.check(ref, state);
+    }
+
+    complete(total, ref, state) {
+        state.done = true;
+        state.pending += total;
+        this.check(ref, state);
+    }
+
+    check(ref, state) {
+        if(state.done && state.pending === 0) {
+            ref.fulfill(state.results);
         }
-        return true;
     }
 }
 
-function countPending(promises) {
-    if (Array.isArray(promises)) {
-        return promises.length;
-    }
-
-    // TODO: Need a better solution
-    // This will consume a generator iterator, and pretty much
-    // make it useless.
-    let i = 0;
-    for(let _ of promises) {
-        ++i;
-    }
-    return i;
+function iterableRef(handler, iterable) {
+    return resolveIterable(handlerForMaybeThenable, handler, iterable, new Deferred());
 }
 
 function checkIterable(kind, x) {
@@ -247,7 +240,22 @@ function applyp(f, thisArg, args) {
 }
 
 function runMerge(f, thisArg, args) {
-    return iterableRef(new Merge(f, thisArg, args.length), args);
+    return iterableRef(new Merge(new MergeHandler(f, thisArg)), args);
+}
+
+class MergeHandler {
+    constructor(f, c) {
+        this.f = f;
+        this.c = c;
+    }
+
+    merge(ref, args) {
+        try {
+            ref.resolve(this.f.apply(this.c, args));
+        } catch(e) {
+            ref.reject(e);
+        }
+    }
 }
 
 //----------------------------------------------------------------

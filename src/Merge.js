@@ -1,38 +1,40 @@
 'use strict';
 
-import resolveIterable from './iterable';
 import { isPending } from './refTypes.js';
 
 export default class Merge {
-    constructor(f, c, n) {
-        this.f = f;
-        this.c = c;
-        this.pending = n;
-        this.results = new Array(n);
+    constructor(mergeHandler) {
+        this.mergeHandler = mergeHandler;
     }
 
-    valueAt(ref, i, x) {
-        this.results[i] = x;
-        if(--this.pending === 0 && isPending(ref)) {
-            merge(this.f, this.c, this.results, ref);
-        }
+    init(promises) {
+        let n = Array.isArray(promises) ? promises.length : 0;
+        return { done: false, pending: 0, results: new Array(n) };
     }
 
-    fulfillAt(ref, i, h) {
-        this.valueAt(ref, i, h.value);
-        return true;
+    valueAt(ref, i, x, state) {
+        state.results[i] = x;
+        --state.pending;
+        this.check(ref, state);
     }
 
-    rejectAt(ref, i, h) {
+    fulfillAt(ref, i, h, state) {
+        this.valueAt(ref, i, h.value, state);
+    }
+
+    rejectAt(ref, i, h, state) {
         ref.become(h);
-        return false;
     }
-}
 
-function merge(f, c, args, ref) {
-    try {
-        ref.resolve(f.apply(c, args));
-    } catch(e) {
-        ref.reject(e);
+    complete(total, ref, state) {
+        state.done = true;
+        state.pending += total;
+        this.check(ref, state);
+    }
+
+    check(ref, state) {
+        if(state.done && state.pending === 0) {
+            this.mergeHandler.merge(ref, state.results);
+        }
     }
 }
