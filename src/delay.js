@@ -1,10 +1,14 @@
-export default function delay(Deferred, ms, handler) {
-    if(ms <= 0) {
-        return handler;
+'use strict';
+
+import { isRejected } from './refTypes';
+
+export default function delay(Deferred, ms, h) {
+    if (ms <= 0 || isRejected(h)) {
+        return this;
     }
 
     let ref = new Deferred();
-    handler.when(new Delay(ms, ref));
+    h.when(new Delay(ms, ref));
     return ref;
 }
 

@@ -1,6 +1,6 @@
 'use strict';
 import maybeThenable from './maybeThenable';
-import { PENDING, RESOLVED, FULFILLED, REJECTED, SETTLED, HANDLED } from './state';
+import { PENDING, RESOLVED, FULFILLED, REJECTED, HANDLED } from './state';
 
 export function isPending(ref) {
     return (ref.state() & PENDING) > 0;
@@ -12,6 +12,10 @@ export function isFulfilled(ref) {
 
 export function isRejected(ref) {
     return (ref.state() & REJECTED) > 0;
+}
+
+export function isSettled(ref) {
+    return isFulfilled(ref) || isRejected(ref);
 }
 
 export function getValue(ref) {
