@@ -1,8 +1,6 @@
 'use strict';
 
 export default class Race {
-    init() {}
-
     valueAt(ref, i, x) {
         ref.fulfill(x);
     }

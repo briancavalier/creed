@@ -3,44 +3,40 @@
 import silenceRejection from './silenceRejection';
 
 export default class Settle {
-    constructor(stateForRef, stateForValue) {
-        this.stateForRef = stateForRef;
+    constructor(stateForValue, results) {
+        this.done = false;
+        this.pending = 0;
+        this.results = results;
         this.stateForValue = stateForValue;
     }
 
-    init(promises) {
-        let n = Array.isArray(promises) ? promises.length : 0;
-        return { done: false, pending: 0, results: new Array(n) };
+    valueAt(ref, i, x) {
+        this.settleAt(ref, i, this.stateForValue(x));
     }
 
-    valueAt(ref, i, x, state) {
-        this.settleAt(ref, i, this.stateForValue(x), state);
+    fulfillAt(ref, i, h) {
+        this.settleAt(ref, i, h);
     }
 
-    fulfillAt(ref, i, h, state) {
-        this.settleAt(ref, i, this.stateForRef(h), state);
-    }
-
-    rejectAt(ref, i, h, state) {
+    rejectAt(ref, i, h) {
         silenceRejection(h);
-        this.settleAt(ref, i, this.stateForRef(h), state);
+        this.settleAt(ref, i, h);
     }
 
-    settleAt(ref, i, s, state) {
-        state.results[i] = s;
-        --state.pending;
-        this.check(ref, state);
+    settleAt(ref, i, state) {
+        this.results[i] = state;
+        this.check(this.pending - 1, ref);
     }
 
-    complete(total, ref, state) {
-        state.done = true;
-        state.pending += total;
-        this.check(ref, state);
+    complete(total, ref) {
+        this.done = true;
+        this.check(this.pending + total, ref);
     }
 
-    check(ref, state) {
-        if(state.done && state.pending === 0) {
-            ref.fulfill(state.results);
+    check(pending, ref) {
+        this.pending = pending;
+        if(this.done && pending === 0) {
+            ref.fulfill(this.results);
         }
     }
 }

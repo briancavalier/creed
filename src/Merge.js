@@ -3,38 +3,35 @@
 import { isPending } from './refTypes.js';
 
 export default class Merge {
-    constructor(mergeHandler) {
+    constructor(mergeHandler, results) {
+        this.done = false;
+        this.pending = 0;
+        this.results = results;
         this.mergeHandler = mergeHandler;
     }
 
-    init(promises) {
-        let n = Array.isArray(promises) ? promises.length : 0;
-        return { done: false, pending: 0, results: new Array(n) };
+    valueAt(ref, i, x) {
+        this.results[i] = x;
+        this.check(this.pending - 1, ref);
     }
 
-    valueAt(ref, i, x, state) {
-        state.results[i] = x;
-        --state.pending;
-        this.check(ref, state);
+    fulfillAt(ref, i, h) {
+        this.valueAt(ref, i, h.value);
     }
 
-    fulfillAt(ref, i, h, state) {
-        this.valueAt(ref, i, h.value, state);
-    }
-
-    rejectAt(ref, i, h, state) {
+    rejectAt(ref, i, h) {
         ref.become(h);
     }
 
-    complete(total, ref, state) {
-        state.done = true;
-        state.pending += total;
-        this.check(ref, state);
+    complete(total, ref) {
+        this.done = true;
+        this.check(this.pending + total, ref);
     }
 
-    check(ref, state) {
-        if(state.done && state.pending === 0) {
-            this.mergeHandler.merge(ref, state.results);
+    check(pending, ref) {
+        this.pending = pending;
+        if(this.done && pending === 0) {
+            this.mergeHandler.merge(ref, this.results);
         }
     }
 }

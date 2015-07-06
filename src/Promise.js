@@ -104,7 +104,7 @@ export function never() {
 
 export function all(promises) {
     checkIterable('all', promises);
-    return new Promise(iterableRef(new Merge(allHandler), promises));
+    return new Promise(iterableRef(new Merge(allHandler, resultsArray(promises)), promises));
 }
 
 const allHandler = {
@@ -125,15 +125,11 @@ export function any(promises) {
 
 export function settle(promises) {
     checkIterable('settle', promises);
-    return new Promise(iterableRef(new Settle(stateForRef, stateForValue), promises));
-}
-
-function stateForRef(ref) {
-    return new Promise(ref);
+    return new Promise(iterableRef(new Settle(stateForValue, resultsArray(promises)), promises));
 }
 
 function stateForValue(x) {
-    return resolve(x);
+    return new Fulfilled(x);
 }
 
 function iterableRef(handler, iterable) {
@@ -144,6 +140,10 @@ function checkIterable(kind, x) {
     if(typeof x !== 'object' || x === null) {
         throw new TypeError('non-iterable passed to ' + kind);
     }
+}
+
+function resultsArray(iterable) {
+    return Array.isArray(iterable) ? new Array(iterable.length) : [];
 }
 
 //----------------------------------------------------------------
@@ -167,7 +167,7 @@ function applyp(f, thisArg, args) {
 }
 
 function runMerge(f, thisArg, args) {
-    return iterableRef(new Merge(new MergeHandler(f, thisArg)), args);
+    return iterableRef(new Merge(new MergeHandler(f, thisArg), resultsArray(args)), args);
 }
 
 class MergeHandler {
