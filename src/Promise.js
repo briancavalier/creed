@@ -1,7 +1,7 @@
 'use strict';
 import Scheduler from './Scheduler';
 import async from './async';
-import registerRejection from './registerRejection';
+import trackError from './trackError';
 import maybeThenable from './maybeThenable';
 import silenceRejection from './silenceRejection';
 import { makeRefTypes, isPending, isFulfilled, isRejected, isSettled } from './refTypes';
@@ -23,7 +23,7 @@ import runCo from './co.js';
 let taskQueue = new Scheduler(async);
 
 let { handlerFor, handlerForMaybeThenable, Deferred, Fulfilled, Rejected, Async, Never }
-    = makeRefTypes(isPromise, handlerForPromise, registerRejection, taskQueue);
+    = makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue);
 
 //----------------------------------------------------------------
 // Promise
