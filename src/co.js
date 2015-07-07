@@ -18,7 +18,7 @@ function handle(handlerFor, result, iterator, next) {
         return next.resolve(result.value);
     }
 
-    handlerFor(result.value).when(new Next(handlerFor, iterator, next));
+    handlerFor(result.value).asap(new Next(handlerFor, iterator, next));
 }
 
 class Next {

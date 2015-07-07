@@ -10,7 +10,7 @@ export default function(Deferred, ms, h) {
 
     let ref = new Deferred();
     let timer = setTimeout(rejectOnTimeout, ms, ref);
-    h.when(new Timeout(timer, ref));
+    h.asap(new Timeout(timer, ref));
     return ref;
 }
 

@@ -1,5 +1,4 @@
-import { FULFILLED, REJECTED } from './state';
-import { isPending } from './refTypes';
+import { isFulfilled, isRejected } from './refTypes';
 import silenceRejection from './silenceRejection';
 import maybeThenable from './maybeThenable';
 
@@ -35,16 +34,15 @@ function runIterable(handlerForMaybeThenable, itemHandler, promises, ref) {
 function handleItem(handlerForMaybeThenable, itemHandler, x, i, ref) {
     if (maybeThenable(x)) {
         let h = handlerForMaybeThenable(x);
-        let s = h.state();
 
-        if (!isPending(ref)) {
+        if (ref.isResolved()) {
             silenceRejection(h);
-        } else if ((s & FULFILLED) > 0) {
+        } else if (isFulfilled(h)) {
             itemHandler.fulfillAt(ref, i, h);
-        } else if ((s & REJECTED) > 0) {
+        } else if (isRejected(h)) {
             itemHandler.rejectAt(ref, i, h);
         } else {
-            h.when(new SettleAt(itemHandler, i, ref));
+            h.asap(new SettleAt(itemHandler, i, ref));
         }
     } else {
         itemHandler.valueAt(ref, i, x);
@@ -52,18 +50,17 @@ function handleItem(handlerForMaybeThenable, itemHandler, x, i, ref) {
 }
 
 class SettleAt {
-    constructor(handler, index, next, state) {
+    constructor(handler, index, next) {
         this.handler = handler;
         this.index = index;
         this.next = next;
-        this.state = state;
     }
 
     fulfilled(handler) {
-        this.handler.fulfillAt(this.next, this.index, handler, this.state);
+        this.handler.fulfillAt(this.next, this.index, handler);
     }
 
     rejected(handler) {
-        return this.handler.rejectAt(this.next, this.index, handler, this.state);
+        return this.handler.rejectAt(this.next, this.index, handler);
     }
 }

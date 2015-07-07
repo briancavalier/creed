@@ -34,12 +34,13 @@ export function getReason(ref) {
     return ref.join().value;
 }
 
-export function makeRefTypes(isPromise, handlerForPromise, registerRejection, taskQueue) {
+export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue) {
 
     class Deferred {
         constructor() {
-            this.consumers = void 0;
             this.handler = void 0;
+            this.action = void 0;
+            this.length = 0;
             this._state = PENDING;
         }
 
@@ -48,33 +49,26 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
         }
 
         when(action) {
-            if (this.isResolved(this)) {
-                taskQueue.enqueue(new Continuation(action, this.handler));
-                return;
-            }
+            this.asap(action);
+        }
 
-            if (this.consumers === void 0) {
-                this.consumers = [action];
+        asap(action) {
+            if (this.isResolved(this)) {
+                this.join().when(action);
+            } else if(this.length === 0) {
+                this.action = action;
+                this.length++;
             } else {
-                this.consumers.push(action);
+                this[this.length++] = action;
             }
         }
 
         join() {
-            if (!this.isResolved(this)) {
+            if (!this.isResolved()) {
                 return this;
             }
 
-            let h = this;
-
-            while (h.handler !== void 0) {
-                h = h.handler;
-                if (h === this) {
-                    return this.handler = cycle();
-                }
-            }
-
-            return this.handler = h;
+            return this.handler = (this.handler === this ? cycle() : this.handler.join());
         }
 
         become(handler) {
@@ -84,7 +78,7 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
 
             this._state |= RESOLVED;
             this.handler = handler;
-            if(this.consumers !== void 0) {
+            if(this.length > 0) {
                 taskQueue.enqueue(this);
             }
         }
@@ -110,12 +104,12 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
         }
 
         run() {
-            let q = this.consumers;
-            let handler = this.handler = this.handler.join();
-            this.consumers = void 0;
+            let handler = this.handler.join();
+            handler.asap(this.action);
 
-            for (let i = 0; i < q.length; ++i) {
-                handler.when(q[i]);
+            for (let i = 1, l = this.length; i < l; ++i) {
+                handler.asap(this[i]);
+                this[i] = void 0;
             }
         }
     }
@@ -129,8 +123,12 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
             return FULFILLED;
         }
 
-        when(action) {
+        asap(action) {
             return action.fulfilled(this);
+        }
+
+        when(action) {
+            taskQueue.enqueue(new Continuation(action, this));
         }
 
         join() {
@@ -142,18 +140,36 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
         constructor(e) {
             this.value = e;
             this._state = REJECTED;
-            registerRejection(this);
+            trackError(this);
         }
 
         state() {
             return this._state;
         }
 
-        when(action) {
+        asap(action) {
             if(action.rejected(this)) {
                 this._state |= HANDLED;
             }
         }
+
+        when(action) {
+            taskQueue.enqueue(new Continuation(action, this));
+        }
+
+        join() {
+            return this;
+        }
+    }
+
+    class Never {
+        state() {
+            return PENDING;
+        }
+
+        asap() {}
+
+        when() {}
 
         join() {
             return this;
@@ -183,51 +199,16 @@ export function makeRefTypes(isPromise, handlerForPromise, registerRejection, ta
         }
     }
 
-    class Async {
-        constructor(handler) {
-            this.handler = handler;
-        }
-
-        state() {
-            return this.join().state();
-        }
-
-        when(action) {
-            taskQueue.enqueue(new Continuation(action, this));
-        }
-
-        join() {
-            let h = this;
-            while(h.handler !== void 0) {
-                h = h.handler;
-            }
-            return h;
-        }
-    }
-
-    class Never {
-        constructor() {}
-
-        state() {
-            return PENDING;
-        }
-
-        when() {}
-
-        join() {
-            return this;
-        }
-    }
-
     return {
-        handlerFor, handlerForMaybeThenable,
-        Deferred, Fulfilled, Rejected, Async, Never
+        handlerFor, handlerForNonPromise, handlerForMaybeThenable,
+        Deferred, Fulfilled, Rejected, Never
     };
 
     function handlerFor(x) {
-        if(isPromise(x)) {
-            return handlerForPromise(x).join();
-        }
+        return isPromise(x) ? handlerForPromise(x).join() : handlerForNonPromise(x);
+    }
+
+    function handlerForNonPromise(x) {
         return maybeThenable(x) ? handleForUntrusted(x) : new Fulfilled(x);
     }
 
@@ -256,6 +237,6 @@ class Continuation {
     }
 
     run() {
-        this.handler.join().when(this.action);
+        this.handler.join().asap(this.action);
     }
 }

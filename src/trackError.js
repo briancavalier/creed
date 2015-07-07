@@ -7,12 +7,12 @@ let emitError = initEmitError();
 
 export default function(error) {
     if(errors.length === 0) {
-        setTimeout(reportRejections, 1);
+        setTimeout(reportErrors, 1);
     }
     errors.push(error);
 }
 
-function reportRejections() {
+function reportErrors() {
     let es = errors;
     errors = [];
     for(let i=0; i<es.length; ++i) {

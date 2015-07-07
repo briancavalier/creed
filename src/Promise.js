@@ -5,7 +5,6 @@ import trackError from './trackError';
 import maybeThenable from './maybeThenable';
 import silenceRejection from './silenceRejection';
 import { makeRefTypes, isPending, isFulfilled, isRejected, isSettled } from './refTypes';
-import { PENDING, RESOLVED, FULFILLED, REJECTED, HANDLED } from './state';
 
 import then from './then';
 import delay from './delay';
@@ -22,7 +21,7 @@ import runCo from './co.js';
 
 let taskQueue = new Scheduler(async);
 
-let { handlerFor, handlerForMaybeThenable, Deferred, Fulfilled, Rejected, Async, Never }
+let { handlerFor, handlerForNonPromise, handlerForMaybeThenable, Deferred, Fulfilled, Rejected, Never }
     = makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue);
 
 //----------------------------------------------------------------
@@ -68,12 +67,19 @@ export function resolve(x) {
         return x;
     }
 
-    let h = handlerFor(x);
-    return new Promise((h.state() & PENDING) > 0 ? h : new Async(h));
+    return new Promise(handlerForNonPromise(x));
 }
 
 export function reject(x) {
-    return new Promise(new Async(new Rejected(x)));
+    return new Promise(new Rejected(x));
+}
+
+const NEVER = new Promise(new Never());
+NEVER.then  = never;
+NEVER.delay = never;
+
+export function never() {
+    return NEVER;
 }
 
 export function promise(f) {
@@ -90,12 +96,6 @@ function runResolver(f) {
     }
 
     return h;
-}
-
-let neverPromise = new Promise(new Never());
-
-export function never() {
-    return neverPromise;
 }
 
 //----------------------------------------------------------------
@@ -190,7 +190,7 @@ class MergeHandler {
 //----------------------------------------------------------------
 
 // Node-style async function to promise-returning function
-// (a -> (err -> value)) -> (a -> Promise)
+// (...a -> (err -> value)) -> (a -> Promise)
 export function denodeify(f) {
     return function(...args) {
         return new Promise(runNode(f, this, args, new Deferred()));
@@ -202,7 +202,7 @@ export function denodeify(f) {
 //----------------------------------------------------------------
 
 // Generator to coroutine
-// Generator -> (a -> Promise)
+// Generator -> (...a -> Promise)
 export function co(generator) {
     return function(...args) {
         return runGenerator(generator, this, args);
@@ -212,7 +212,7 @@ export function co(generator) {
 function runGenerator(generator, thisArg, args) {
     var iterator = generator.apply(thisArg, args);
     var d = new Deferred();
-    return new Promise(runCo(handlerFor, d, iterator));
+    return new Promise(runCo(handlerForMaybeThenable, d, iterator));
 }
 
 //----------------------------------------------------------------

@@ -8,7 +8,7 @@ export default function delay(Deferred, ms, h) {
     }
 
     let ref = new Deferred();
-    h.when(new Delay(ms, ref));
+    h.asap(new Delay(ms, ref));
     return ref;
 }
 

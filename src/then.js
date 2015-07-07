@@ -1,11 +1,9 @@
 'use strict';
-import { FULFILLED, REJECTED } from './state';
+import { isFulfilled, isRejected } from './refTypes';
 
 export default function then(Deferred, f, r, h) {
-    let s = h.state();
-
-    if(((s & FULFILLED) > 0 && typeof f !== 'function') ||
-        ((s & REJECTED) > 0 && typeof r !== 'function')) {
+    if((isFulfilled(h) && typeof f !== 'function') ||
+        (isRejected(h) && typeof r !== 'function')) {
         return h;
     }
 

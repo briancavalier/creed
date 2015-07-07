@@ -1,8 +1,8 @@
 'use strict';
-import { FULFILLED } from './state';
+import { isFulfilled } from './refTypes';
 
 export default function(h) {
-    (h.state() & FULFILLED) === 0 && h.when(rejectionSilencer);
+    !isFulfilled(h) && h.asap(rejectionSilencer);
 }
 
 const rejectionSilencer = { rejected: always, fulfilled: always };
