@@ -4,7 +4,7 @@ import { isRejected } from './refTypes';
 
 export default function delay(Deferred, ms, h) {
     if (ms <= 0 || isRejected(h)) {
-        return this;
+        return h;
     }
 
     let ref = new Deferred();
