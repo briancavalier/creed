@@ -43,7 +43,7 @@ class Promise {
             return this;
         }
 
-        return new Promise(then(f, r, ref, new Deferred()));
+        return new this.constructor(then(f, r, ref, new Deferred()));
     }
 
     catch(r) {
@@ -52,7 +52,7 @@ class Promise {
             return this;
         }
 
-        return new Promise(then(void 0, r, ref, new Deferred()));
+        return new this.constructor(then(void 0, r, ref, new Deferred()));
     }
 
     delay(ms) {
