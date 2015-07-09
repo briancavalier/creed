@@ -38,14 +38,13 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
 
     class Deferred {
         constructor() {
-            this.handler = void 0;
+            this.ref = null;
             this.action = void 0;
             this.length = 0;
-            this._state = PENDING;
         }
 
         state() {
-            return this.isResolved() ? this.handler.join().state() : this._state;
+            return this.isResolved() ? this.ref.join().state() : PENDING;
         }
 
         when(action) {
@@ -68,7 +67,7 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
         }
 
         _join() {
-            return this.handler = (this.handler === this ? cycle() : this.handler.join());
+            return this.ref = (this.ref === this ? cycle() : this.ref.join());
         }
 
         become(handler) {
@@ -77,18 +76,18 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
             }
 
             this._state |= RESOLVED;
-            this.handler = handler;
+            this.ref = handler;
             if(this.length > 0) {
                 taskQueue.enqueue(this);
             }
         }
 
         isResolved() {
-            return (this._state & RESOLVED) > 0;
+            return this.ref !== null;
         }
 
         resolve(x) {
-            this.become(handlerFor(x));
+            this.become(refFor(x));
         }
 
         fulfill(x) {
@@ -104,7 +103,7 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
         }
 
         run() {
-            let handler = this.handler.join();
+            let handler = this.ref.join();
             handler.asap(this.action);
 
             for (let i = 1, l = this.length; i < l; ++i) {
@@ -200,19 +199,19 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
     }
 
     return {
-        handlerFor, handlerForNonPromise, handlerForMaybeThenable,
+        refFor, refForNonPromise, refForMaybeThenable,
         Deferred, Fulfilled, Rejected, Never
     };
 
-    function handlerFor(x) {
-        return isPromise(x) ? handlerForPromise(x).join() : handlerForNonPromise(x);
+    function refFor(x) {
+        return isPromise(x) ? handlerForPromise(x).join() : refForNonPromise(x);
     }
 
-    function handlerForNonPromise(x) {
+    function refForNonPromise(x) {
         return maybeThenable(x) ? handleForUntrusted(x) : new Fulfilled(x);
     }
 
-    function handlerForMaybeThenable(x) {
+    function refForMaybeThenable(x) {
         return isPromise(x) ? handlerForPromise(x).join() : handleForUntrusted(x);
     }
 
@@ -231,12 +230,12 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
 }
 
 class Continuation {
-    constructor(action, handler) {
+    constructor(action, ref) {
         this.action = action;
-        this.handler = handler;
+        this.ref = ref;
     }
 
     run() {
-        this.handler.join().asap(this.action);
+        this.ref.join().asap(this.action);
     }
 }

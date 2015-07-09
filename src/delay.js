@@ -28,6 +28,6 @@ class Delay {
     }
 }
 
-function fulfillDelayed(handler, next) {
-    next.become(handler);
+function fulfillDelayed(ref, deferred) {
+    deferred.become(ref);
 }

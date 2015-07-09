@@ -21,20 +21,20 @@ import runCo from './co.js';
 
 let taskQueue = new Scheduler(async);
 
-let { handlerFor, handlerForNonPromise, handlerForMaybeThenable, Deferred, Fulfilled, Rejected, Never }
-    = makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue);
+let { refFor, refForNonPromise, refForMaybeThenable, Deferred, Fulfilled, Rejected, Never }
+    = makeRefTypes(isPromise, refForPromise, trackError, taskQueue);
 
 //----------------------------------------------------------------
 // Promise
 //----------------------------------------------------------------
 
 class Promise {
-    constructor(handler) {
-        this._handler = handler;
+    constructor(ref) {
+        this._ref = ref;
     }
 
     then(f, r) {
-        return new this.constructor(then(Deferred, f, r, handlerForPromise(this)));
+        return new this.constructor(then(Deferred, f, r, refForPromise(this)));
     }
 
     catch(r) {
@@ -42,11 +42,11 @@ class Promise {
     }
 
     delay(ms) {
-        return new this.constructor(delay(Deferred, ms, handlerForPromise(this)));
+        return new this.constructor(delay(Deferred, ms, refForPromise(this)));
     }
 
     timeout(ms) {
-        return new this.constructor(timeout(Deferred, ms, handlerForPromise(this)));
+        return new this.constructor(timeout(Deferred, ms, refForPromise(this)));
     }
 }
 
@@ -54,8 +54,8 @@ function isPromise(x) {
     return x instanceof Promise;
 }
 
-function handlerForPromise(p) {
-    return p._handler;
+function refForPromise(p) {
+    return p._ref;
 }
 
 //----------------------------------------------------------------
@@ -67,7 +67,7 @@ export function resolve(x) {
         return x;
     }
 
-    return new Promise(handlerForNonPromise(x));
+    return new Promise(refForNonPromise(x));
 }
 
 export function reject(x) {
@@ -138,7 +138,7 @@ function stateForValue(x) {
 }
 
 function iterableRef(handler, iterable) {
-    return resolveIterable(handlerForMaybeThenable, handler, iterable, new Deferred());
+    return resolveIterable(refForMaybeThenable, handler, iterable, new Deferred());
 }
 
 function checkIterable(kind, x) {
@@ -172,7 +172,7 @@ function applyp(f, thisArg, args) {
 }
 
 function runMerge(f, thisArg, args) {
-    return iterableRef(new Merge(new MergeHandler(f, thisArg), resultsArray(args)), args);
+    return iterableRef(new Merge(new MergeHandler(f, thisArg), args), args);
 }
 
 class MergeHandler {
@@ -217,7 +217,7 @@ export function co(generator) {
 function runGenerator(generator, thisArg, args) {
     var iterator = generator.apply(thisArg, args);
     var d = new Deferred();
-    return new Promise(runCo(handlerForMaybeThenable, d, iterator));
+    return new Promise(runCo(refForMaybeThenable, d, iterator));
 }
 
 //----------------------------------------------------------------

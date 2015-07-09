@@ -1,47 +1,47 @@
 'use strict';
 import { isFulfilled, isRejected } from './refTypes';
 
-export default function then(Deferred, f, r, h) {
-    if((isFulfilled(h) && typeof f !== 'function') ||
-        (isRejected(h) && typeof r !== 'function')) {
-        return h;
+export default function then(Deferred, f, r, ref) {
+    if((isFulfilled(ref) && typeof f !== 'function') ||
+        (isRejected(ref) && typeof r !== 'function')) {
+        return ref;
     }
 
     let d = new Deferred();
-    h.when(new Then(f, r, d));
+    ref.when(new Then(f, r, d));
     return d;
 }
 
 class Then {
-    constructor(f, r, next) {
+    constructor(f, r, deferred) {
         this.f = f;
         this.r = r;
-        this.next = next;
+        this.deferred = deferred;
     }
 
-    fulfilled(handler) {
-        return runThen(this.f, handler, this.next);
+    fulfilled(ref) {
+        return runThen(this.f, ref, this.deferred);
     }
 
-    rejected(handler) {
-        return runThen(this.r, handler, this.next);
+    rejected(ref) {
+        return runThen(this.r, ref, this.deferred);
     }
 }
 
-function runThen(f, handler, next) {
+function runThen(f, ref, deferred) {
     if(typeof f !== 'function') {
-        next.become(handler);
+        deferred.become(ref);
         return false;
     }
 
-    tryMapNext(f, handler.value, next);
+    tryMapNext(f, ref.value, deferred);
     return true;
 }
 
-function tryMapNext(f, x, next) {
+function tryMapNext(f, x, deferred) {
     try {
-        next.resolve(f(x));
+        deferred.resolve(f(x));
     } catch(e) {
-        next.reject(e);
+        deferred.reject(e);
     }
 }

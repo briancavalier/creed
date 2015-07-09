@@ -3,31 +3,31 @@
 import { isPending, isSettled } from './refTypes';
 import TimeoutError from './TimeoutError';
 
-export default function(Deferred, ms, h) {
-    if(isSettled(h)) {
-        return h;
+export default function(Deferred, ms, ref) {
+    if(isSettled(ref)) {
+        return ref;
     }
 
-    let ref = new Deferred();
-    let timer = setTimeout(rejectOnTimeout, ms, ref);
-    h.asap(new Timeout(timer, ref));
-    return ref;
+    let deferred = new Deferred();
+    let timer = setTimeout(rejectOnTimeout, ms, deferred);
+    ref.asap(new Timeout(timer, deferred));
+    return deferred;
 }
 
 class Timeout {
-    constructor(timer, ref) {
+    constructor(timer, deferred) {
         this.timer = timer;
-        this.ref = ref;
+        this.deferred = deferred;
     }
 
-    fulfilled(handler) {
+    fulfilled(ref) {
         clearTimeout(this.timer);
-        this.ref.become(handler);
+        this.deferred.become(ref);
     }
 
-    rejected(handler) {
+    rejected(ref) {
         clearTimeout(this.timer);
-        this.ref.become(handler);
+        this.deferred.become(ref);
         return false;
     }
 }

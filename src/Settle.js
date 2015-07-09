@@ -10,33 +10,33 @@ export default class Settle {
         this.stateForValue = stateForValue;
     }
 
-    valueAt(ref, i, x) {
-        this.settleAt(ref, i, this.stateForValue(x));
+    valueAt(deferred, i, x) {
+        this.settleAt(deferred, i, this.stateForValue(x));
     }
 
-    fulfillAt(ref, i, h) {
-        this.settleAt(ref, i, h);
+    fulfillAt(deferred, i, ref) {
+        this.settleAt(deferred, i, ref);
     }
 
-    rejectAt(ref, i, h) {
-        silenceRejection(h);
-        this.settleAt(ref, i, h);
+    rejectAt(deferred, i, ref) {
+        silenceRejection(ref);
+        this.settleAt(deferred, i, ref);
     }
 
-    settleAt(ref, i, state) {
+    settleAt(deferred, i, state) {
         this.results[i] = state;
-        this.check(this.pending - 1, ref);
+        this.check(this.pending - 1, deferred);
     }
 
-    complete(total, ref) {
+    complete(total, deferred) {
         this.done = true;
-        this.check(this.pending + total, ref);
+        this.check(this.pending + total, deferred);
     }
 
-    check(pending, ref) {
+    check(pending, deferred) {
         this.pending = pending;
         if(this.done && pending === 0) {
-            ref.fulfill(this.results);
+            deferred.fulfill(this.results);
         }
     }
 }
