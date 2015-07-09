@@ -3,7 +3,6 @@ import Scheduler from './Scheduler';
 import async from './async';
 import trackError from './trackError';
 import maybeThenable from './maybeThenable';
-import silenceRejection from './silenceRejection';
 import { makeRefTypes, isPending, isFulfilled, isRejected, isSettled } from './refTypes';
 
 import then from './then';
