@@ -1,7 +1,6 @@
 'use strict';
 
-import silenceRejection from './silenceRejection';
-import { isPending } from './refTypes.js';
+import { isPending, silenceError } from './refTypes.js';
 
 export default class Any {
     constructor() {
@@ -9,28 +8,29 @@ export default class Any {
         this.pending = 0;
     }
 
-    valueAt(ref, i, x) {
-        ref.fulfill(x);
+    valueAt(deferred, i, x) {
+        deferred.fulfill(x);
     }
 
-    fulfillAt(ref, i, h) {
-        ref.become(h);
+    fulfillAt(deferred, i, ref) {
+        deferred.become(ref);
     }
 
-    rejectAt(ref, i, h) {
-        silenceRejection(h);
-        this.check(this.pending - 1, ref);
+    rejectAt(deferred, i, ref) {
+        silenceError(ref);
+        this.check(this.pending - 1, deferred);
     }
 
-    complete(total, ref) {
+    complete(total, deferred) {
         this.done = true;
-        this.check(this.pending + total, ref);
+        this.check(this.pending + total, deferred);
     }
 
-    check(pending, ref) {
+    check(pending, deferred) {
         this.pending = pending;
         if(this.done && pending === 0) {
-            ref.reject(new Error());
+            // TODO: Better error
+            deferred.reject(new Error());
         }
     }
 }

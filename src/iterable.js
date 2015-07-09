@@ -1,17 +1,16 @@
-import { isFulfilled, isRejected } from './refTypes';
-import silenceRejection from './silenceRejection';
+import { isFulfilled, isRejected, silenceError } from './refTypes';
 import maybeThenable from './maybeThenable';
 
-export default function(handlerForMaybeThenable, itemHandler, promises, ref) {
+export default function(refForMaybeThenable, itemHandler, promises, ref) {
     let run = Array.isArray(promises) ? runArray : runIterable;
-    return run(handlerForMaybeThenable, itemHandler, promises, ref);
+    return run(refForMaybeThenable, itemHandler, promises, ref);
 }
 
-function runArray(handlerForMaybeThenable, itemHandler, promises, ref) {
+function runArray(refForMaybeThenable, itemHandler, promises, ref) {
     let i = 0;
 
     for (; i < promises.length; ++i) {
-        handleItem(handlerForMaybeThenable, itemHandler, promises[i], i, ref);
+        handleItem(refForMaybeThenable, itemHandler, promises[i], i, ref);
     }
 
     itemHandler.complete(i, ref);
@@ -19,11 +18,11 @@ function runArray(handlerForMaybeThenable, itemHandler, promises, ref) {
     return ref;
 }
 
-function runIterable(handlerForMaybeThenable, itemHandler, promises, ref) {
+function runIterable(refForMaybeThenable, itemHandler, promises, ref) {
     let i = 0;
 
     for(let x of promises) {
-        handleItem(handlerForMaybeThenable, itemHandler, x, i++, ref);
+        handleItem(refForMaybeThenable, itemHandler, x, i++, ref);
     }
 
     itemHandler.complete(i, ref);
@@ -31,36 +30,36 @@ function runIterable(handlerForMaybeThenable, itemHandler, promises, ref) {
     return ref;
 }
 
-function handleItem(handlerForMaybeThenable, itemHandler, x, i, ref) {
+function handleItem(refForMaybeThenable, itemHandler, x, i, deferred) {
     if (maybeThenable(x)) {
-        let h = handlerForMaybeThenable(x);
+        let ref = refForMaybeThenable(x);
 
-        if (ref.isResolved()) {
-            silenceRejection(h);
-        } else if (isFulfilled(h)) {
-            itemHandler.fulfillAt(ref, i, h);
-        } else if (isRejected(h)) {
-            itemHandler.rejectAt(ref, i, h);
+        if (deferred.isResolved()) {
+            silenceError(ref);
+        } else if (isFulfilled(ref)) {
+            itemHandler.fulfillAt(deferred, i, ref);
+        } else if (isRejected(ref)) {
+            itemHandler.rejectAt(deferred, i, ref);
         } else {
-            h.asap(new SettleAt(itemHandler, i, ref));
+            ref.asap(new SettleAt(itemHandler, i, deferred));
         }
     } else {
-        itemHandler.valueAt(ref, i, x);
+        itemHandler.valueAt(deferred, i, x);
     }
 }
 
 class SettleAt {
-    constructor(handler, index, next) {
+    constructor(handler, index, deferred) {
         this.handler = handler;
         this.index = index;
-        this.next = next;
+        this.deferred = deferred;
     }
 
-    fulfilled(handler) {
-        this.handler.fulfillAt(this.next, this.index, handler);
+    fulfilled(ref) {
+        this.handler.fulfillAt(this.deferred, this.index, ref);
     }
 
-    rejected(handler) {
-        return this.handler.rejectAt(this.next, this.index, handler);
+    rejected(ref) {
+        return this.handler.rejectAt(this.deferred, this.index, ref);
     }
 }

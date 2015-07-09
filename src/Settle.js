@@ -1,6 +1,6 @@
 'use strict';
 
-import silenceRejection from './silenceRejection';
+import { silenceError }from './refTypes';
 
 export default class Settle {
     constructor(stateForValue, results) {
@@ -19,7 +19,7 @@ export default class Settle {
     }
 
     rejectAt(deferred, i, ref) {
-        silenceRejection(ref);
+        silenceError(ref);
         this.settleAt(deferred, i, ref);
     }
 

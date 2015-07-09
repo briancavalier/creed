@@ -1,25 +1,25 @@
 'use strict';
 
 export default class Race {
-    constructor(empty) {
-        this.empty = empty;
+    constructor(emptyRef) {
+        this.emptyRef = emptyRef;
     }
 
-    valueAt(ref, i, x) {
-        ref.fulfill(x);
+    valueAt(deferred, i, x) {
+        deferred.fulfill(x);
     }
 
-    fulfillAt(ref, i, h) {
-        ref.become(h);
+    fulfillAt(deferred, i, ref) {
+        deferred.become(ref);
     }
 
-    rejectAt(ref, i, h) {
-        ref.become(h);
+    rejectAt(deferred, i, ref) {
+        deferred.become(ref);
     }
 
-    complete(total, ref) {
+    complete(total, deferred) {
         if(total === 0) {
-            this.empty(ref);
+            this.emptyRef(deferred);
         }
     }
 }

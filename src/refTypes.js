@@ -34,6 +34,12 @@ export function getReason(ref) {
     return ref.join().value;
 }
 
+export function silenceError(ref) {
+    if(isFulfilled(ref)) return;
+
+    ref._state |= HANDLED;
+}
+
 export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue) {
 
     class Deferred {

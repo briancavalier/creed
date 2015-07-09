@@ -172,7 +172,7 @@ function applyp(f, thisArg, args) {
 }
 
 function runMerge(f, thisArg, args) {
-    return iterableRef(new Merge(new MergeHandler(f, thisArg), args), args);
+    return iterableRef(new Merge(new MergeHandler(f, thisArg), resultsArray(args)), args);
 }
 
 class MergeHandler {
