@@ -118,7 +118,7 @@ export function makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue) 
             let handler = this.ref.join();
             handler.asap(this.action);
 
-            for (let i = 0, l = this.length; i < l; ++i) {
+            for (let i = 0; i < this.length; ++i) {
                 handler.asap(this[i]);
                 this[i] = void 0;
             }
