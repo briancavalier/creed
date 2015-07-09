@@ -1,30 +1,31 @@
 'use strict';
 import isNode from './isNode';
-import { HANDLED } from './state';
 
-let errors = [];
 let emitError = initEmitError();
 
-export default function(error) {
-    if(errors.length === 0) {
-        setTimeout(reportErrors, 1);
+export default class ErrorHandler {
+    constructor(report) {
+        this.errors = new Set();
+        this.report = report;
     }
-    errors.push(error);
-}
 
-function reportErrors() {
-    let es = errors;
-    errors = [];
-    for(let i=0; i<es.length; ++i) {
-        let e = es[i];
-        if(!e.handled) {
-            emitError('unhandledRejection', e) || reportError(e);
+    track(e) {
+        if(this.errors.size === 0) {
+            setTimeout(reportErrors, 1, this.report, this.errors);
         }
+        this.errors.add(e);
+    }
+
+    untrack(e) {
+        this.errors.delete(e);
     }
 }
 
-function reportError(e) {
-    throw e.value;
+function reportErrors(reportError, errors) {
+    for(let e of errors) {
+        emitError('unhandledRejection', e) || reportError(e);
+    }
+    errors.clear();
 }
 
 function initEmitError() {

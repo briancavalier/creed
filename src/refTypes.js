@@ -1,6 +1,6 @@
 'use strict';
 import maybeThenable from './maybeThenable';
-import { PENDING, RESOLVED, FULFILLED, REJECTED, HANDLED } from './state';
+import { PENDING, RESOLVED, FULFILLED, REJECTED } from './state';
 
 export function isPending(ref) {
     return (ref.state() & PENDING) > 0;
@@ -37,10 +37,14 @@ export function getReason(ref) {
 export function silenceError(ref) {
     if(isFulfilled(ref)) return;
 
-    ref.handled = true;
+    ref.when(silencer);
 }
 
-export function makeRefTypes(isPromise, refForPromise, trackError, taskQueue) {
+const silencer = {
+    rejected() { return true; }
+};
+
+export function makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue) {
 
     class Deferred {
         constructor() {
@@ -146,8 +150,7 @@ export function makeRefTypes(isPromise, refForPromise, trackError, taskQueue) {
     class Rejected {
         constructor(e) {
             this.value = e;
-            this.handled = false;
-            trackError(this);
+            errorHandler.track(this);
         }
 
         state() {
@@ -156,7 +159,7 @@ export function makeRefTypes(isPromise, refForPromise, trackError, taskQueue) {
 
         asap(action) {
             if(action.rejected(this)) {
-                this.handled = true;
+                errorHandler.untrack(this);
             }
         }
 
