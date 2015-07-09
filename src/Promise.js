@@ -33,11 +33,22 @@ class Promise {
     }
 
     then(f, r) {
-        return new this.constructor(then(Deferred, f, r, refForPromise(this)));
+        let ref = refForPromise(this);
+        if((isFulfilled(ref) && typeof f !== 'function') ||
+            (isRejected(ref) && typeof r !== 'function')) {
+            return this;
+        }
+
+        return new Promise(then(f, r, ref, new Deferred()));
     }
 
     catch(r) {
-        return this.then(null, r);
+        let ref = refForPromise(this);
+        if(isRejected(ref) && typeof r !== 'function' || isFulfilled(ref)) {
+            return this;
+        }
+
+        return new Promise(then(void 0, r, ref, new Deferred()));
     }
 
     delay(ms) {

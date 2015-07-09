@@ -1,13 +1,6 @@
 'use strict';
-import { isFulfilled, isRejected } from './refTypes';
 
-export default function then(Deferred, f, r, ref) {
-    if((isFulfilled(ref) && typeof f !== 'function') ||
-        (isRejected(ref) && typeof r !== 'function')) {
-        return ref;
-    }
-
-    let d = new Deferred();
+export default function then(f, r, ref, d) {
     ref.when(new Then(f, r, d));
     return d;
 }
@@ -20,7 +13,7 @@ class Then {
     }
 
     fulfilled(ref) {
-        return runThen(this.f, ref, this.deferred);
+        runThen(this.f, ref, this.deferred);
     }
 
     rejected(ref) {

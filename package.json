@@ -1,12 +1,17 @@
 {
   "name": "truth",
   "version": "1.0.0",
-  "description": "",
-  "main": "truth.js",
+  "description": "Forward-looking async toolkit: promises, generators, streaming",
+  "main": "lib/Promise.js",
+  "files": [
+    "lib",
+    "dist"
+  ],
   "scripts": {
-    "build": "babel -d lib src && browserify -o build/truth.js -s truth --no-detect-globals truth.js && uglifyjs build/truth.js -c -m --source-map=build/truth.min.js.map --source-map-url=truth.min.js.map --source-map-include-sources -o build/truth.min.js",
+    "build": "babel -d lib src && browserify -o dist/truth.js -s truth --no-detect-globals lib/Promise.js && uglifyjs dist/truth.js -c -m --source-map=dist/truth.min.js.map --source-map-url=truth.min.js.map --source-map-include-sources -o dist/truth.min.js",
     "test": "npm run build && promises-aplus-tests test/aplus.js"
   },
+
   "author": "brian@hovercraftstudios.com",
   "license": "MIT",
   "devDependencies": {

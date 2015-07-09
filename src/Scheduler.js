@@ -6,7 +6,7 @@ export default class Scheduler {
 		this.drain = () => this._drain();
 	}
 
-	enqueue(task) {
+	add(task) {
 		if (this.length === 0) {
 			this._async(this.drain);
 		}

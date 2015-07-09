@@ -17,7 +17,7 @@ function reportErrors() {
     errors = [];
     for(let i=0; i<es.length; ++i) {
         let e = es[i];
-        if((e.state() & HANDLED) === 0) {
+        if(!e.handled) {
             emitError('unhandledRejection', e) || reportError(e);
         }
     }

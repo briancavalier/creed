@@ -37,20 +37,24 @@ export function getReason(ref) {
 export function silenceError(ref) {
     if(isFulfilled(ref)) return;
 
-    ref._state |= HANDLED;
+    ref.handled = true;
 }
 
-export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue) {
+export function makeRefTypes(isPromise, refForPromise, trackError, taskQueue) {
 
     class Deferred {
         constructor() {
-            this.ref = null;
+            this.ref = void 0;
             this.action = void 0;
             this.length = 0;
         }
 
         state() {
             return this.isResolved() ? this.ref.join().state() : PENDING;
+        }
+
+        isResolved() {
+            return this.ref !== void 0;
         }
 
         when(action) {
@@ -60,9 +64,8 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
         asap(action) {
             if (this.isResolved(this)) {
                 this._join().when(action);
-            } else if(this.length === 0) {
+            } else if(this.action === void 0) {
                 this.action = action;
-                this.length++;
             } else {
                 this[this.length++] = action;
             }
@@ -74,22 +77,6 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
 
         _join() {
             return this.ref = (this.ref === this ? cycle() : this.ref.join());
-        }
-
-        become(handler) {
-            if(this.isResolved()) {
-                return;
-            }
-
-            this._state |= RESOLVED;
-            this.ref = handler;
-            if(this.length > 0) {
-                taskQueue.enqueue(this);
-            }
-        }
-
-        isResolved() {
-            return this.ref !== null;
         }
 
         resolve(x) {
@@ -105,14 +92,29 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
                 return;
             }
 
-            this.become(new Rejected(e));
+            this._become(new Rejected(e));
+        }
+
+        become(ref) {
+            if(this.isResolved()) {
+                return;
+            }
+
+            this._become(ref);
+        }
+
+        _become(ref) {
+            this.ref = ref;
+            if(this.action !== void 0) {
+                taskQueue.add(this);
+            }
         }
 
         run() {
             let handler = this.ref.join();
             handler.asap(this.action);
 
-            for (let i = 1, l = this.length; i < l; ++i) {
+            for (let i = 0, l = this.length; i < l; ++i) {
                 handler.asap(this[i]);
                 this[i] = void 0;
             }
@@ -129,11 +131,11 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
         }
 
         asap(action) {
-            return action.fulfilled(this);
+            action.fulfilled(this);
         }
 
         when(action) {
-            taskQueue.enqueue(new Continuation(action, this));
+            taskQueue.add(new Continuation(action, this));
         }
 
         join() {
@@ -144,22 +146,22 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
     class Rejected {
         constructor(e) {
             this.value = e;
-            this._state = REJECTED;
+            this.handled = false;
             trackError(this);
         }
 
         state() {
-            return this._state;
+            return REJECTED;
         }
 
         asap(action) {
             if(action.rejected(this)) {
-                this._state |= HANDLED;
+                this.handled = true;
             }
         }
 
         when(action) {
-            taskQueue.enqueue(new Continuation(action, this));
+            taskQueue.add(new Continuation(action, this));
         }
 
         join() {
@@ -181,53 +183,41 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
         }
     }
 
-    function extract(then, thenable) {
-        let d = new Deferred();
-        taskQueue.enqueue(new Assimilate(then, thenable, x => d.resolve(x), e => d.reject(e)));
-        return d;
-    }
-
-    class Assimilate {
-        constructor(then, thenable, resolve, reject) {
-            this._then = then;
-            this.thenable = thenable;
-            this.resolve = resolve;
-            this.reject = reject;
-        }
-
-        run() {
-            try {
-                this._then.call(this.thenable, this.resolve, this.reject);
-            } catch (e) {
-                this.reject(e);
-            }
-        }
-    }
-
     return {
         refFor, refForNonPromise, refForMaybeThenable,
         Deferred, Fulfilled, Rejected, Never
     };
 
     function refFor(x) {
-        return isPromise(x) ? handlerForPromise(x).join() : refForNonPromise(x);
+        return isPromise(x) ? refForPromise(x).join() : refForNonPromise(x);
     }
 
     function refForNonPromise(x) {
-        return maybeThenable(x) ? handleForUntrusted(x) : new Fulfilled(x);
+        return maybeThenable(x) ? refForUntrusted(x) : new Fulfilled(x);
     }
 
     function refForMaybeThenable(x) {
-        return isPromise(x) ? handlerForPromise(x).join() : handleForUntrusted(x);
+        return isPromise(x) ? refForPromise(x).join() : refForUntrusted(x);
     }
 
-    function handleForUntrusted(x) {
+    function refForUntrusted(x) {
         try {
             let then = x.then;
             return typeof then === 'function' ? extract(then, x) : new Fulfilled(x);
         } catch(e) {
             return new Rejected(e);
         }
+    }
+
+    function extract(then, thenable) {
+        let d = new Deferred();
+        try {
+            then.call(thenable, x => d.resolve(x), e => d.reject(e));
+        } catch (e) {
+            d.reject(e);
+        }
+
+        return d;
     }
 
     function cycle() {
@@ -242,6 +232,6 @@ class Continuation {
     }
 
     run() {
-        this.ref.join().asap(this.action);
+        this.ref.asap(this.action);
     }
 }
