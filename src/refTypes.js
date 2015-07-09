@@ -54,7 +54,7 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
 
         asap(action) {
             if (this.isResolved(this)) {
-                this.join().when(action);
+                this._join().when(action);
             } else if(this.length === 0) {
                 this.action = action;
                 this.length++;
@@ -64,10 +64,10 @@ export function makeRefTypes(isPromise, handlerForPromise, trackError, taskQueue
         }
 
         join() {
-            if (!this.isResolved()) {
-                return this;
-            }
+            return this.isResolved() ? this._join() : this;
+        }
 
+        _join() {
             return this.handler = (this.handler === this ? cycle() : this.handler.join());
         }
 

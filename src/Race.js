@@ -1,6 +1,10 @@
 'use strict';
 
 export default class Race {
+    constructor(empty) {
+        this.empty = empty;
+    }
+
     valueAt(ref, i, x) {
         ref.fulfill(x);
     }
@@ -13,5 +17,9 @@ export default class Race {
         ref.become(h);
     }
 
-    complete() {}
+    complete(total, ref) {
+        if(total === 0) {
+            this.empty(ref);
+        }
+    }
 }

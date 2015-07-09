@@ -74,7 +74,8 @@ export function reject(x) {
     return new Promise(new Rejected(x));
 }
 
-const NEVER = new Promise(new Never());
+const neverRef = new Never();
+const NEVER = new Promise(neverRef);
 NEVER.then  = never;
 NEVER.delay = never;
 
@@ -115,7 +116,11 @@ const allHandler = {
 
 export function race(promises) {
     checkIterable('race', promises);
-    return new Promise(iterableRef(new Race(), promises));
+    return new Promise(iterableRef(new Race(becomeNever), promises));
+}
+
+function becomeNever(deferred) {
+    deferred.become(neverRef);
 }
 
 export function any(promises) {
