@@ -37,7 +37,7 @@ export function getReason(ref) {
 export function silenceError(ref) {
     if(isFulfilled(ref)) return;
 
-    ref.when(silencer);
+    ref.asap(silencer);
 }
 
 const silencer = {
@@ -66,7 +66,7 @@ export function makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue) 
         }
 
         asap(action) {
-            if (this.isResolved(this)) {
+            if (this.isResolved()) {
                 this._join().when(action);
             } else if(this.action === void 0) {
                 this.action = action;
@@ -80,7 +80,17 @@ export function makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue) 
         }
 
         _join() {
-            return this.ref = (this.ref === this ? cycle() : this.ref.join());
+            let ref = this;
+
+            while(ref.ref !== void 0) {
+                ref = ref.ref;
+                if(ref === this) {
+                    ref = cycle();
+                    break;
+                }
+            }
+
+            return this.ref = ref;
         }
 
         resolve(x) {
@@ -115,11 +125,11 @@ export function makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue) 
         }
 
         run() {
-            let handler = this.ref.join();
-            handler.asap(this.action);
+            let ref = this.ref.join();
+            ref.asap(this.action);
 
             for (let i = 0; i < this.length; ++i) {
-                handler.asap(this[i]);
+                ref.asap(this[i]);
                 this[i] = void 0;
             }
         }

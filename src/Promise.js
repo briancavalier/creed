@@ -1,6 +1,6 @@
 'use strict';
-import Scheduler from './Scheduler';
-import async from './async';
+import TaskQueue from './TaskQueue';
+import makeAsync from './async';
 import ErrorHandler from './ErrorHandler';
 import maybeThenable from './maybeThenable';
 import { makeRefTypes, isPending, isFulfilled, isRejected, isSettled } from './refTypes';
@@ -18,7 +18,7 @@ import resolveIterable from './iterable';
 import runNode from './node';
 import runCo from './co.js';
 
-let taskQueue = new Scheduler(async);
+let taskQueue = new TaskQueue(makeAsync);
 
 let { refFor, refForNonPromise, refForMaybeThenable, Deferred, Fulfilled, Rejected, Never }
     = makeRefTypes(isPromise, refForPromise, new ErrorHandler(reportError), taskQueue);
@@ -43,24 +43,28 @@ class Promise {
             return this;
         }
 
-        return new this.constructor(then(f, r, ref, new Deferred()));
+        return new Promise(then(f, r, ref, new Deferred()));
     }
 
     catch(r) {
-        let ref = refForPromise(this);
-        if(isRejected(ref) && typeof r !== 'function' || isFulfilled(ref)) {
-            return this;
-        }
-
-        return new this.constructor(then(void 0, r, ref, new Deferred()));
+        var ref = refForPromise(this);
+        return isFulfilled(ref) ? this
+            : new Promise(then(void 0, r, ref, new Deferred()));
     }
 
     delay(ms) {
-        return new this.constructor(delay(Deferred, ms, refForPromise(this)));
+        let ref = refForPromise(this);
+        if(ms <= 0 || isRejected(ref)) {
+            return this;
+        }
+
+        return new Promise(delay(ms, ref, new Deferred()));
     }
 
     timeout(ms) {
-        return new this.constructor(timeout(Deferred, ms, refForPromise(this)));
+        var ref = refForPromise(this);
+        return isSettled(ref) ? this
+            : new Promise(timeout(ms, ref, new Deferred()));
     }
 }
 

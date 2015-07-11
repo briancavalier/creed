@@ -1,29 +1,22 @@
 'use strict';
 
-import { isRejected } from './refTypes';
-
-export default function delay(Deferred, ms, h) {
-    if (ms <= 0 || isRejected(h)) {
-        return h;
-    }
-
-    let ref = new Deferred();
-    h.asap(new Delay(ms, ref));
-    return ref;
+export default function delay(ms, h, deferred) {
+    h.asap(new Delay(ms, deferred));
+    return deferred;
 }
 
 class Delay {
-    constructor(time, ref) {
+    constructor(time, deferred) {
         this.time = time;
-        this.ref = ref;
+        this.deferred = deferred;
     }
 
     fulfilled(handler) {
-        setTimeout(fulfillDelayed, this.time, handler, this.ref);
+        setTimeout(fulfillDelayed, this.time, handler, this.deferred);
     }
 
     rejected(handler) {
-        this.ref.become(handler);
+        this.deferred.become(handler);
         return false;
     }
 }

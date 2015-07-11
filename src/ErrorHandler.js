@@ -1,5 +1,5 @@
 'use strict';
-import isNode from './isNode';
+import { isNode } from './env';
 
 let emitError = initEmitError();
 
@@ -30,7 +30,7 @@ function reportErrors(reportError, errors) {
 
 function initEmitError() {
     /*global process, self, CustomEvent*/
-    if(isNode() && typeof process.emit === 'function') {
+    if(isNode && typeof process.emit === 'function') {
         // Returning falsy here means to call the default reportRejection API.
         // This is safe even in browserify since process.emit always returns
         // falsy in browserify:

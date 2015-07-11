@@ -1,8 +1,8 @@
 'use strict';
 
-export default function then(f, r, ref, d) {
-    ref.when(new Then(f, r, d));
-    return d;
+export default function then(f, r, ref, deferred) {
+    ref.when(new Then(f, r, deferred));
+    return deferred;
 }
 
 class Then {
@@ -27,13 +27,13 @@ function runThen(f, ref, deferred) {
         return false;
     }
 
-    tryMapNext(f, ref.value, deferred);
+    tryMapNext(f, ref, deferred);
     return true;
 }
 
-function tryMapNext(f, x, deferred) {
+function tryMapNext(f, ref, deferred) {
     try {
-        deferred.resolve(f(x));
+        deferred.resolve(f(ref.value));
     } catch(e) {
         deferred.reject(e);
     }

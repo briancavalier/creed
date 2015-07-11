@@ -1,14 +1,9 @@
 'use strict';
 
-import { isPending, isSettled } from './refTypes';
+import { isPending } from './refTypes';
 import TimeoutError from './TimeoutError';
 
-export default function(Deferred, ms, ref) {
-    if(isSettled(ref)) {
-        return ref;
-    }
-
-    let deferred = new Deferred();
+export default function(ms, ref, deferred) {
     let timer = setTimeout(rejectOnTimeout, ms, deferred);
     ref.asap(new Timeout(timer, deferred));
     return deferred;
