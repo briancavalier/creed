@@ -2,44 +2,29 @@
 /** @author Brian Cavalier */
 /** @author John Hann */
 
-import isNode from './isNode';
-/*global process,document,MutationObserver,WebKitMutationObserver*/
+import { isNode, MutationObs } from './env';
 
-export default function async(f) {
-	return runAsync(f);
-};
+/*global process,document */
 
-var runAsync = function (f) { return setTimeout(f, 0); };
-
-var MutationObs;
-
-// Detect specific env
-if (isNode()) { // Node
-	runAsync = function (f) { return process.nextTick(f); };
-} else if (MutationObs = hasMutationObserver()) { // Modern browser
-	runAsync = initMutationObserver(MutationObs);
+export default function createScheduler(f) {
+	return isNode ? createNodeScheduler(f)
+		: MutationObs ? createBrowserScheduler(f)
+		: createFallbackScheduler(f);
 }
 
-function hasMutationObserver () {
-	return (typeof MutationObserver === 'function' && MutationObserver) ||
-		(typeof WebKitMutationObserver === 'function' && WebKitMutationObserver);
+function createFallbackScheduler(f) {
+	return () => setTimeout(f, 0);
 }
 
-function initMutationObserver(MutationObserver) {
-	var scheduled;
-	var node = document.createTextNode('');
-	var o = new MutationObserver(run);
-	o.observe(node, { characterData: true });
+function createNodeScheduler(f) {
+	return () => process.nextTick(f);
+}
 
-	function run() {
-		var f = scheduled;
-		scheduled = void 0;
-		f();
-	}
+function createBrowserScheduler(f) {
+	return () => {
+		let div = document.createElement('div');
+		(new MutationObs(f)).observe(div, { characterData: true });
 
-	var i = 0;
-	return function (f) {
-		scheduled = f;
-		node.data = (i ^= 1);
+		return () => div.data = (i ^= 1);
 	};
 }

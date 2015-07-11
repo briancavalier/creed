@@ -1,17 +1,20 @@
 export default class Scheduler {
-	constructor(async) {
-		this._async = async;
+	constructor(makeAsync) {
 		this.length = 0;
-
-		this.drain = () => this._drain();
+		this._makeAsync = makeAsync;
 	}
 
 	add(task) {
 		if (this.length === 0) {
-			this._async(this.drain);
+			this.drain();
 		}
 
 		this[this.length++] = task;
+	}
+
+	drain() {
+		this.drain = this._makeAsync(() => this._drain());
+		this.drain();
 	}
 
 	_drain() {
