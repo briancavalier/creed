@@ -8,15 +8,15 @@
     "dist"
   ],
   "scripts": {
-    "build": "babel -d lib src && browserify -o dist/truth.js -s truth --no-detect-globals lib/Promise.js && uglifyjs dist/truth.js -c -m --source-map=dist/truth.min.js.map --source-map-url=truth.min.js.map --source-map-include-sources -o dist/truth.min.js",
+    "build": "babel -d lib src && webpack --output-library truth --output-library-target umd ./lib/Promise.js --output-file dist/truth.js && uglifyjs dist/truth.js -c -m --source-map=dist/truth.min.js.map --source-map-url=truth.min.js.map --source-map-include-sources -o dist/truth.min.js",
     "test": "npm run build && promises-aplus-tests test/aplus.js"
   },
-
   "author": "brian@hovercraftstudios.com",
   "license": "MIT",
   "devDependencies": {
     "babel": "^5.5.8",
-    "browserify": "^10.2.4",
-    "mocha": "^2.2.5"
+    "mocha": "^2.2.5",
+    "node-libs-browser": "^0.5.2",
+    "webpack": "^1.10.1"
   }
 }

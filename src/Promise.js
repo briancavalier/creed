@@ -19,23 +19,29 @@ import runNode from './node';
 import runCo from './co.js';
 
 let taskQueue = new TaskQueue(makeAsync);
+let errorHandler = new ErrorHandler(e => { throw e });
 
-let { refFor, refForNonPromise, refForMaybeThenable, Deferred, Fulfilled, Rejected, Never }
-    = makeRefTypes(isPromise, refForPromise, new ErrorHandler(reportError), taskQueue);
+let {
+    refFor,
+    refForNonPromise,
+    refForMaybeThenable,
+    Deferred,
+    Fulfilled,
+    Rejected,
+    Never
+    } = makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue);
 
-function reportError(e) {
-    throw e.value;
-}
+// ## Promise
 
-//----------------------------------------------------------------
-// Promise
-//----------------------------------------------------------------
-
+// Promise :: Promise e a
 class Promise {
     constructor(ref) {
         this._ref = ref;
     }
 
+    // **then :: Promise e a -> (a -> b) -> (e -> e2) -> Promise b e2**
+    //
+    // Transform the value or handle the error of the promise
     then(f, r) {
         let ref = refForPromise(this);
         if((isFulfilled(ref) && typeof f !== 'function') ||
@@ -46,6 +52,9 @@ class Promise {
         return new Promise(then(f, r, ref, new Deferred()));
     }
 
+    // **catch :: Promise e a -> (e -> e2) -> Promise b e2**
+    //
+    // Handle a failed promise
     catch(r) {
         var ref = refForPromise(this);
         return isFulfilled(ref) ? this

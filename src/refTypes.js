@@ -66,10 +66,11 @@ export function makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue) 
         }
 
         asap(action) {
-            if (this.isResolved()) {
-                this._join().when(action);
-            } else if(this.action === void 0) {
+            if(this.action === void 0) {
                 this.action = action;
+                if(this.isResolved()) {
+                    taskQueue.add(this);
+                }
             } else {
                 this[this.length++] = action;
             }
