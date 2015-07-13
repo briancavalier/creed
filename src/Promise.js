@@ -25,6 +25,7 @@ let errorHandler = new ErrorHandler(r => { throw r.value });
 let marker = {};
 
 const PromiseProtocol = {
+    // then :: Promise e a -> (a -> b) -> (e -> b) -> Promise e b
     then(f, r) {
         let n = this.near();
         if((isFulfilled(n) && typeof f !== 'function') ||
@@ -35,6 +36,7 @@ const PromiseProtocol = {
         return then(f, r, n, new Promise());
     },
 
+    // catch :: Promise e a -> (e -> b) -> Promise e b
     catch(r) {
         let n = this.near();
         if(isFulfilled(n)) {
@@ -61,11 +63,13 @@ const PromiseProtocol = {
             : timeout(ms, n, new Promise());
     },
 
+    // toString :: Promise e a -> String
     toString() {
         let n = this.near();
         return isSettled(n) ? '[object Promise ' + n.value + ']' : '[object Promise]';
     },
 
+    // near :: Promise e a -> Promise e a
     near() {
         return this;
     },
@@ -191,11 +195,12 @@ mixin(Fulfilled.prototype, PromiseProtocol);
 class Rejected {
     constructor(e) {
         this.value = e;
+        this._state = REJECTED;
         errorHandler.track(this);
     }
 
     state() {
-        return REJECTED;
+        return this._state;
     }
 
     _runAction(action) {
@@ -247,7 +252,11 @@ class Continuation {
 }
 
 export function resolve(x) {
-    return isPromise(x) ? x.near() : refForNonPromise(x);
+    if(isPromise(x)) {
+        return x.near();
+    }
+
+    return maybeThenable(x) ? refForUntrusted(x) : new Fulfilled(x);
 }
 
 export function reject(e) {
@@ -289,27 +298,26 @@ const allHandler = {
     }
 };
 
+// race :: Iterable (Promise e a) -> Promise e a
 export function race(promises) {
     checkIterable('race', promises);
     return iterablePromise(new Race(never), promises);
 }
 
+// race :: Iterable (Promise e a) -> Promise e a
 export function any(promises) {
     checkIterable('any', promises);
     return iterablePromise(new Any(), promises);
 }
 
+// race :: Iterable (Promise e a) -> Promise e (Iterable Promise e a)
 export function settle(promises) {
     checkIterable('settle', promises);
-    return iterablePromise(new Settle(stateForValue, resultsArray(promises)), promises);
-}
-
-function stateForValue(x) {
-    return new Fulfilled(x);
+    return iterablePromise(new Settle(resolve, resultsArray(promises)), promises);
 }
 
 function iterablePromise(handler, iterable) {
-    return resolveIterable(refForMaybeThenable, handler, iterable, new Promise());
+    return resolveIterable(resolveMaybeThenable, handler, iterable, new Promise());
 }
 
 function checkIterable(kind, x) {
@@ -422,14 +430,10 @@ function runGenerator(generator, thisArg, args) {
 }(Promise, runResolver, resolve, reject, all, race));
 
 function isPromise(x) {
-    return x !== null && typeof x === 'object' && x._isPromise === marker;//promises.has(x);
+    return x !== null && typeof x === 'object' && x._isPromise === marker;
 }
 
-function refForNonPromise(x) {
-    return maybeThenable(x) ? refForUntrusted(x) : new Fulfilled(x);
-}
-
-function refForMaybeThenable(x) {
+function resolveMaybeThenable(x) {
     return isPromise(x) ? x.near() : refForUntrusted(x)
 }
 
@@ -459,7 +463,7 @@ function cycle() {
 
 function mixin(t, s) {
     return Object.keys(s).reduce((t, k) => {
-        if(!(k in t)) {
+        if(!t.hasOwnProperty(k)) {
             t[k] = s[k];
         }
         return t;

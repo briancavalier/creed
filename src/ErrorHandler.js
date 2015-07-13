@@ -1,31 +1,35 @@
 'use strict';
 import { isNode } from './env';
+import { silenceError, isHandled } from './inspect';
 
 let emitError = initEmitError();
 
 export default class ErrorHandler {
     constructor(report) {
-        this.errors = new Set();
+        this.errors = [];
         this.report = report;
     }
 
     track(e) {
-        if(this.errors.size === 0) {
+        if(this.errors.length === 0) {
             setTimeout(reportErrors, 1, this.report, this.errors);
         }
-        this.errors.add(e);
+        this.errors.push(e);
     }
 
     untrack(e) {
-        this.errors.delete(e);
+        silenceError(e);
     }
 }
 
 function reportErrors(reportError, errors) {
-    for(let e of errors) {
-        emitError('unhandledRejection', e) || reportError(e);
+    for(let i=0; i<errors.length; ++i) {
+        let e = errors[i];
+        if(!isHandled(e)) {
+            emitError('unhandledRejection', e) || reportError(e);
+        }
     }
-    errors.clear();
+    errors.length = 0;
 }
 
 function initEmitError() {

@@ -3,15 +3,15 @@
 import { silenceError }from './inspect';
 
 export default class Settle {
-    constructor(stateForValue, results) {
+    constructor(resolve, results) {
         this.done = false;
         this.pending = 0;
         this.results = results;
-        this.stateForValue = stateForValue;
+        this.resolve = resolve;
     }
 
     valueAt(promise, i, x) {
-        this.settleAt(promise, i, this.stateForValue(x));
+        this.settleAt(promise, i, this.resolve(x));
     }
 
     fulfillAt(promise, i, ref) {
