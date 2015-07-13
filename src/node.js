@@ -1,12 +1,12 @@
 'use strict';
 
-export default function runNode(f, thisArg, args, deferred) {
+export default function runNode(f, thisArg, args, promise) {
 
     function settleNode(e, x) {
         if (e) {
-            deferred.reject(e);
+            promise._reject(e);
         } else {
-            deferred.fulfill(x);
+            promise._fulfill(x);
         }
     }
 
@@ -20,5 +20,5 @@ export default function runNode(f, thisArg, args, deferred) {
             f.apply(thisArg, args);
     }
 
-    return deferred;
+    return promise;
 }

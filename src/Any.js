@@ -8,29 +8,29 @@ export default class Any {
         this.pending = 0;
     }
 
-    valueAt(deferred, i, x) {
-        deferred.fulfill(x);
+    valueAt(promise, i, x) {
+        promise._fulfill(x);
     }
 
-    fulfillAt(deferred, i, ref) {
-        deferred.become(ref);
+    fulfillAt(promise, i, ref) {
+        promise._become(ref);
     }
 
-    rejectAt(deferred, i, ref) {
+    rejectAt(promise, i, ref) {
         silenceError(ref);
-        this.check(this.pending - 1, deferred);
+        this.check(this.pending - 1, promise);
     }
 
-    complete(total, deferred) {
+    complete(total, promise) {
         this.done = true;
-        this.check(this.pending + total, deferred);
+        this.check(this.pending + total, promise);
     }
 
-    check(pending, deferred) {
+    check(pending, promise) {
         this.pending = pending;
         if(this.done && pending === 0) {
             // TODO: Better error
-            deferred.reject(new Error());
+            promise._reject(new Error());
         }
     }
 }

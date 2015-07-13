@@ -2,42 +2,42 @@
 
 import { isFulfilled, isRejected } from './inspect';
 
-export default function(refFor, deferred, iterator) {
-    coStep(refFor, iterator.next, void 0, iterator, deferred);
-    return deferred;
+export default function(refFor, iterator, promise) {
+    coStep(refFor, iterator.next, void 0, iterator, promise);
+    return promise;
 };
 
-function coStep(refFor, continuation, x, iterator, deferred) {
+function coStep(refFor, continuation, x, iterator, promise) {
     try {
-        handle(refFor, continuation.call(iterator, x), iterator, deferred);
+        handle(refFor, continuation.call(iterator, x), iterator, promise);
     } catch(e) {
-        deferred.reject(e);
+        promise._reject(e);
     }
 }
 
-function handle(refFor, result, iterator, deferred) {
+function handle(refFor, result, iterator, promise) {
     if(result.done) {
-        return deferred.resolve(result.value);
+        return promise._resolve(result.value);
     }
 
-    refFor(result.value).asap(new Next(refFor, iterator, deferred));
+    refFor(result.value)._runAction(new Next(refFor, iterator, promise));
 }
 
 class Next {
-    constructor(refFor, iterator, deferred) {
+    constructor(refFor, iterator, promise) {
         this.refFor = refFor;
         this.iterator = iterator;
-        this.deferred = deferred;
+        this.promise = promise;
     }
 
     fulfilled(ref) {
         let iterator = this.iterator;
-        coStep(this.refFor, iterator.next, ref.value, iterator, this.deferred);
+        coStep(this.refFor, iterator.next, ref.value, iterator, this.promise);
     }
 
     rejected(ref) {
         let iterator = this.iterator;
-        coStep(this.refFor, iterator.throw, ref.value, iterator, this.deferred);
+        coStep(this.refFor, iterator.throw, ref.value, iterator, this.promise);
         return true;
     }
 }

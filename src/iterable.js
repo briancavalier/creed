@@ -1,65 +1,65 @@
 import { isFulfilled, isRejected, silenceError } from './inspect';
 import maybeThenable from './maybeThenable';
 
-export default function(refFor, itemHandler, promises, deferred) {
+export default function(resolve, itemHandler, promises, promise) {
     let run = Array.isArray(promises) ? runArray : runIterable;
-    return run(refFor, itemHandler, promises, deferred);
+    return run(resolve, itemHandler, promises, promise);
 }
 
-function runArray(refFor, itemHandler, promises, deferred) {
+function runArray(resolve, itemHandler, promises, promise) {
     let i = 0;
 
     for (; i < promises.length; ++i) {
-        handleItem(refFor, itemHandler, promises[i], i, deferred);
+        handleItem(resolve, itemHandler, promises[i], i, promise);
     }
 
-    itemHandler.complete(i, deferred);
+    itemHandler.complete(i, promise);
 
-    return deferred;
+    return promise;
 }
 
-function runIterable(refFor, itemHandler, promises, deferred) {
+function runIterable(resolve, itemHandler, promises, promise) {
     let i = 0;
 
     for(let x of promises) {
-        handleItem(refFor, itemHandler, x, i++, deferred);
+        handleItem(resolve, itemHandler, x, i++, promise);
     }
 
-    itemHandler.complete(i, deferred);
+    itemHandler.complete(i, promise);
 
-    return deferred;
+    return promise;
 }
 
-function handleItem(refFor, itemHandler, x, i, deferred) {
+function handleItem(resolve, itemHandler, x, i, promise) {
     if (maybeThenable(x)) {
-        let ref = refFor(x);
+        let ref = resolve(x);
 
-        if (deferred.isResolved()) {
+        if (promise._isResolved()) {
             silenceError(ref);
         } else if (isFulfilled(ref)) {
-            itemHandler.fulfillAt(deferred, i, ref);
+            itemHandler.fulfillAt(promise, i, ref);
         } else if (isRejected(ref)) {
-            itemHandler.rejectAt(deferred, i, ref);
+            itemHandler.rejectAt(promise, i, ref);
         } else {
-            ref.asap(new SettleAt(itemHandler, i, deferred));
+            ref._runAction(new SettleAt(itemHandler, i, promise));
         }
     } else {
-        itemHandler.valueAt(deferred, i, x);
+        itemHandler.valueAt(promise, i, x);
     }
 }
 
 class SettleAt {
-    constructor(handler, index, deferred) {
+    constructor(handler, index, promise) {
         this.handler = handler;
         this.index = index;
-        this.deferred = deferred;
+        this.promise = promise;
     }
 
     fulfilled(ref) {
-        this.handler.fulfillAt(this.deferred, this.index, ref);
+        this.handler.fulfillAt(this.promise, this.index, ref);
     }
 
     rejected(ref) {
-        return this.handler.rejectAt(this.deferred, this.index, ref);
+        return this.handler.rejectAt(this.promise, this.index, ref);
     }
 }

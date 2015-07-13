@@ -1,26 +1,26 @@
 'use strict';
 
-export default function delay(ms, h, deferred) {
-    h.asap(new Delay(ms, deferred));
-    return deferred;
+export default function delay(ms, h, promise) {
+    h._runAction(new Delay(ms, promise));
+    return promise;
 }
 
 class Delay {
-    constructor(time, deferred) {
+    constructor(time, promise) {
         this.time = time;
-        this.deferred = deferred;
+        this.promise = promise;
     }
 
     fulfilled(handler) {
-        setTimeout(fulfillDelayed, this.time, handler, this.deferred);
+        setTimeout(fulfillDelayed, this.time, handler, this.promise);
     }
 
-    rejected(handler) {
-        this.deferred.become(handler);
+    rejected(ref) {
+        this.promise._become(ref);
         return false;
     }
 }
 
-function fulfillDelayed(ref, deferred) {
-    deferred.become(ref);
+function fulfillDelayed(ref, promise) {
+    promise._become(ref);
 }

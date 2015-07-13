@@ -1,25 +1,25 @@
 'use strict';
 
 export default class Race {
-    constructor(emptyRef) {
-        this.emptyRef = emptyRef;
+    constructor(never) {
+        this.never = never;
     }
 
-    valueAt(deferred, i, x) {
-        deferred.fulfill(x);
+    valueAt(promise, i, x) {
+        promise._fulfill(x);
     }
 
-    fulfillAt(deferred, i, ref) {
-        deferred.become(ref);
+    fulfillAt(promise, i, ref) {
+        promise._become(ref);
     }
 
-    rejectAt(deferred, i, ref) {
-        deferred.become(ref);
+    rejectAt(promise, i, ref) {
+        promise._become(ref);
     }
 
-    complete(total, deferred) {
+    complete(total, promise) {
         if(total === 0) {
-            this.emptyRef(deferred);
+            promise._resolve(this.never());
         }
     }
 }

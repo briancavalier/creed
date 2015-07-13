@@ -1,40 +1,40 @@
 'use strict';
 
-export default function then(f, r, ref, deferred) {
-    ref.when(new Then(f, r, deferred));
-    return deferred;
+export default function then(f, r, ref, promise) {
+    ref._when(new Then(f, r, promise));
+    return promise;
 }
 
 class Then {
-    constructor(f, r, deferred) {
+    constructor(f, r, promise) {
         this.f = f;
         this.r = r;
-        this.deferred = deferred;
+        this.promise = promise;
     }
 
     fulfilled(ref) {
-        runThen(this.f, ref, this.deferred);
+        runThen(this.f, ref, this.promise);
     }
 
     rejected(ref) {
-        return runThen(this.r, ref, this.deferred);
+        return runThen(this.r, ref, this.promise);
     }
 }
 
-function runThen(f, ref, deferred) {
+function runThen(f, ref, promise) {
     if(typeof f !== 'function') {
-        deferred.become(ref);
+        promise._become(ref);
         return false;
     }
 
-    tryMapNext(f, ref, deferred);
+    tryMapNext(f, ref.value, promise);
     return true;
 }
 
-function tryMapNext(f, ref, deferred) {
+function tryMapNext(f, x, promise) {
     try {
-        deferred.resolve(f(ref.value));
+        promise._resolve(f(x));
     } catch(e) {
-        deferred.reject(e);
+        promise._reject(e);
     }
 }

@@ -10,28 +10,28 @@ export default class Merge {
         this.mergeHandler = mergeHandler;
     }
 
-    valueAt(deferred, i, x) {
+    valueAt(promise, i, x) {
         this.results[i] = x;
-        this.check(this.pending - 1, deferred);
+        this.check(this.pending - 1, promise);
     }
 
-    fulfillAt(deferred, i, ref) {
-        this.valueAt(deferred, i, ref.value);
+    fulfillAt(promise, i, ref) {
+        this.valueAt(promise, i, ref.value);
     }
 
-    rejectAt(deferred, i, ref) {
-        deferred.become(ref);
+    rejectAt(promise, i, ref) {
+        promise._become(ref);
     }
 
-    complete(total, deferred) {
+    complete(total, promise) {
         this.done = true;
-        this.check(this.pending + total, deferred);
+        this.check(this.pending + total, promise);
     }
 
-    check(pending, deferred) {
+    check(pending, promise) {
         this.pending = pending;
         if(this.done && pending === 0) {
-            this.mergeHandler.merge(deferred, this.results);
+            this.mergeHandler.merge(promise, this.results);
         }
     }
 }
