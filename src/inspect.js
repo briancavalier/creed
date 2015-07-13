@@ -24,7 +24,8 @@ export function silenceError(ref) {
     }
 }
 
-const silencer = {
-    fulfilled() { return true; },
-    rejected()  { return true; }
-};
+const silencer = { fulfilled: always, rejected: always };
+
+function always() {
+    return true;
+}

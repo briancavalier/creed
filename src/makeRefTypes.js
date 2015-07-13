@@ -20,21 +20,6 @@ export default function makeRefTypes(isPromise, refForPromise, errorHandler, tas
             return this.ref !== void 0;
         }
 
-        when(action) {
-            this.asap(action);
-        }
-
-        asap(action) {
-            if(this.action === void 0) {
-                this.action = action;
-                if(this.isResolved()) {
-                    taskQueue.add(this);
-                }
-            } else {
-                this[this.length++] = action;
-            }
-        }
-
         join() {
             return this.isResolved() ? this._join() : this;
         }
@@ -51,6 +36,21 @@ export default function makeRefTypes(isPromise, refForPromise, errorHandler, tas
             }
 
             return this.ref = ref;
+        }
+
+        when(action) {
+            this.asap(action);
+        }
+
+        asap(action) {
+            if(this.action === void 0) {
+                this.action = action;
+                if(this.isResolved()) {
+                    taskQueue.add(this);
+                }
+            } else {
+                this[this.length++] = action;
+            }
         }
 
         resolve(x) {
@@ -107,16 +107,16 @@ export default function makeRefTypes(isPromise, refForPromise, errorHandler, tas
             return FULFILLED;
         }
 
+        join() {
+            return this;
+        }
+
         asap(action) {
             action.fulfilled(this);
         }
 
         when(action) {
             taskQueue.add(new Continuation(action, this));
-        }
-
-        join() {
-            return this;
         }
     }
 
@@ -130,6 +130,10 @@ export default function makeRefTypes(isPromise, refForPromise, errorHandler, tas
             return REJECTED;
         }
 
+        join() {
+            return this;
+        }
+
         asap(action) {
             if(action.rejected(this)) {
                 errorHandler.untrack(this);
@@ -139,25 +143,21 @@ export default function makeRefTypes(isPromise, refForPromise, errorHandler, tas
         when(action) {
             taskQueue.add(new Continuation(action, this));
         }
-
-        join() {
-            return this;
-        }
     }
 
-    class Never {
+    const Never = {
         state() {
             return PENDING;
-        }
-
-        asap() {}
-
-        when() {}
+        },
 
         join() {
             return this;
-        }
-    }
+        },
+
+        asap() {},
+
+        when() {}
+    };
 
     class Continuation {
         constructor(action, ref) {

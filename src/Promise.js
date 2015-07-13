@@ -96,8 +96,8 @@ export function reject(x) {
     return new Promise(new Rejected(x));
 }
 
-const neverRef = new Never();
-const NEVER = new Promise(neverRef);
+//const neverRef = new Never();
+const NEVER = new Promise(Never);
 NEVER.then  = never;
 NEVER.delay = never;
 
@@ -145,7 +145,7 @@ export function race(promises) {
 }
 
 function becomeNever(deferred) {
-    deferred.become(neverRef);
+    deferred.become(Never);
 }
 
 export function any(promises) {
