@@ -1,6 +1,6 @@
 'use strict';
 
-import { isPending, silenceError } from './refTypes.js';
+import { isPending, silenceError } from './inspect.js';
 
 export default class Any {
     constructor() {

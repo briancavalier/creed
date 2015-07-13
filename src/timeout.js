@@ -1,6 +1,6 @@
 'use strict';
 
-import { isPending } from './refTypes';
+import { isPending } from './inspect';
 import TimeoutError from './TimeoutError';
 
 export default function(ms, ref, deferred) {

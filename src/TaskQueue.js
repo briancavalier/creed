@@ -1,5 +1,9 @@
+'use strict';
+
+import makeAsync from './async';
+
 export default class TaskQueue {
-	constructor(makeAsync) {
+	constructor() {
 		this.tasks = new Array(2 << 15);
 		this.length = 0;
 		this.drain = makeAsync(() => this._drain());

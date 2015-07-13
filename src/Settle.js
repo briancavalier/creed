@@ -1,6 +1,6 @@
 'use strict';
 
-import { silenceError }from './refTypes';
+import { silenceError }from './inspect';
 
 export default class Settle {
     constructor(stateForValue, results) {

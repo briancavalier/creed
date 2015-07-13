@@ -1,9 +1,8 @@
 'use strict';
 import TaskQueue from './TaskQueue';
-import makeAsync from './async';
 import ErrorHandler from './ErrorHandler';
-import maybeThenable from './maybeThenable';
-import { makeRefTypes, isPending, isFulfilled, isRejected, isSettled } from './refTypes';
+import makeRefTypes from './makeRefTypes';
+import { isPending, isFulfilled, isRejected, isSettled } from './inspect';
 
 import then from './then';
 import delay from './delay';
@@ -18,18 +17,11 @@ import resolveIterable from './iterable';
 import runNode from './node';
 import runCo from './co.js';
 
-let taskQueue = new TaskQueue(makeAsync);
-let errorHandler = new ErrorHandler(e => { throw e });
+let taskQueue = new TaskQueue();
+let errorHandler = new ErrorHandler(r => { throw r.value });
 
-let {
-    refFor,
-    refForNonPromise,
-    refForMaybeThenable,
-    Deferred,
-    Fulfilled,
-    Rejected,
-    Never
-    } = makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue);
+let { refFor, refForObject, Deferred, Resolved, Fulfilled, Rejected, Never }
+    = makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue);
 
 // ## Promise
 
@@ -39,8 +31,7 @@ class Promise {
         this._ref = ref;
     }
 
-    // **then :: Promise e a -> (a -> b) -> (e -> e2) -> Promise b e2**
-    //
+    // then :: Promise e a -> (a -> b) -> (e -> e2) -> Promise b e2
     // Transform the value or handle the error of the promise
     then(f, r) {
         let ref = refForPromise(this);
@@ -52,8 +43,7 @@ class Promise {
         return new Promise(then(f, r, ref, new Deferred()));
     }
 
-    // **catch :: Promise e a -> (e -> e2) -> Promise b e2**
-    //
+    // catch :: Promise e a -> (e -> e2) -> Promise b e2
     // Handle a failed promise
     catch(r) {
         var ref = refForPromise(this);
@@ -61,6 +51,7 @@ class Promise {
             : new Promise(then(void 0, r, ref, new Deferred()));
     }
 
+    // delay :: Promise e a -> number -> Promise e a
     delay(ms) {
         let ref = refForPromise(this);
         if(ms <= 0 || isRejected(ref)) {
@@ -70,10 +61,16 @@ class Promise {
         return new Promise(delay(ms, ref, new Deferred()));
     }
 
+    // timeout :: Promise e a -> number -> Promise (e|TimeoutError) a
     timeout(ms) {
         var ref = refForPromise(this);
         return isSettled(ref) ? this
             : new Promise(timeout(ms, ref, new Deferred()));
+    }
+
+    toString() {
+        let ref = refForPromise(this);
+        return isSettled(ref) ? '[object Promise ' + ref.join().value + ']' : '[object Promise]';
     }
 }
 
@@ -85,18 +82,16 @@ function refForPromise(p) {
     return p._ref;
 }
 
-//----------------------------------------------------------------
-// Creating promises
-//----------------------------------------------------------------
+// ## Creating promises
 
+// resolve :: a -> Promise e a
+// resolve :: Promise e a -> Promise e a
+// resolve :: Thenable e a -> Promise e a
 export function resolve(x) {
-    if (isPromise(x)) {
-        return x;
-    }
-
-    return new Promise(refForNonPromise(x));
+    return isPromise(x) ? x : new Promise(new Resolved(x));
 }
 
+// reject :: e -> Promise e a
 export function reject(x) {
     return new Promise(new Rejected(x));
 }
@@ -106,10 +101,12 @@ const NEVER = new Promise(neverRef);
 NEVER.then  = never;
 NEVER.delay = never;
 
+// never :: () -> Promise e a
 export function never() {
     return NEVER;
 }
 
+// promise :: ((a -> ()) -> (e -> ()) -> ()) -> resolve a
 export function promise(f) {
     return new Promise(runResolver(f));
 }
@@ -130,6 +127,7 @@ function runResolver(f) {
 // Arrays & Iterables
 //----------------------------------------------------------------
 
+// all :: Iterable (Promise e a) -> Promise e (Iterable a)
 export function all(promises) {
     checkIterable('all', promises);
     return new Promise(iterableRef(new Merge(allHandler, resultsArray(promises)), promises));
@@ -165,7 +163,7 @@ function stateForValue(x) {
 }
 
 function iterableRef(handler, iterable) {
-    return resolveIterable(refForMaybeThenable, handler, iterable, new Deferred());
+    return resolveIterable(refFor, handler, iterable, new Deferred());
 }
 
 function checkIterable(kind, x) {
@@ -182,14 +180,14 @@ function resultsArray(iterable) {
 // Lifting
 //----------------------------------------------------------------
 
-// (a -> b) -> (Promise a -> Promise b)
+// lift :: (a -> b) -> (Promise a -> Promise b)
 export function lift(f) {
     return function(...args) {
         return applyp(f, this, args);
     }
 }
 
-// (a -> b) -> Promise a -> Promise b
+// merge :: (a -> b) -> Promise a -> Promise b
 export function merge(f, ...args) {
     return applyp(f, this, args);
 }
@@ -244,7 +242,7 @@ export function co(generator) {
 function runGenerator(generator, thisArg, args) {
     var iterator = generator.apply(thisArg, args);
     var d = new Deferred();
-    return new Promise(runCo(refForMaybeThenable, d, iterator));
+    return new Promise(runCo(refFor, d, iterator));
 }
 
 //----------------------------------------------------------------

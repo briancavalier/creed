@@ -1,41 +1,43 @@
 'use strict';
 
-export default function(handlerFor, deferred, iterator) {
-    coStep(handlerFor, iterator.next, void 0, iterator, deferred);
+import { isFulfilled, isRejected } from './inspect';
+
+export default function(refFor, deferred, iterator) {
+    coStep(refFor, iterator.next, void 0, iterator, deferred);
     return deferred;
 };
 
-function coStep(handlerFor, continuation, x, iterator, next) {
+function coStep(refFor, continuation, x, iterator, deferred) {
     try {
-        handle(handlerFor, continuation.call(iterator, x), iterator, next);
+        handle(refFor, continuation.call(iterator, x), iterator, deferred);
     } catch(e) {
-        next.reject(e);
+        deferred.reject(e);
     }
 }
 
-function handle(handlerFor, result, iterator, next) {
+function handle(refFor, result, iterator, deferred) {
     if(result.done) {
-        return next.resolve(result.value);
+        return deferred.resolve(result.value);
     }
 
-    handlerFor(result.value).asap(new Next(handlerFor, iterator, next));
+    refFor(result.value).asap(new Next(refFor, iterator, deferred));
 }
 
 class Next {
-    constructor(handlerFor, iterator, next) {
-        this.handlerFor = handlerFor;
+    constructor(refFor, iterator, deferred) {
+        this.refFor = refFor;
         this.iterator = iterator;
-        this.next = next;
+        this.deferred = deferred;
     }
 
-    fulfilled(handler) {
+    fulfilled(ref) {
         let iterator = this.iterator;
-        coStep(this.handlerFor, iterator.next, handler.value, iterator, this.next);
+        coStep(this.refFor, iterator.next, ref.value, iterator, this.deferred);
     }
 
-    rejected(handler) {
+    rejected(ref) {
         let iterator = this.iterator;
-        coStep(this.handlerFor, iterator.throw, handler.value, iterator, this.next);
+        coStep(this.refFor, iterator.throw, ref.value, iterator, this.deferred);
         return true;
     }
 }

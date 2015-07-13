@@ -1,50 +1,9 @@
 'use strict';
 import maybeThenable from './maybeThenable';
 import { PENDING, RESOLVED, FULFILLED, REJECTED } from './state';
+import { silenceError } from './inspect';
 
-export function isPending(ref) {
-    return (ref.state() & PENDING) > 0;
-}
-
-export function isFulfilled(ref) {
-    return (ref.state() & FULFILLED) > 0;
-}
-
-export function isRejected(ref) {
-    return (ref.state() & REJECTED) > 0;
-}
-
-export function isSettled(ref) {
-    return isFulfilled(ref) || isRejected(ref);
-}
-
-export function getValue(ref) {
-    if(!isFulfilled(ref)) {
-        throw new TypeError('not fulfilled');
-    }
-
-    return ref.join().value;
-}
-
-export function getReason(ref) {
-    if(!isRejected(ref)) {
-        throw new TypeError('not rejected');
-    }
-
-    return ref.join().value;
-}
-
-export function silenceError(ref) {
-    if(isFulfilled(ref)) return;
-
-    ref.asap(silencer);
-}
-
-const silencer = {
-    rejected() { return true; }
-};
-
-export function makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue) {
+export default function makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue) {
 
     class Deferred {
         constructor() {
@@ -128,11 +87,39 @@ export function makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue) 
         run() {
             let ref = this.ref.join();
             ref.asap(this.action);
+            this.action = void 0;
 
             for (let i = 0; i < this.length; ++i) {
                 ref.asap(this[i]);
                 this[i] = void 0;
             }
+        }
+    }
+
+    class Resolved {
+        constructor(x) {
+            this.ref = void 0;
+            this.value = x;
+        }
+
+        state() {
+            return this.join().state();
+        }
+
+        join() {
+            if(this.ref === void 0) {
+                this.ref = maybeThenable(this.value) ? refForUntrusted(this.value) : new Fulfilled(this.value);
+                this.value = void 0;
+            }
+            return this.ref = this.ref.join();
+        }
+
+        asap(action) {
+            return this.join().asap(action);
+        }
+
+        when(action) {
+            return this.join().when(action);
         }
     }
 
@@ -197,33 +184,35 @@ export function makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue) 
         }
     }
 
+    class Continuation {
+        constructor(action, ref) {
+            this.action = action;
+            this.ref = ref;
+        }
+
+        run() {
+            this.ref.asap(this.action);
+        }
+    }
+
     return {
-        refFor, refForNonPromise, refForMaybeThenable,
-        Deferred, Fulfilled, Rejected, Never
+        refFor, Deferred, Resolved, Fulfilled, Rejected, Never
     };
 
     function refFor(x) {
-        return isPromise(x) ? refForPromise(x).join() : refForNonPromise(x);
-    }
-
-    function refForNonPromise(x) {
-        return maybeThenable(x) ? refForUntrusted(x) : new Fulfilled(x);
-    }
-
-    function refForMaybeThenable(x) {
-        return isPromise(x) ? refForPromise(x).join() : refForUntrusted(x);
+        return isPromise(x) ? refForPromise(x).join() : new Resolved(x);
     }
 
     function refForUntrusted(x) {
         try {
             let then = x.then;
-            return typeof then === 'function' ? extract(then, x) : new Fulfilled(x);
+            return typeof then === 'function' ? extractThenable(then, x) : new Fulfilled(x);
         } catch(e) {
             return new Rejected(e);
         }
     }
 
-    function extract(then, thenable) {
+    function extractThenable(then, thenable) {
         let d = new Deferred();
         try {
             then.call(thenable, x => d.resolve(x), e => d.reject(e));
@@ -236,16 +225,5 @@ export function makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue) 
 
     function cycle() {
         return new Rejected(new TypeError('resolution cycle'));
-    }
-}
-
-class Continuation {
-    constructor(action, ref) {
-        this.action = action;
-        this.ref = ref;
-    }
-
-    run() {
-        this.ref.asap(this.action);
     }
 }

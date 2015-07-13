@@ -1,38 +1,38 @@
-import { isFulfilled, isRejected, silenceError } from './refTypes';
+import { isFulfilled, isRejected, silenceError } from './inspect';
 import maybeThenable from './maybeThenable';
 
-export default function(refForMaybeThenable, itemHandler, promises, ref) {
+export default function(refFor, itemHandler, promises, deferred) {
     let run = Array.isArray(promises) ? runArray : runIterable;
-    return run(refForMaybeThenable, itemHandler, promises, ref);
+    return run(refFor, itemHandler, promises, deferred);
 }
 
-function runArray(refForMaybeThenable, itemHandler, promises, ref) {
+function runArray(refFor, itemHandler, promises, deferred) {
     let i = 0;
 
     for (; i < promises.length; ++i) {
-        handleItem(refForMaybeThenable, itemHandler, promises[i], i, ref);
+        handleItem(refFor, itemHandler, promises[i], i, deferred);
     }
 
-    itemHandler.complete(i, ref);
+    itemHandler.complete(i, deferred);
 
-    return ref;
+    return deferred;
 }
 
-function runIterable(refForMaybeThenable, itemHandler, promises, ref) {
+function runIterable(refFor, itemHandler, promises, deferred) {
     let i = 0;
 
     for(let x of promises) {
-        handleItem(refForMaybeThenable, itemHandler, x, i++, ref);
+        handleItem(refFor, itemHandler, x, i++, deferred);
     }
 
-    itemHandler.complete(i, ref);
+    itemHandler.complete(i, deferred);
 
-    return ref;
+    return deferred;
 }
 
-function handleItem(refForMaybeThenable, itemHandler, x, i, deferred) {
+function handleItem(refFor, itemHandler, x, i, deferred) {
     if (maybeThenable(x)) {
-        let ref = refForMaybeThenable(x);
+        let ref = refFor(x);
 
         if (deferred.isResolved()) {
             silenceError(ref);
