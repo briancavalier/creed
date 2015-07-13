@@ -20,7 +20,7 @@ import runCo from './co.js';
 let taskQueue = new TaskQueue();
 let errorHandler = new ErrorHandler(r => { throw r.value });
 
-let { refFor, refForObject, Deferred, Resolved, Fulfilled, Rejected, Never }
+let { refFor, refForNonPromise, refForMaybeThenable, refForObject, Deferred, Fulfilled, Rejected, Never }
     = makeRefTypes(isPromise, refForPromise, errorHandler, taskQueue);
 
 // ## Promise
@@ -88,7 +88,7 @@ function refForPromise(p) {
 // resolve :: Promise e a -> Promise e a
 // resolve :: Thenable e a -> Promise e a
 export function resolve(x) {
-    return isPromise(x) ? x : new Promise(new Resolved(x));
+    return isPromise(x) ? x : new Promise(refForNonPromise(x));
 }
 
 // reject :: e -> Promise e a
@@ -163,7 +163,7 @@ function stateForValue(x) {
 }
 
 function iterableRef(handler, iterable) {
-    return resolveIterable(refFor, handler, iterable, new Deferred());
+    return resolveIterable(refForMaybeThenable, handler, iterable, new Deferred());
 }
 
 function checkIterable(kind, x) {

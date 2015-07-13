@@ -93,33 +93,8 @@ export default function makeRefTypes(isPromise, refForPromise, errorHandler, tas
                 ref.asap(this[i]);
                 this[i] = void 0;
             }
-        }
-    }
 
-    class Resolved {
-        constructor(x) {
-            this.ref = void 0;
-            this.value = x;
-        }
-
-        state() {
-            return this.join().state();
-        }
-
-        join() {
-            if(this.ref === void 0) {
-                this.ref = maybeThenable(this.value) ? refForUntrusted(this.value) : new Fulfilled(this.value);
-                this.value = void 0;
-            }
-            return this.ref = this.ref.join();
-        }
-
-        asap(action) {
-            return this.join().asap(action);
-        }
-
-        when(action) {
-            return this.join().when(action);
+            this.length = 0;
         }
     }
 
@@ -196,11 +171,19 @@ export default function makeRefTypes(isPromise, refForPromise, errorHandler, tas
     }
 
     return {
-        refFor, Deferred, Resolved, Fulfilled, Rejected, Never
+        refFor, refForNonPromise, refForMaybeThenable, Deferred, Fulfilled, Rejected, Never
     };
 
     function refFor(x) {
-        return isPromise(x) ? refForPromise(x).join() : new Resolved(x);
+        return isPromise(x) ? refForPromise(x).join() : refForNonPromise(x);
+    }
+
+    function refForNonPromise(x) {
+        return maybeThenable(x) ? refForUntrusted(x) : new Fulfilled(x);
+    }
+
+    function refForMaybeThenable(x) {
+        return isPromise(x) ? refForPromise(x).join() : refForUntrusted(x)
     }
 
     function refForUntrusted(x) {
