@@ -251,6 +251,9 @@ class Continuation {
     }
 }
 
+// reject :: Promise e a -> Promise e a
+// reject :: Thenable e a -> Promise e a
+// reject :: a -> Promise e a
 export function resolve(x) {
     if(isPromise(x)) {
         return x.near();
@@ -259,10 +262,12 @@ export function resolve(x) {
     return maybeThenable(x) ? refForUntrusted(x) : new Fulfilled(x);
 }
 
+// reject :: e -> Promise e a
 export function reject(e) {
     return new Rejected(e);
 }
 
+// never :: () -> Promise e a
 export function never() {
     return new Never();
 }
