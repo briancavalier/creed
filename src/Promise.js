@@ -20,7 +20,7 @@ import runNode from './node';
 import runCo from './co.js';
 
 let taskQueue = new TaskQueue();
-let errorHandler = new ErrorHandler(r => { throw r.value; });
+let errorHandler = new ErrorHandler();
 
 let marker = {};
 
@@ -176,7 +176,7 @@ class Fulfilled {
 
 addProtocol(Fulfilled.prototype, PromiseProtocol);
 
-// A promise that has failed to acquire its value
+// A promise that is known to have failed to acquire its value
 class Rejected {
     constructor(e) {
         this.value = e;
@@ -197,7 +197,7 @@ class Rejected {
 
 addProtocol(Rejected.prototype, PromiseProtocol);
 
-// A promise that will neither acquire its value nor fail
+// A promise that will never acquire its value nor fail
 class Never {
     then() {
         return this;

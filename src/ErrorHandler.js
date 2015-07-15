@@ -2,31 +2,36 @@
 import { isNode } from './env';
 import { silenceError, isHandled } from './inspect';
 
+const UNHANDLED_REJECTION = 'unhandledRejection';
+const HANDLED_REJECTION = 'rejectionHandled';
+
 let emitError = initEmitError();
 
 export default class ErrorHandler {
-    constructor(report) {
+    constructor() {
         this.errors = [];
-        this.report = report;
     }
 
     track(e) {
-        if(this.errors.length === 0) {
-            setTimeout(reportErrors, 1, this.report, this.errors);
+        if(!emitError(UNHANDLED_REJECTION, e)) {
+            if(this.errors.length === 0) {
+                setTimeout(reportErrors, 1, this.errors);
+            }
+            this.errors.push(e);
         }
-        this.errors.push(e);
     }
 
     untrack(e) {
         silenceError(e);
+        emitError(HANDLED_REJECTION, e);
     }
 }
 
-function reportErrors(reportError, errors) {
+function reportErrors(errors) {
     for(let i=0; i<errors.length; ++i) {
         let e = errors[i];
         if(!isHandled(e)) {
-            emitError('unhandledRejection', e) || reportError(e);
+            throw e.value;
         }
     }
     errors.length = 0;
@@ -40,7 +45,7 @@ function initEmitError() {
         // falsy in browserify:
         // https://github.com/defunctzombie/node-process/blob/master/browser.js#L40-L46
         return function(type, error) {
-            return type === 'unhandledRejection'
+            return type === UNHANDLED_REJECTION
                 ? process.emit(type, error.value, error)
                 : process.emit(type, error);
         };
@@ -48,14 +53,14 @@ function initEmitError() {
         return (function(noop, self, CustomEvent) {
             let hasCustomEvent = false;
             try {
-                hasCustomEvent = new CustomEvent('unhandledRejection') instanceof CustomEvent;
+                hasCustomEvent = new CustomEvent(UNHANDLED_REJECTION) instanceof CustomEvent;
             } catch (e) {}
 
             return !hasCustomEvent ? noop : function(type, error) {
                 let ev = new CustomEvent(type, {
                     detail: {
                         reason: error.value,
-                        key: error
+                        promise: error
                     },
                     bubbles: false,
                     cancelable: true

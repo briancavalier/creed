@@ -21,10 +21,9 @@ function createNodeScheduler(f) {
 }
 
 function createBrowserScheduler(f) {
-	return () => {
-		let div = document.createElement('div');
-		(new MutationObs(f)).observe(div, { characterData: true });
+	let node = document.createTextNode('');
+	(new MutationObs(f)).observe(node, { characterData: true });
 
-		return () => div.data = (i ^= 1);
-	};
+	let i = 0;
+	return () => node.data = (i ^= 1);
 }
