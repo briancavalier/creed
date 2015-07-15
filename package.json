@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "build-node": "babel -q -d lib src",
-    "build": "npm build-node && webpack --config .webpack.js && uglifyjs dist/creed.js -c 'warnings=false' -m --source-map=dist/creed.min.js.map --source-map-url=creed.min.js.map --source-map-include-sources -o dist/creed.min.js",
+    "build": "npm run build-node && webpack --config .webpack.js && uglifyjs dist/creed.js -c 'warnings=false' -m --source-map=dist/creed.min.js.map --source-map-url=creed.min.js.map --source-map-include-sources -o dist/creed.min.js",
     "test": "jscs -x src && npm run build-node && promises-aplus-tests test/aplus.js"
   },
   "author": "brian@hovercraftstudios.com",

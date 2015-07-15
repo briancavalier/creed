@@ -14,7 +14,7 @@ import Any from './Any';
 import Race from './Race';
 import Merge from './Merge';
 import Settle from './Settle';
-import resolveIterable from './iterable';
+import { checkIterable, resolveIterable, resultsArray } from './iterable';
 
 import runNode from './node';
 import runCo from './co.js';
@@ -292,16 +292,6 @@ export function settle(promises) {
 function iterablePromise(handler, iterable) {
     let p = new Promise();
     return resolveIterable(resolveMaybeThenable, handler, iterable, p);
-}
-
-function checkIterable(kind, x) {
-    if (typeof x !== 'object' || x === null) {
-        throw new TypeError('non-iterable passed to ' + kind);
-    }
-}
-
-function resultsArray(iterable) {
-    return Array.isArray(iterable) ? new Array(iterable.length) : [];
 }
 
 // ## Lifting

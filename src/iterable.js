@@ -1,7 +1,17 @@
 import { isFulfilled, isRejected, silenceError } from './inspect';
 import maybeThenable from './maybeThenable';
 
-export default function (resolve, itemHandler, promises, promise) {
+export function checkIterable(kind, x) {
+    if (typeof x !== 'object' || x === null) {
+        throw new TypeError('non-iterable passed to ' + kind);
+    }
+}
+
+export function resultsArray(iterable) {
+    return Array.isArray(iterable) ? new Array(iterable.length) : [];
+}
+
+export function resolveIterable(resolve, itemHandler, promises, promise) {
     let run = Array.isArray(promises) ? runArray : runIterable;
     return run(resolve, itemHandler, promises, promise);
 }
