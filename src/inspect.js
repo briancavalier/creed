@@ -22,10 +22,6 @@ export function isSettled(p) {
     return (p.state() & SETTLED) > 0;
 }
 
-export function isSettledOrNever(p) {
-    return (p.state() & (SETTLED|NEVER)) > 0;
-}
-
 export function isNever(p) {
     return (p.state() & NEVER) > 0;
 }

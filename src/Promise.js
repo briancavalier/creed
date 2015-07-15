@@ -250,7 +250,7 @@ export function delay(ms, x) {
 // timeout :: Promise e a -> number -> Promise (e|TimeoutError) a
 export function timeout(ms, x) {
     var p = resolve(x);
-    return isSettledOrNever(p) ? p : _timeout(ms, p, new Promise());
+    return isSettled(p) ? p : _timeout(ms, p, new Promise());
 }
 
 // ## Iterables
