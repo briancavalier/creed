@@ -1,14 +1,14 @@
 {
-  "name": "truth",
+  "name": "creed",
   "version": "1.0.0",
-  "description": "Forward-looking async toolkit: promises, generators, streaming",
+  "description": "Forward-looking async toolkit: promises, iterators, generators, streaming",
   "main": "lib/Promise.js",
   "files": [
     "lib",
     "dist"
   ],
   "scripts": {
-    "build": "babel -d lib src && webpack --output-library truth --output-library-target umd ./lib/Promise.js --output-file dist/truth.js && uglifyjs dist/truth.js -c -m --source-map=dist/truth.min.js.map --source-map-url=truth.min.js.map --source-map-include-sources -o dist/truth.min.js",
+    "build": "babel -d lib src && webpack --output-library creed --output-library-target umd ./lib/Promise.js --output-file dist/creed.js && uglifyjs dist/creed.js -c -m --source-map=dist/creed.min.js.map --source-map-url=creed.min.js.map --source-map-include-sources -o dist/creed.min.js",
     "test": "npm run build && promises-aplus-tests test/aplus.js"
   },
   "author": "brian@hovercraftstudios.com",

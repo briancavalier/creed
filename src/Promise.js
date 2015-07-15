@@ -3,12 +3,12 @@
 import TaskQueue from './TaskQueue';
 import ErrorHandler from './ErrorHandler';
 import maybeThenable from './maybeThenable';
-import { PENDING, RESOLVED, FULFILLED, REJECTED } from './state';
-import { silenceError, isFulfilled, isRejected, isSettled } from './inspect';
+import { PENDING, FULFILLED, REJECTED, NEVER } from './state';
+import { silenceError, isFulfilled, isRejected, isRejectedOrNever, isSettled, isSettledOrNever } from './inspect';
 
 import then from './then';
-import delay from './delay';
-import timeout from './timeout';
+import _delay from './delay';
+import _timeout from './timeout';
 
 import Any from './Any';
 import Race from './Race';
@@ -20,12 +20,12 @@ import runNode from './node';
 import runCo from './co.js';
 
 let taskQueue = new TaskQueue();
-let errorHandler = new ErrorHandler(r => { throw r.value });
+let errorHandler = new ErrorHandler(r => { throw r.value; });
 
 let marker = {};
 
 const PromiseProtocol = {
-    // then :: Promise e a -> (a -> b) -> (e -> b) -> Promise e b
+    // then :: Promise e a -> (a -> b|Promise e b) -> (e -> b|Promise e b) -> Promise e b
     then(f, r) {
         let n = this.near();
         if((isFulfilled(n) && typeof f !== 'function') ||
@@ -36,31 +36,10 @@ const PromiseProtocol = {
         return then(f, r, n, new Promise());
     },
 
-    // catch :: Promise e a -> (e -> b) -> Promise e b
+    // catch :: Promise e a -> (e -> b|Promise e b) -> Promise e b
     catch(r) {
         let n = this.near();
-        if(isFulfilled(n)) {
-            return n;
-        }
-
-        return then(void 0, r, n, new Promise());
-    },
-
-    // delay :: Promise e a -> number -> Promise e a
-    delay(ms) {
-        let n = this.near();
-        if(ms <= 0 || isRejected(n)) {
-            return this;
-        }
-
-        return delay(ms, n, new Promise());
-    },
-
-    // timeout :: Promise e a -> number -> Promise (e|TimeoutError) a
-    timeout(ms) {
-        var n = this.near();
-        return isSettled(n) ? this
-            : timeout(ms, n, new Promise());
+        return isFulfilled(n) ? n : then(void 0, r, n, new Promise());
     },
 
     // toString :: Promise e a -> String
@@ -81,11 +60,17 @@ const PromiseProtocol = {
     }
 };
 
-class Promise {
+// A promise that is initially pending, and fulfills or fails
+// at some point after being created.
+export class Promise {
     constructor() {
         this.ref = void 0;
         this.action = void 0;
         this.length = 0;
+    }
+
+    near() {
+        return this._isResolved() ? this._near() : this;
     }
 
     state() {
@@ -94,10 +79,6 @@ class Promise {
 
     _isResolved() {
         return this.ref !== void 0;
-    }
-
-    near() {
-        return this._isResolved() ? this._near() : this;
     }
 
     _near() {
@@ -174,8 +155,9 @@ class Promise {
     }
 }
 
-mixin(Promise.prototype, PromiseProtocol);
+addProtocol(Promise.prototype, PromiseProtocol);
 
+// A promise that has already acquired its value
 class Fulfilled {
     constructor(x) {
         this.value = x;
@@ -190,8 +172,9 @@ class Fulfilled {
     }
 }
 
-mixin(Fulfilled.prototype, PromiseProtocol);
+addProtocol(Fulfilled.prototype, PromiseProtocol);
 
+// A promise that has failed to acquire its value
 class Rejected {
     constructor(e) {
         this.value = e;
@@ -210,17 +193,10 @@ class Rejected {
     }
 }
 
-mixin(Rejected.prototype, PromiseProtocol);
+addProtocol(Rejected.prototype, PromiseProtocol);
 
+// A promise that will neither acquire its value nor fail
 class Never {
-    state() {
-        return PENDING;
-    }
-
-    _runAction() {}
-
-    _when() {}
-
     then() {
         return this;
     }
@@ -229,31 +205,24 @@ class Never {
         return this;
     }
 
-    delay() {
-        return this;
-    }
-
     toString() {
         return '[object Never]';
     }
-}
 
-mixin(Never.prototype, PromiseProtocol);
-
-class Continuation {
-    constructor(action, ref) {
-        this.action = action;
-        this.ref = ref;
+    state() {
+        return PENDING|NEVER;
     }
 
-    run() {
-        this.ref._runAction(this.action);
-    }
+    _when() {}
+
+    _runAction() {}
 }
 
-// reject :: Promise e a -> Promise e a
-// reject :: Thenable e a -> Promise e a
-// reject :: a -> Promise e a
+addProtocol(Never.prototype, PromiseProtocol);
+
+// resolve :: Promise e a -> Promise e a
+// resolve :: Thenable e a -> Promise e a
+// resolve :: a -> Promise e a
 export function resolve(x) {
     if(isPromise(x)) {
         return x.near();
@@ -272,24 +241,19 @@ export function never() {
     return new Never();
 }
 
-// promise :: ((a -> ()) -> (e -> ()) -> ()) -> resolve a
-export function promise(f) {
-    let p = new Promise();
-    runResolver(f, p);
-    return p;
+// delay :: Promise e a -> number -> Promise e a
+export function delay(ms, x) {
+    let p = resolve(x);
+    return ms <= 0 || isRejectedOrNever(p) ? p : _delay(ms, p, new Promise());
 }
 
-function runResolver(f, p) {
-    try {
-        f(x => p._resolve(x), e => p._reject(e));
-    } catch (e) {
-        p._reject(e);
-    }
+// timeout :: Promise e a -> number -> Promise (e|TimeoutError) a
+export function timeout(ms, x) {
+    var p = resolve(x);
+    return isSettledOrNever(p) ? p : _timeout(ms, p, new Promise());
 }
 
-//----------------------------------------------------------------
-// Iterables
-//----------------------------------------------------------------
+// ## Iterables
 
 // all :: Iterable (Promise e a) -> Promise e (Iterable a)
 export function all(promises) {
@@ -315,7 +279,7 @@ export function any(promises) {
     return iterablePromise(new Any(), promises);
 }
 
-// race :: Iterable (Promise e a) -> Promise e (Iterable Promise e a)
+// settle :: Iterable (Promise e a) -> Promise e (Iterable Promise e a)
 export function settle(promises) {
     checkIterable('settle', promises);
     return iterablePromise(new Settle(resolve, resultsArray(promises)), promises);
@@ -335,9 +299,7 @@ function resultsArray(iterable) {
     return Array.isArray(iterable) ? new Array(iterable.length) : [];
 }
 
-//----------------------------------------------------------------
-// Lifting
-//----------------------------------------------------------------
+// ## Lifting
 
 // lift :: (a -> b) -> (Promise a -> Promise b)
 export function lift(f) {
@@ -374,24 +336,20 @@ class MergeHandler {
     }
 }
 
-//----------------------------------------------------------------
-// Convert node-style async
-//----------------------------------------------------------------
+// ## Convert node-style async
 
+// denodify :: (...a -> (err -> value)) -> (a -> Promise)
 // Node-style async function to promise-returning function
-// (...a -> (err -> value)) -> (a -> Promise)
 export function denodeify(f) {
     return function(...args) {
         return runNode(f, this, args, new Promise());
     };
 }
 
-//----------------------------------------------------------------
-// Generators
-//----------------------------------------------------------------
+// ## Generators
 
+// co :: Generator -> (...a -> Promise)
 // Generator to coroutine
-// Generator -> (...a -> Promise)
 export function co(generator) {
     return function(...args) {
         return runGenerator(generator, this, args);
@@ -403,9 +361,7 @@ function runGenerator(generator, thisArg, args) {
     return runCo(resolve, iterator, new Promise());
 }
 
-//----------------------------------------------------------------
-// ES6 Promise polyfill
-//----------------------------------------------------------------
+// ## ES6 Promise polyfill
 
 (function(TruthPromise, runResolver, resolve, reject, all, race) {
 
@@ -434,6 +390,7 @@ function runGenerator(generator, thisArg, args) {
 
 }(Promise, runResolver, resolve, reject, all, race));
 
+// isPromise :: a -> boolean
 function isPromise(x) {
     return x !== null && typeof x === 'object' && x._isPromise === marker;
 }
@@ -466,11 +423,30 @@ function cycle() {
     return new Rejected(new TypeError('resolution cycle'));
 }
 
-function mixin(t, s) {
+function runResolver(f, p) {
+    try {
+        f(x => p._resolve(x), e => p._reject(e));
+    } catch (e) {
+        p._reject(e);
+    }
+}
+
+function addProtocol(t, s) {
     return Object.keys(s).reduce((t, k) => {
         if(!t.hasOwnProperty(k)) {
             t[k] = s[k];
         }
         return t;
     }, t);
+}
+
+class Continuation {
+    constructor(action, ref) {
+        this.action = action;
+        this.ref = ref;
+    }
+
+    run() {
+        this.ref._runAction(this.action);
+    }
 }

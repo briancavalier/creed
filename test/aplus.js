@@ -1,20 +1,13 @@
-var truth = require('..');
+var creed = require('..');
 
 process.addListener('unhandledRejection', function(){});
 
-exports.resolved = truth.resolve;
-exports.rejected = truth.reject;
+exports.resolved = creed.resolve;
+exports.rejected = creed.reject;
 exports.deferred = function() {
-    var d = {
-        resolve: void 0,
-        reject: void 0,
-        promise: void 0
+    return {
+        resolve: function(x) { this.promise._resolve(x); },
+        reject: function(e) { this.promise._reject(e); },
+        promise: new creed.Promise
     };
-
-    d.promise = truth.promise(function(resolve, reject) {
-        d.resolve = resolve;
-        d.reject = reject;
-    });
-
-    return d;
 };

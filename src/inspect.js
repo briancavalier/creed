@@ -1,6 +1,6 @@
 'use strict';
 
-import { PENDING, RESOLVED, FULFILLED, REJECTED, SETTLED, HANDLED } from './state';
+import { PENDING, FULFILLED, REJECTED, SETTLED, NEVER, HANDLED } from './state';
 
 export function isPending(p) {
     return (p.state() & PENDING) > 0;
@@ -14,8 +14,20 @@ export function isRejected(p) {
     return (p.state() & REJECTED) > 0;
 }
 
+export function isRejectedOrNever(p) {
+    return (p.state() & (REJECTED|NEVER)) > 0;
+}
+
 export function isSettled(p) {
     return (p.state() & SETTLED) > 0;
+}
+
+export function isSettledOrNever(p) {
+    return (p.state() & (SETTLED|NEVER)) > 0;
+}
+
+export function isNever(p) {
+    return (p.state() & NEVER) > 0;
 }
 
 export function isHandled(p) {
