@@ -25,7 +25,10 @@ let errorHandler = new ErrorHandler();
 let marker = {};
 
 const PromiseProtocol = {
+    // then :: Promise e a -> (a -> b|Promise e b) -> Promise e b
+    // then :: Promise e a -> () -> (e -> b|Promise e b) -> Promise e b
     // then :: Promise e a -> (a -> b|Promise e b) -> (e -> b|Promise e b) -> Promise e b
+    // Transform this Promise's value
     then(f, r) {
         let n = this.near();
         if ((isFulfilled(n) && typeof f !== 'function') ||
@@ -37,12 +40,14 @@ const PromiseProtocol = {
     },
 
     // catch :: Promise e a -> (e -> b|Promise e b) -> Promise e b
+    // Handle this Promise's error
     catch(r) {
         let n = this.near();
         return isFulfilled(n) ? n : then(void 0, r, n, new Promise());
     },
 
     // toString :: Promise e a -> String
+    // Return a string representation of the current state of this promise
     toString() {
         let n = this.near();
         return isSettled(n)
@@ -62,8 +67,9 @@ const PromiseProtocol = {
     }
 };
 
-// A promise that is initially pending, and fulfills or fails
-// at some point after being created.
+// Promise :: Promise e a
+// A promise that is pending initially, and fulfills or fails
+// at some time after being created.
 export class Promise {
     constructor() {
         this.ref = void 0;
@@ -159,6 +165,7 @@ export class Promise {
 
 addProtocol(Promise.prototype, PromiseProtocol);
 
+// Fulfilled :: a -> Promise _ a
 // A promise that has already acquired its value
 class Fulfilled {
     constructor(x) {
@@ -176,6 +183,7 @@ class Fulfilled {
 
 addProtocol(Fulfilled.prototype, PromiseProtocol);
 
+// Rejected :: e -> Promise e _
 // A promise that is known to have failed to acquire its value
 class Rejected {
     constructor(e) {
@@ -197,6 +205,7 @@ class Rejected {
 
 addProtocol(Rejected.prototype, PromiseProtocol);
 
+// Never :: Promise _ _
 // A promise that will never acquire its value nor fail
 class Never {
     then() {
@@ -238,7 +247,7 @@ export function reject(e) {
     return new Rejected(e);
 }
 
-// never :: () -> Promise e a
+// never :: Never
 export function never() {
     return new Never();
 }
@@ -276,7 +285,7 @@ export function race(promises) {
     return iterablePromise(new Race(never), promises);
 }
 
-// race :: Iterable (Promise e a) -> Promise e a
+// any :: Iterable (Promise e a) -> Promise e a
 export function any(promises) {
     checkIterable('any', promises);
     return iterablePromise(new Any(), promises);
@@ -296,14 +305,14 @@ function iterablePromise(handler, iterable) {
 
 // ## Lifting
 
-// lift :: (a -> b) -> (Promise a -> Promise b)
+// lift :: (...a -> b) -> (...Promise e a -> Promise e b)
 export function lift(f) {
     return function (...args) {
         return applyp(f, this, args);
     };
 }
 
-// merge :: (a -> b) -> Promise a -> Promise b
+// merge :: (...a -> b) -> ...Promise e a -> Promise e b
 export function merge(f, ...args) {
     return applyp(f, this, args);
 }
@@ -334,7 +343,9 @@ class MergeHandler {
 
 // ## Convert node-style async
 
-// denodify :: (...a -> (err -> value)) -> (a -> Promise)
+// type Nodeback = (e -> value -> ())
+
+// denodify :: (...a -> Nodeback) -> (a -> Promise)
 // Node-style async function to promise-returning function
 export function denodeify(f) {
     return function (...args) {
@@ -356,35 +367,6 @@ function runGenerator(generator, thisArg, args) {
     var iterator = generator.apply(thisArg, args);
     return runCo(resolve, iterator, new Promise());
 }
-
-// ## ES6 Promise polyfill
-
-(function (BasePromise, runResolver, resolve, reject, all, race) {
-
-    var g;
-    if (typeof self !== 'undefined') {
-        g = self;
-    } else if (typeof global !== 'undefined') {
-        g = global;
-    } else {
-        return;
-    }
-
-    if (typeof g.Promise !== 'function') {
-        g.Promise = class Promise extends BasePromise {
-            constructor(f) {
-                super();
-                runResolver(f, this);
-            }
-        };
-
-        Promise.resolve = resolve;
-        Promise.reject  = reject;
-        Promise.all     = all;
-        Promise.race    = race;
-    }
-
-}(Promise, runResolver, resolve, reject, all, race));
 
 // isPromise :: a -> boolean
 function isPromise(x) {
@@ -408,6 +390,7 @@ function refForUntrusted(x) {
 
 function extractThenable(then, thenable) {
     let d = new Promise();
+
     try {
         then.call(thenable, x => d._resolve(x), e => d._reject(e));
     } catch (e) {
@@ -447,4 +430,27 @@ class Continuation {
     run() {
         this.ref._runAction(this.action);
     }
+}
+
+// ## ES6 Promise polyfill
+
+var g;
+if (typeof self !== 'undefined') {
+    g = self;
+} else if (typeof global !== 'undefined') {
+    g = global;
+}
+
+if (g !== void 0 && typeof g.Promise !== 'function') {
+    g.Promise = class CreedPromise extends Promise {
+        constructor(f) {
+            super();
+            runResolver(f, this);
+        }
+    };
+
+    g.Promise.resolve = resolve;
+    g.Promise.reject  = reject;
+    g.Promise.all     = all;
+    g.Promise.race    = race;
 }
