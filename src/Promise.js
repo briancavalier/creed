@@ -4,7 +4,7 @@ import TaskQueue from './TaskQueue';
 import ErrorHandler from './ErrorHandler';
 import maybeThenable from './maybeThenable';
 import { PENDING, FULFILLED, REJECTED, NEVER } from './state';
-import { silenceError, isFulfilled, isRejected, isRejectedOrNever, isSettled, isSettledOrNever } from './inspect';
+import { silenceError, isFulfilled, isRejected, isRejectedOrNever, isSettled } from './inspect';
 
 import then from './then';
 import _delay from './delay';
@@ -45,7 +45,9 @@ const PromiseProtocol = {
     // toString :: Promise e a -> String
     toString() {
         let n = this.near();
-        return isSettled(n) ? '[object Promise ' + n.value + ']' : '[object Promise]';
+        return isSettled(n)
+            ? '[object Promise ' + n.value + ']'
+            : '[object Promise]';
     },
 
     // near :: Promise e a -> Promise e a
@@ -258,7 +260,8 @@ export function timeout(ms, x) {
 // all :: Iterable (Promise e a) -> Promise e (Iterable a)
 export function all(promises) {
     checkIterable('all', promises);
-    return iterablePromise(new Merge(allHandler, resultsArray(promises)), promises);
+    let handler = new Merge(allHandler, resultsArray(promises));
+    return iterablePromise(handler, promises);
 }
 
 const allHandler = {
@@ -282,11 +285,13 @@ export function any(promises) {
 // settle :: Iterable (Promise e a) -> Promise e (Iterable Promise e a)
 export function settle(promises) {
     checkIterable('settle', promises);
-    return iterablePromise(new Settle(resolve, resultsArray(promises)), promises);
+    let handler = new Settle(resolve, resultsArray(promises));
+    return iterablePromise(handler, promises);
 }
 
 function iterablePromise(handler, iterable) {
-    return resolveIterable(resolveMaybeThenable, handler, iterable, new Promise());
+    let p = new Promise();
+    return resolveIterable(resolveMaybeThenable, handler, iterable, p);
 }
 
 function checkIterable(kind, x) {
@@ -318,7 +323,8 @@ function applyp(f, thisArg, args) {
 }
 
 function runMerge(f, thisArg, args) {
-    return iterablePromise(new Merge(new MergeHandler(f, thisArg), resultsArray(args)), args);
+    let handler = new Merge(new MergeHandler(f, thisArg), resultsArray(args));
+    return iterablePromise(handler, args);
 }
 
 class MergeHandler {
@@ -402,7 +408,9 @@ function resolveMaybeThenable(x) {
 function refForUntrusted(x) {
     try {
         let then = x.then;
-        return typeof then === 'function' ? extractThenable(then, x) : new Fulfilled(x);
+        return typeof then === 'function'
+            ? extractThenable(then, x)
+            : new Fulfilled(x);
     } catch(e) {
         return new Rejected(e);
     }
