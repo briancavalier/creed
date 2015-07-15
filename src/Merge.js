@@ -30,7 +30,7 @@ export default class Merge {
 
     check(pending, promise) {
         this.pending = pending;
-        if(this.done && pending === 0) {
+        if (this.done && pending === 0) {
             this.mergeHandler.merge(promise, this.results);
         }
     }

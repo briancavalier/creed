@@ -13,8 +13,8 @@ export default class ErrorHandler {
     }
 
     track(e) {
-        if(!emitError(UNHANDLED_REJECTION, e)) {
-            if(this.errors.length === 0) {
+        if (!emitError(UNHANDLED_REJECTION, e)) {
+            if (this.errors.length === 0) {
                 setTimeout(reportErrors, 1, this.errors);
             }
             this.errors.push(e);
@@ -28,9 +28,9 @@ export default class ErrorHandler {
 }
 
 function reportErrors(errors) {
-    for(let i=0; i<errors.length; ++i) {
+    for (let i = 0; i < errors.length; ++i) {
         let e = errors[i];
-        if(!isHandled(e)) {
+        if (!isHandled(e)) {
             throw e.value;
         }
     }
@@ -39,24 +39,24 @@ function reportErrors(errors) {
 
 function initEmitError() {
     /*global process, self, CustomEvent*/
-    if(isNode && typeof process.emit === 'function') {
+    if (isNode && typeof process.emit === 'function') {
         // Returning falsy here means to call the default reportRejection API.
         // This is safe even in browserify since process.emit always returns
         // falsy in browserify:
         // https://github.com/defunctzombie/node-process/blob/master/browser.js#L40-L46
-        return function(type, error) {
+        return function (type, error) {
             return type === UNHANDLED_REJECTION
                 ? process.emit(type, error.value, error)
                 : process.emit(type, error);
         };
-    } else if(typeof self !== 'undefined' && typeof CustomEvent === 'function') {
-        return (function(noop, self, CustomEvent) {
+    } else if (typeof self !== 'undefined' && typeof CustomEvent === 'function') {
+        return (function (noop, self, CustomEvent) {
             let hasCustomEvent = false;
             try {
                 hasCustomEvent = new CustomEvent(UNHANDLED_REJECTION) instanceof CustomEvent;
             } catch (e) {}
 
-            return !hasCustomEvent ? noop : function(type, error) {
+            return !hasCustomEvent ? noop : function (type, error) {
                 let ev = new CustomEvent(type, {
                     detail: {
                         reason: error.value,

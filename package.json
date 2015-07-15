@@ -9,12 +9,13 @@
   ],
   "scripts": {
     "build": "babel -d lib src && webpack --output-library creed --output-library-target umd ./lib/Promise.js --output-file dist/creed.js && uglifyjs dist/creed.js -c -m --source-map=dist/creed.min.js.map --source-map-url=creed.min.js.map --source-map-include-sources -o dist/creed.min.js",
-    "test": "npm run build && promises-aplus-tests test/aplus.js"
+    "test": "jscs -x src && npm run build && promises-aplus-tests test/aplus.js"
   },
   "author": "brian@hovercraftstudios.com",
   "license": "MIT",
   "devDependencies": {
     "babel": "^5.5.8",
+    "jscs": "^1.13.1",
     "mocha": "^2.2.5",
     "node-libs-browser": "^0.5.2",
     "webpack": "^1.10.1"

@@ -1,7 +1,7 @@
 import { isFulfilled, isRejected, silenceError } from './inspect';
 import maybeThenable from './maybeThenable';
 
-export default function(resolve, itemHandler, promises, promise) {
+export default function (resolve, itemHandler, promises, promise) {
     let run = Array.isArray(promises) ? runArray : runIterable;
     return run(resolve, itemHandler, promises, promise);
 }
@@ -21,7 +21,7 @@ function runArray(resolve, itemHandler, promises, promise) {
 function runIterable(resolve, itemHandler, promises, promise) {
     let i = 0;
 
-    for(let x of promises) {
+    for (let x of promises) {
         handleItem(resolve, itemHandler, x, i++, promise);
     }
 

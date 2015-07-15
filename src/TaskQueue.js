@@ -1,3 +1,7 @@
+// Unfortunately, jscs indentation does weird things to the TaskQueue
+// method bodies.  Have to disable for now.
+// jscs:disable
+
 'use strict';
 
 import makeAsync from './async';

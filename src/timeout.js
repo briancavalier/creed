@@ -3,7 +3,7 @@
 import { isPending } from './inspect';
 import TimeoutError from './TimeoutError';
 
-export default function(ms, ref, promise) {
+export default function (ms, ref, promise) {
     let timer = setTimeout(rejectOnTimeout, ms, promise);
     ref._runAction(new Timeout(timer, promise));
     return promise;
@@ -28,7 +28,7 @@ class Timeout {
 }
 
 function rejectOnTimeout(promise) {
-    if(isPending(promise)) {
+    if (isPending(promise)) {
         promise._reject(new TimeoutError('promise timeout'));
     }
 }

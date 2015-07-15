@@ -15,7 +15,7 @@ export function isRejected(p) {
 }
 
 export function isRejectedOrNever(p) {
-    return (p.state() & (REJECTED|NEVER)) > 0;
+    return (p.state() & (REJECTED | NEVER)) > 0;
 }
 
 export function isSettled(p) {
@@ -31,7 +31,7 @@ export function isHandled(p) {
 }
 
 export function silenceError(p) {
-    if(!isFulfilled(p)) {
+    if (!isFulfilled(p)) {
         p._runAction(silencer);
     }
 }

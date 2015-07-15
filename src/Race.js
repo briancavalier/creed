@@ -18,7 +18,7 @@ export default class Race {
     }
 
     complete(total, promise) {
-        if(total === 0) {
+        if (total === 0) {
             promise._resolve(this.never());
         }
     }

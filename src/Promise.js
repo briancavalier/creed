@@ -28,7 +28,7 @@ const PromiseProtocol = {
     // then :: Promise e a -> (a -> b|Promise e b) -> (e -> b|Promise e b) -> Promise e b
     then(f, r) {
         let n = this.near();
-        if((isFulfilled(n) && typeof f !== 'function') ||
+        if ((isFulfilled(n) && typeof f !== 'function') ||
             (isRejected(n) && typeof r !== 'function')) {
             return n;
         }
@@ -86,9 +86,9 @@ export class Promise {
     _near() {
         let ref = this;
 
-        while(ref.ref !== void 0) {
+        while (ref.ref !== void 0) {
             ref = ref.ref;
-            if(ref === this) {
+            if (ref === this) {
                 ref = cycle();
                 break;
             }
@@ -102,9 +102,9 @@ export class Promise {
     }
 
     _runAction(action) {
-        if(this.action === void 0) {
+        if (this.action === void 0) {
             this.action = action;
-            if(this._isResolved()) {
+            if (this._isResolved()) {
                 taskQueue.add(this);
             }
         } else {
@@ -121,7 +121,7 @@ export class Promise {
     }
 
     _reject(e) {
-        if(this._isResolved()) {
+        if (this._isResolved()) {
             return;
         }
 
@@ -129,7 +129,7 @@ export class Promise {
     }
 
     _become(ref) {
-        if(this._isResolved()) {
+        if (this._isResolved()) {
             return;
         }
 
@@ -138,7 +138,7 @@ export class Promise {
 
     __become(ref) {
         this.ref = ref;
-        if(this.action !== void 0) {
+        if (this.action !== void 0) {
             taskQueue.add(this);
         }
     }
@@ -189,7 +189,7 @@ class Rejected {
     }
 
     _runAction(action) {
-        if(action.rejected(this)) {
+        if (action.rejected(this)) {
             errorHandler.untrack(this);
         }
     }
@@ -203,7 +203,7 @@ class Never {
         return this;
     }
 
-    catch() {
+    catch () {
         return this;
     }
 
@@ -212,7 +212,7 @@ class Never {
     }
 
     state() {
-        return PENDING|NEVER;
+        return PENDING | NEVER;
     }
 
     _when() {}
@@ -226,7 +226,7 @@ addProtocol(Never.prototype, PromiseProtocol);
 // resolve :: Thenable e a -> Promise e a
 // resolve :: a -> Promise e a
 export function resolve(x) {
-    if(isPromise(x)) {
+    if (isPromise(x)) {
         return x.near();
     }
 
@@ -295,7 +295,7 @@ function iterablePromise(handler, iterable) {
 }
 
 function checkIterable(kind, x) {
-    if(typeof x !== 'object' || x === null) {
+    if (typeof x !== 'object' || x === null) {
         throw new TypeError('non-iterable passed to ' + kind);
     }
 }
@@ -308,9 +308,9 @@ function resultsArray(iterable) {
 
 // lift :: (a -> b) -> (Promise a -> Promise b)
 export function lift(f) {
-    return function(...args) {
+    return function (...args) {
         return applyp(f, this, args);
-    }
+    };
 }
 
 // merge :: (a -> b) -> Promise a -> Promise b
@@ -336,7 +336,7 @@ class MergeHandler {
     merge(promise, args) {
         try {
             promise._resolve(this.f.apply(this.c, args));
-        } catch(e) {
+        } catch (e) {
             promise._reject(e);
         }
     }
@@ -347,7 +347,7 @@ class MergeHandler {
 // denodify :: (...a -> (err -> value)) -> (a -> Promise)
 // Node-style async function to promise-returning function
 export function denodeify(f) {
-    return function(...args) {
+    return function (...args) {
         return runNode(f, this, args, new Promise());
     };
 }
@@ -357,7 +357,7 @@ export function denodeify(f) {
 // co :: Generator -> (...a -> Promise)
 // Generator to coroutine
 export function co(generator) {
-    return function(...args) {
+    return function (...args) {
         return runGenerator(generator, this, args);
     };
 }
@@ -369,18 +369,18 @@ function runGenerator(generator, thisArg, args) {
 
 // ## ES6 Promise polyfill
 
-(function(TruthPromise, runResolver, resolve, reject, all, race) {
+(function (TruthPromise, runResolver, resolve, reject, all, race) {
 
     var g;
-    if(typeof self !== 'undefined') {
+    if (typeof self !== 'undefined') {
         g = self;
-    } else if(typeof global !== 'undefined') {
+    } else if (typeof global !== 'undefined') {
         g = global;
     } else {
         return;
     }
 
-    if(typeof g.Promise !== 'function') {
+    if (typeof g.Promise !== 'function') {
         g.Promise = class Promise extends TruthPromise {
             constructor(f) {
                 super();
@@ -402,7 +402,7 @@ function isPromise(x) {
 }
 
 function resolveMaybeThenable(x) {
-    return isPromise(x) ? x.near() : refForUntrusted(x)
+    return isPromise(x) ? x.near() : refForUntrusted(x);
 }
 
 function refForUntrusted(x) {
@@ -411,7 +411,7 @@ function refForUntrusted(x) {
         return typeof then === 'function'
             ? extractThenable(then, x)
             : new Fulfilled(x);
-    } catch(e) {
+    } catch (e) {
         return new Rejected(e);
     }
 }
@@ -441,7 +441,7 @@ function runResolver(f, p) {
 
 function addProtocol(t, s) {
     return Object.keys(s).reduce((t, k) => {
-        if(!t.hasOwnProperty(k)) {
+        if (!t.hasOwnProperty(k)) {
             t[k] = s[k];
         }
         return t;

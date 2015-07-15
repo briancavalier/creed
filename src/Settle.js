@@ -35,7 +35,7 @@ export default class Settle {
 
     check(pending, promise) {
         this.pending = pending;
-        if(this.done && pending === 0) {
+        if (this.done && pending === 0) {
             promise._fulfill(this.results);
         }
     }

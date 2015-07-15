@@ -22,7 +22,7 @@ class Then {
 }
 
 function runThen(f, ref, promise) {
-    if(typeof f !== 'function') {
+    if (typeof f !== 'function') {
         promise._become(ref);
         return false;
     }
@@ -34,7 +34,7 @@ function runThen(f, ref, promise) {
 function tryMapNext(f, x, promise) {
     try {
         promise._resolve(f(x));
-    } catch(e) {
+    } catch (e) {
         promise._reject(e);
     }
 }

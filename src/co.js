@@ -2,7 +2,7 @@
 
 import { isFulfilled, isRejected } from './inspect';
 
-export default function(refFor, iterator, promise) {
+export default function (refFor, iterator, promise) {
     coStep(refFor, iterator.next, void 0, iterator, promise);
     return promise;
 };
@@ -10,13 +10,13 @@ export default function(refFor, iterator, promise) {
 function coStep(refFor, continuation, x, iterator, promise) {
     try {
         handle(refFor, continuation.call(iterator, x), iterator, promise);
-    } catch(e) {
+    } catch (e) {
         promise._reject(e);
     }
 }
 
 function handle(refFor, result, iterator, promise) {
-    if(result.done) {
+    if (result.done) {
         return promise._resolve(result.value);
     }
 
