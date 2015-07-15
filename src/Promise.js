@@ -369,7 +369,7 @@ function runGenerator(generator, thisArg, args) {
 
 // ## ES6 Promise polyfill
 
-(function (TruthPromise, runResolver, resolve, reject, all, race) {
+(function (BasePromise, runResolver, resolve, reject, all, race) {
 
     var g;
     if (typeof self !== 'undefined') {
@@ -381,7 +381,7 @@ function runGenerator(generator, thisArg, args) {
     }
 
     if (typeof g.Promise !== 'function') {
-        g.Promise = class Promise extends TruthPromise {
+        g.Promise = class Promise extends BasePromise {
             constructor(f) {
                 super();
                 runResolver(f, this);
