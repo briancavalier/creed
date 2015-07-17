@@ -13,13 +13,14 @@
   "scripts": {
     "build-lib": "babel --loose es6.classes --blacklist es6.modules -q -d build src",
     "prepublish": "npm run build-lib && esperanto -b -t umd -o creed.js -i ./build/Promise.js -s -n creed",
-    "test": "jscs -x src && npm run build-lib && promises-aplus-tests test/aplus.js"
+    "test": "jscs -x src && npm run build-lib && istanbul cover promises-aplus-tests test/aplus.js"
   },
   "author": "brian@hovercraftstudios.com",
   "license": "MIT",
   "devDependencies": {
     "babel": "^5.6.23",
     "esperanto": "^0.7.3",
+    "istanbul": "^0.3.17",
     "jscs": "^1.13.1",
     "mocha": "^2.2.5",
     "promises-aplus-tests": "^2.1.1"
