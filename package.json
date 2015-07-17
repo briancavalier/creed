@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Forward-looking async toolkit: promises, iterators, generators",
   "main": "creed.js",
+  "files": [
+    "creed.js"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/briancavalier/creed.git"
