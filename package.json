@@ -12,8 +12,9 @@
   },
   "scripts": {
     "build-lib": "babel --loose es6.classes --blacklist es6.modules -q -d build src",
-    "prepublish": "npm run build-lib && esperanto -b -t umd -o creed.js -i ./build/Promise.js -s -n creed",
-    "test": "jscs -x src && npm run build-lib && istanbul cover promises-aplus-tests test/aplus.js"
+    "build-dist": "npm run build-lib && esperanto -b -t umd -o creed.js -i ./build/Promise.js -s -n creed",
+    "prepublish": "npm run build-dist",
+    "test": "jscs -x src && npm run build-dist && istanbul cover promises-aplus-tests test/aplus.js"
   },
   "author": "brian@hovercraftstudios.com",
   "license": "MIT",

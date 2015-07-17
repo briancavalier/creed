@@ -255,7 +255,6 @@ Never.prototype._isPromise = marker;
 // ## Creating promises
 // -------------------------------------------------------------
 
-// resolve :: Promise e a -> Promise e a
 // resolve :: Thenable e a -> Promise e a
 // resolve :: a -> Promise e a
 export function resolve(x) {
@@ -276,7 +275,7 @@ export function never() {
     return new Never();
 }
 
-// delay :: Promise e a -> number -> Promise e a
+// delay :: number -> Promise e a -> Promise e a
 export function delay(ms, x) {
     let p = resolve(x);
     return ms <= 0 || isRejected(p) ? p : _delay(ms, p, new Promise());
@@ -375,7 +374,7 @@ class MergeHandler {
 
 // type Nodeback = (e -> value -> ())
 
-// denodify :: (...a -> Nodeback) -> (a -> Promise)
+// denodify :: (...a -> Nodeback) -> (...a -> Promise)
 // Node-style async function to promise-returning function
 export function denodeify(f) {
     return function (...args) {
