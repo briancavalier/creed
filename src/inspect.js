@@ -14,10 +14,6 @@ export function isRejected(p) {
     return (p.state() & REJECTED) > 0;
 }
 
-export function isRejectedOrNever(p) {
-    return (p.state() & (REJECTED | NEVER)) > 0;
-}
-
 export function isSettled(p) {
     return (p.state() & SETTLED) > 0;
 }

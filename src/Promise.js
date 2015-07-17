@@ -4,7 +4,8 @@ import TaskQueue from './TaskQueue';
 import ErrorHandler from './ErrorHandler';
 import maybeThenable from './maybeThenable';
 import { PENDING, FULFILLED, REJECTED, NEVER } from './state';
-import { silenceError, isFulfilled, isRejected, isRejectedOrNever, isSettled } from './inspect';
+import { silenceError, isFulfilled, isRejected, isSettled, isPending, isNever } from './inspect';
+export { isFulfilled, isRejected, isSettled, isPending, isNever };
 
 import then from './then';
 import _delay from './delay';
@@ -278,7 +279,7 @@ export function never() {
 // delay :: Promise e a -> number -> Promise e a
 export function delay(ms, x) {
     let p = resolve(x);
-    return ms <= 0 || isRejectedOrNever(p) ? p : _delay(ms, p, new Promise());
+    return ms <= 0 || isRejected(p) ? p : _delay(ms, p, new Promise());
 }
 
 // timeout :: Promise e a -> number -> Promise (e|TimeoutError) a
