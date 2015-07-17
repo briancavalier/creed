@@ -1,6 +1,6 @@
 {
   "name": "creed",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Forward-looking async toolkit: promises, iterators, generators",
   "main": "creed.js",
   "files": [
