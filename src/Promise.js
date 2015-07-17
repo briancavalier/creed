@@ -2,6 +2,7 @@
 
 import TaskQueue from './TaskQueue';
 import ErrorHandler from './ErrorHandler';
+import makeEmitError from './emitError';
 import maybeThenable from './maybeThenable';
 import { PENDING, FULFILLED, REJECTED, NEVER } from './state';
 import { silenceError, isFulfilled, isRejected, isSettled, isPending, isNever } from './inspect';
@@ -21,7 +22,9 @@ import runNode from './node';
 import runCo from './co.js';
 
 let taskQueue = new TaskQueue();
-let errorHandler = new ErrorHandler();
+let errorHandler = new ErrorHandler(makeEmitError(), e => {
+    throw e.value;
+});
 
 let marker = {};
 

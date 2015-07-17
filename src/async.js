@@ -6,11 +6,11 @@ import { isNode, MutationObs } from './env';
 
 /*global process,document */
 
-export default function createScheduler(f) {
+export default function (f) {
     //jscs:disable validateIndentation
-	return isNode ? createNodeScheduler(f)
-		: MutationObs ? createBrowserScheduler(f)
-		: createFallbackScheduler(f);
+    return isNode ? createNodeScheduler(f)
+    : MutationObs ? createBrowserScheduler(f)
+    : createFallbackScheduler(f);
 }
 
 function createFallbackScheduler(f) {
