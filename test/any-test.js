@@ -27,7 +27,7 @@ describe('any', () => {
     it('should resolve if at least one input resolves', () => {
         var s = new Set([reject(1), reject(2), resolve(3)]);
         return any(s).then(x => {
-            assert(x, 3);
+            assert.equal(x, 3);
         });
     });
 
