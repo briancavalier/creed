@@ -1,8 +1,5 @@
 .idea/
-node_modules/
 experiments/
-/lib/
-.idea/
-dist/
-experiements/
 node_modules/
+build/
+creed.js
