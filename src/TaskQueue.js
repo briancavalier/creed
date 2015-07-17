@@ -27,6 +27,6 @@ export default class TaskQueue {
 			q[i].run();
 			q[i] = void 0;
 		}
-        this.length = 0;
+		this.length = 0;
 	}
 }
