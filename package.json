@@ -2,25 +2,23 @@
   "name": "creed",
   "version": "1.0.0",
   "description": "Forward-looking async toolkit: promises, iterators, generators, streaming",
-  "main": "lib/Promise.js",
+  "main": "dist/creed.js",
   "files": [
-    "lib",
     "dist"
   ],
   "scripts": {
-    "build-node": "babel --loose es6.classes -q -d lib src",
-    "build": "npm run build-node && webpack --config .webpack.js && uglifyjs dist/creed.js -c 'warnings=false' -m --source-map=dist/creed.min.js.map --source-map-url=creed.min.js.map --source-map-include-sources -o dist/creed.min.js",
-    "test": "jscs -x src && npm run build-node && promises-aplus-tests test/aplus.js"
+    "build-lib": "babel --loose es6.classes --blacklist es6.modules -q -d lib src",
+    "prepublish": "npm run build-lib && esperanto -b -t umd -o ./dist/creed.js -i ./lib/Promise.js -s -n creed && uglifyjs dist/creed.js -c 'warnings=false' -m -o dist/creed.min.js",
+    "test": "jscs -x src && npm run build-lib && promises-aplus-tests test/aplus.js"
   },
   "author": "brian@hovercraftstudios.com",
   "license": "MIT",
   "devDependencies": {
     "babel": "^5.6.23",
+    "esperanto": "^0.7.3",
     "jscs": "^1.13.1",
     "mocha": "^2.2.5",
-    "node-libs-browser": "^0.5.2",
     "promises-aplus-tests": "^2.1.1",
-    "uglifyjs": "^2.4.10",
-    "webpack": "^1.10.1"
+    "uglifyjs": "^2.4.10"
   }
 }

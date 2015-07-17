@@ -24,49 +24,6 @@ let errorHandler = new ErrorHandler();
 
 let marker = {};
 
-const PromiseProtocol = {
-    // then :: Promise e a -> (a -> b|Promise e b) -> Promise e b
-    // then :: Promise e a -> () -> (e -> b|Promise e b) -> Promise e b
-    // then :: Promise e a -> (a -> b|Promise e b) -> (e -> b|Promise e b) -> Promise e b
-    // Transform this Promise's value
-    then(f, r) {
-        let n = this.near();
-        if ((isFulfilled(n) && typeof f !== 'function') ||
-            (isRejected(n) && typeof r !== 'function')) {
-            return n;
-        }
-
-        return then(f, r, n, new Promise());
-    },
-
-    // catch :: Promise e a -> (e -> b|Promise e b) -> Promise e b
-    // Handle this Promise's error
-    catch(r) {
-        let n = this.near();
-        return isFulfilled(n) ? n : then(void 0, r, n, new Promise());
-    },
-
-    // toString :: Promise e a -> String
-    // Return a string representation of the current state of this promise
-    toString() {
-        let n = this.near();
-        return isSettled(n)
-            ? '[object Promise ' + n.value + ']'
-            : '[object Promise]';
-    },
-
-    // near :: Promise e a -> Promise e a
-    near() {
-        return this;
-    },
-
-    _isPromise: marker,
-
-    _when(action) {
-        taskQueue.add(new Continuation(action, this));
-    }
-};
-
 // Promise :: Promise e a
 // A promise that is pending initially, and fulfills or fails
 // at some time after being created.
@@ -75,6 +32,15 @@ export class Promise {
         this.ref = void 0;
         this.action = void 0;
         this.length = 0;
+    }
+
+    then(f, r) {
+        let n = this.near();
+        return n === this ? then(f, r, n, new Promise()) : n.then(f, r);
+    }
+
+    catch (r) {
+        return this.then(void 0, r);
     }
 
     near() {
@@ -162,8 +128,9 @@ export class Promise {
         this.length = 0;
     }
 }
+Promise.prototype._isPromise = marker;
 
-addProtocol(Promise.prototype, PromiseProtocol);
+//addProtocol(Promise.prototype, PromiseProtocol);
 
 // Fulfilled :: a -> Promise _ a
 // A promise that has already acquired its value
@@ -172,16 +139,32 @@ class Fulfilled {
         this.value = x;
     }
 
+    then(f) {
+        return then(f, void 0, this, new Promise());
+    }
+
+    catch () {
+        return this;
+    }
+
     state() {
         return FULFILLED;
+    }
+
+    near() {
+        return this;
+    }
+
+    _when(action) {
+        taskQueue.add(new Continuation(action, this));
     }
 
     _runAction(action) {
         action.fulfilled(this);
     }
 }
-
-addProtocol(Fulfilled.prototype, PromiseProtocol);
+Fulfilled.prototype._isPromise = marker;
+//addProtocol(Fulfilled.prototype, PromiseProtocol);
 
 // Rejected :: e -> Promise e _
 // A promise that is known to have failed to acquire its value
@@ -192,8 +175,24 @@ class Rejected {
         errorHandler.track(this);
     }
 
+    then(_, r) {
+        return typeof r === 'function' ? this.catch(r) : this;
+    }
+
+    catch (r) {
+        return then(void 0, r, this, new Promise());
+    }
+
     state() {
         return this._state;
+    }
+
+    near() {
+        return this;
+    }
+
+    _when(action) {
+        taskQueue.add(new Continuation(action, this));
     }
 
     _runAction(action) {
@@ -202,8 +201,9 @@ class Rejected {
         }
     }
 }
+Rejected.prototype._isPromise = marker;
 
-addProtocol(Rejected.prototype, PromiseProtocol);
+//addProtocol(Rejected.prototype, PromiseProtocol);
 
 // Never :: Promise _ _
 // A promise that will never acquire its value nor fail
@@ -224,12 +224,15 @@ class Never {
         return PENDING | NEVER;
     }
 
+    near() {
+        return this;
+    }
+
     _when() {}
 
     _runAction() {}
 }
-
-addProtocol(Never.prototype, PromiseProtocol);
+Never.prototype._isPromise = marker;
 
 // resolve :: Promise e a -> Promise e a
 // resolve :: Thenable e a -> Promise e a
@@ -410,15 +413,6 @@ function runResolver(f, p) {
     } catch (e) {
         p._reject(e);
     }
-}
-
-function addProtocol(t, s) {
-    return Object.keys(s).reduce((t, k) => {
-        if (!t.hasOwnProperty(k)) {
-            t[k] = s[k];
-        }
-        return t;
-    }, t);
 }
 
 class Continuation {
