@@ -51,6 +51,11 @@ export class Promise {
         return this.then(void 0, r);
     }
 
+    toString() {
+        let n = this.near();
+        return n === this ? '[object Promise]' : n.toString();
+    }
+
     near() {
         return this._isResolved() ? this._near() : this;
     }
@@ -153,6 +158,10 @@ class Fulfilled {
         return this;
     }
 
+    toString() {
+        return '[object Promise ' + this.value + ']';
+    }
+
     state() {
         return FULFILLED;
     }
@@ -186,6 +195,10 @@ class Rejected {
 
     catch (r) {
         return then(void 0, r, this, new Promise());
+    }
+
+    toString() {
+        return '[object Promise ' + this.value + ']';
     }
 
     state() {
