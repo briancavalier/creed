@@ -1,18 +1,15 @@
 {
   "name": "creed",
   "version": "0.1.0",
-  "description": "Forward-looking async toolkit: promises, iterators, generators, streaming",
-  "main": "dist/creed.js",
-  "files": [
-    "dist"
-  ],
+  "description": "Forward-looking async toolkit: promises, iterators, generators",
+  "main": "creed.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/briancavalier/creed.git"
   },
   "scripts": {
-    "build-lib": "babel --loose es6.classes --blacklist es6.modules -q -d lib src",
-    "prepublish": "npm run build-lib && esperanto -b -t umd -o ./dist/creed.js -i ./lib/Promise.js -s -n creed && uglifyjs dist/creed.js -c 'warnings=false' -m -o dist/creed.min.js",
+    "build-lib": "babel --loose es6.classes --blacklist es6.modules -q -d build src",
+    "prepublish": "npm run build-lib && esperanto -b -t umd -o creed.js -i ./build/Promise.js -s -n creed",
     "test": "jscs -x src && npm run build-lib && promises-aplus-tests test/aplus.js"
   },
   "author": "brian@hovercraftstudios.com",
@@ -22,7 +19,6 @@
     "esperanto": "^0.7.3",
     "jscs": "^1.13.1",
     "mocha": "^2.2.5",
-    "promises-aplus-tests": "^2.1.1",
-    "uglifyjs": "^2.4.10"
+    "promises-aplus-tests": "^2.1.1"
   }
 }
