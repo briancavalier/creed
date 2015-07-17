@@ -145,7 +145,7 @@ describe('inspect', () => {
         it('should handle rejected promise', () => {
             let p = reject();
             assert(!isHandled(p));
-            
+
             silenceError(p);
             assert(isHandled(p));
         });

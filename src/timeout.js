@@ -15,14 +15,14 @@ class Timeout {
         this.promise = promise;
     }
 
-    fulfilled(ref) {
+    fulfilled(p) {
         clearTimeout(this.timer);
-        this.promise._become(ref);
+        this.promise._become(p);
     }
 
-    rejected(ref) {
+    rejected(p) {
         clearTimeout(this.timer);
-        this.promise._become(ref);
+        this.promise._become(p);
         return false;
     }
 }

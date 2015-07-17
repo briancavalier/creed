@@ -42,19 +42,19 @@ function runIterable(resolve, itemHandler, promises, promise) {
 
 function handleItem(resolve, itemHandler, x, i, promise) {
     if (maybeThenable(x)) {
-        let ref = resolve(x);
+        let p = resolve(x);
 
         if (promise._isResolved()) {
-            silenceError(ref);
-        } else if (isFulfilled(ref)) {
-            itemHandler.fulfillAt(promise, i, ref);
-        } else if (isRejected(ref)) {
-            itemHandler.rejectAt(promise, i, ref);
+            silenceError(p);
+        } else if (isFulfilled(p)) {
+            itemHandler.fulfillAt(p, i, promise);
+        } else if (isRejected(p)) {
+            itemHandler.rejectAt(p, i, promise);
         } else {
-            ref._runAction(new SettleAt(itemHandler, i, promise));
+            p._runAction(new SettleAt(itemHandler, i, promise));
         }
     } else {
-        itemHandler.valueAt(promise, i, x);
+        itemHandler.valueAt(x, i, promise);
     }
 }
 
@@ -65,11 +65,11 @@ class SettleAt {
         this.promise = promise;
     }
 
-    fulfilled(ref) {
-        this.handler.fulfillAt(this.promise, this.index, ref);
+    fulfilled(p) {
+        this.handler.fulfillAt(p, this.index, this.promise);
     }
 
-    rejected(ref) {
-        return this.handler.rejectAt(this.promise, this.index, ref);
+    rejected(p) {
+        return this.handler.rejectAt(p, this.index, this.promise);
     }
 }

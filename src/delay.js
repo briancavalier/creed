@@ -11,16 +11,16 @@ class Delay {
         this.promise = promise;
     }
 
-    fulfilled(handler) {
-        setTimeout(fulfillDelayed, this.time, handler, this.promise);
+    fulfilled(p) {
+        setTimeout(fulfillDelayed, this.time, p, this.promise);
     }
 
-    rejected(ref) {
-        this.promise._become(ref);
+    rejected(p) {
+        this.promise._become(p);
         return false;
     }
 }
 
-function fulfillDelayed(ref, promise) {
-    promise._become(ref);
+function fulfillDelayed(p, promise) {
+    promise._become(p);
 }

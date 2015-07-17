@@ -1,7 +1,5 @@
 'use strict';
 
-import { isFulfilled, isRejected } from './inspect';
-
 export default function (refFor, iterator, promise) {
     coStep(refFor, iterator.next, void 0, iterator, promise);
     return promise;

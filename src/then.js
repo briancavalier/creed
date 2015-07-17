@@ -12,22 +12,22 @@ class Then {
         this.promise = promise;
     }
 
-    fulfilled(ref) {
-        runThen(this.f, ref, this.promise);
+    fulfilled(p) {
+        runThen(this.f, p, this.promise);
     }
 
-    rejected(ref) {
-        return runThen(this.r, ref, this.promise);
+    rejected(p) {
+        return runThen(this.r, p, this.promise);
     }
 }
 
-function runThen(f, ref, promise) {
+function runThen(f, p, promise) {
     if (typeof f !== 'function') {
-        promise._become(ref);
+        promise._become(p);
         return false;
     }
 
-    tryMapNext(f, ref.value, promise);
+    tryMapNext(f, p.value, promise);
     return true;
 }
 

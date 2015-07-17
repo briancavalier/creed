@@ -8,16 +8,16 @@ export default class Any {
         this.pending = 0;
     }
 
-    valueAt(promise, i, x) {
+    valueAt(x, i, promise) {
         promise._fulfill(x);
     }
 
-    fulfillAt(promise, i, ref) {
-        promise._become(ref);
+    fulfillAt(p, i, promise) {
+        promise._become(p);
     }
 
-    rejectAt(promise, i, ref) {
-        silenceError(ref);
+    rejectAt(p, i, promise) {
+        silenceError(p);
         this.check(this.pending - 1, promise);
     }
 

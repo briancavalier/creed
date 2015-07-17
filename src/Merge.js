@@ -10,17 +10,17 @@ export default class Merge {
         this.mergeHandler = mergeHandler;
     }
 
-    valueAt(promise, i, x) {
+    valueAt(x, i, promise) {
         this.results[i] = x;
         this.check(this.pending - 1, promise);
     }
 
-    fulfillAt(promise, i, ref) {
-        this.valueAt(promise, i, ref.value);
+    fulfillAt(p, i, promise) {
+        this.valueAt(p.value, i, promise);
     }
 
-    rejectAt(promise, i, ref) {
-        promise._become(ref);
+    rejectAt(p, i, promise) {
+        promise._become(p);
     }
 
     complete(total, promise) {

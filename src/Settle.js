@@ -10,20 +10,20 @@ export default class Settle {
         this.resolve = resolve;
     }
 
-    valueAt(promise, i, x) {
-        this.settleAt(promise, i, this.resolve(x));
+    valueAt(x, i, promise) {
+        this.settleAt(this.resolve(x), i, promise);
     }
 
-    fulfillAt(promise, i, ref) {
-        this.settleAt(promise, i, ref);
+    fulfillAt(p, i, promise) {
+        this.settleAt(p, i, promise);
     }
 
-    rejectAt(promise, i, ref) {
-        silenceError(ref);
-        this.settleAt(promise, i, ref);
+    rejectAt(p, i, promise) {
+        silenceError(p);
+        this.settleAt(p, i, promise);
     }
 
-    settleAt(promise, i, state) {
+    settleAt(p, i, promise) {
         this.results[i] = state;
         this.check(this.pending - 1, promise);
     }

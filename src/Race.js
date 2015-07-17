@@ -5,21 +5,21 @@ export default class Race {
         this.never = never;
     }
 
-    valueAt(promise, i, x) {
+    valueAt(x, i, promise) {
         promise._fulfill(x);
     }
 
-    fulfillAt(promise, i, ref) {
-        promise._become(ref);
+    fulfillAt(p, i, promise) {
+        promise._become(p);
     }
 
-    rejectAt(promise, i, ref) {
-        promise._become(ref);
+    rejectAt(p, i, promise) {
+        promise._become(p);
     }
 
     complete(total, promise) {
         if (total === 0) {
-            promise._resolve(this.never());
+            promise._become(this.never());
         }
     }
 }
