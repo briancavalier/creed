@@ -24,7 +24,7 @@ export default class Settle {
     }
 
     settleAt(p, i, promise) {
-        this.results[i] = state;
+        this.results[i] = p;
         this.check(this.pending - 1, promise);
     }
 

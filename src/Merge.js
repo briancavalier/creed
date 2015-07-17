@@ -1,7 +1,5 @@
 'use strict';
 
-import { isPending } from './inspect';
-
 export default class Merge {
     constructor(mergeHandler, results) {
         this.done = false;

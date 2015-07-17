@@ -13,7 +13,7 @@ export function resultsArray(iterable) {
 
 export function resolveIterable(resolve, itemHandler, promises, promise) {
     let run = Array.isArray(promises) ? runArray : runIterable;
-    return run(resolve, itemHandler, promises, promise);
+    return run(resolve, itemHandler, promises, promise).near();
 }
 
 function runArray(resolve, itemHandler, promises, promise) {
