@@ -24,6 +24,10 @@ let errorHandler = new ErrorHandler();
 
 let marker = {};
 
+// -------------------------------------------------------------
+// ## Types
+// -------------------------------------------------------------
+
 // Promise :: Promise e a
 // A promise that is pending initially, and fulfills or fails
 // at some time after being created.
@@ -34,11 +38,15 @@ export class Promise {
         this.length = 0;
     }
 
+    // then :: Promise e a -> (a -> b) -> Promise e b
+    // then :: Promise e a -> () -> (e -> b) -> Promise e b
+    // then :: Promise e a -> (a -> b) -> (e -> b) -> Promise e b
     then(f, r) {
         let n = this.near();
         return n === this ? then(f, r, n, new Promise()) : n.then(f, r);
     }
 
+    // catch :: Promise e a -> (e -> b) -> Promise e b
     catch (r) {
         return this.then(void 0, r);
     }
@@ -130,8 +138,6 @@ export class Promise {
 }
 Promise.prototype._isPromise = marker;
 
-//addProtocol(Promise.prototype, PromiseProtocol);
-
 // Fulfilled :: a -> Promise _ a
 // A promise that has already acquired its value
 class Fulfilled {
@@ -164,7 +170,6 @@ class Fulfilled {
     }
 }
 Fulfilled.prototype._isPromise = marker;
-//addProtocol(Fulfilled.prototype, PromiseProtocol);
 
 // Rejected :: e -> Promise e _
 // A promise that is known to have failed to acquire its value
@@ -203,8 +208,6 @@ class Rejected {
 }
 Rejected.prototype._isPromise = marker;
 
-//addProtocol(Rejected.prototype, PromiseProtocol);
-
 // Never :: Promise _ _
 // A promise that will never acquire its value nor fail
 class Never {
@@ -233,6 +236,10 @@ class Never {
     _runAction() {}
 }
 Never.prototype._isPromise = marker;
+
+// -------------------------------------------------------------
+// ## Creating promises
+// -------------------------------------------------------------
 
 // resolve :: Promise e a -> Promise e a
 // resolve :: Thenable e a -> Promise e a
@@ -267,7 +274,9 @@ export function timeout(ms, x) {
     return isSettled(p) ? p : _timeout(ms, p, new Promise());
 }
 
+// -------------------------------------------------------------
 // ## Iterables
+// -------------------------------------------------------------
 
 // all :: Iterable (Promise e a) -> Promise e (Iterable a)
 export function all(promises) {
@@ -306,7 +315,9 @@ function iterablePromise(handler, iterable) {
     return resolveIterable(resolveMaybeThenable, handler, iterable, p);
 }
 
+// -------------------------------------------------------------
 // ## Lifting
+// -------------------------------------------------------------
 
 // lift :: (...a -> b) -> (...Promise e a -> Promise e b)
 export function lift(f) {
@@ -344,7 +355,9 @@ class MergeHandler {
     }
 }
 
+// -------------------------------------------------------------
 // ## Convert node-style async
+// -------------------------------------------------------------
 
 // type Nodeback = (e -> value -> ())
 
@@ -356,7 +369,9 @@ export function denodeify(f) {
     };
 }
 
+// -------------------------------------------------------------
 // ## Generators
+// -------------------------------------------------------------
 
 // co :: Generator -> (...a -> Promise)
 // Generator to coroutine
@@ -370,6 +385,10 @@ function runGenerator(generator, thisArg, args) {
     var iterator = generator.apply(thisArg, args);
     return runCo(resolve, iterator, new Promise());
 }
+
+// -------------------------------------------------------------
+// # Internals
+// -------------------------------------------------------------
 
 // isPromise :: a -> boolean
 function isPromise(x) {
@@ -426,7 +445,9 @@ class Continuation {
     }
 }
 
+// -------------------------------------------------------------
 // ## ES6 Promise polyfill
+// -------------------------------------------------------------
 
 var g;
 if (typeof self !== 'undefined') {
