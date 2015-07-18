@@ -8,11 +8,12 @@ import { isNode, MutationObs } from './env';
 
 export default function (f) {
     //jscs:disable validateIndentation
-    return isNode ? createNodeScheduler(f)
-    : MutationObs ? createBrowserScheduler(f)
-    : createFallbackScheduler(f);
+    return isNode ? createNodeScheduler(f) /* istanbul ignore next */
+        : MutationObs ? createBrowserScheduler(f)
+        : createFallbackScheduler(f);
 }
 
+/* istanbul ignore next */
 function createFallbackScheduler(f) {
     return () => setTimeout(f, 0);
 }
@@ -21,6 +22,7 @@ function createNodeScheduler(f) {
     return () => process.nextTick(f);
 }
 
+/* istanbul ignore next */
 function createBrowserScheduler(f) {
     let node = document.createTextNode('');
     (new MutationObs(f)).observe(node, { characterData: true });
