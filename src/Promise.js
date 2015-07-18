@@ -16,7 +16,7 @@ import Any from './Any';
 import Race from './Race';
 import Merge from './Merge';
 import Settle from './Settle';
-import { checkIterable, resolveIterable, resultsArray } from './iterable';
+import { resolveIterable, resultsArray } from './iterable';
 
 import runNode from './node';
 import runCo from './co.js';
@@ -296,7 +296,6 @@ export function timeout(ms, x) {
 
 // all :: Iterable (Promise e a) -> Promise e (Iterable a)
 export function all(promises) {
-    checkIterable('all', promises);
     let handler = new Merge(allHandler, resultsArray(promises));
     return iterablePromise(handler, promises);
 }
@@ -309,24 +308,29 @@ const allHandler = {
 
 // race :: Iterable (Promise e a) -> Promise e a
 export function race(promises) {
-    checkIterable('race', promises);
     return iterablePromise(new Race(never), promises);
 }
 
 // any :: Iterable (Promise e a) -> Promise e a
 export function any(promises) {
-    checkIterable('any', promises);
     return iterablePromise(new Any(), promises);
 }
 
 // settle :: Iterable (Promise e a) -> Promise e (Iterable Promise e a)
 export function settle(promises) {
-    checkIterable('settle', promises);
     let handler = new Settle(resolve, resultsArray(promises));
     return iterablePromise(handler, promises);
 }
 
+function isIterable(x) {
+    return typeof x === 'object' && x !== null;
+}
+
 function iterablePromise(handler, iterable) {
+    if (!isIterable(iterable)) {
+        return reject(new TypeError('expected an iterable'));
+    }
+
     let p = new Promise();
     return resolveIterable(resolveMaybeThenable, handler, iterable, p);
 }

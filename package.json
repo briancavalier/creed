@@ -14,9 +14,10 @@
     "build-lib": "babel --loose es6.classes --blacklist es6.modules -q -d build src",
     "build-dist": "npm run build-lib && esperanto -b -t umd -o creed.js -i ./build/Promise.js -s -n creed",
     "prepublish": "npm run build-dist",
+    "clean": "rimraf build creed.js coverage",
     "test-aplus": "promises-aplus-tests test/aplus.js",
-    "test-main": "istanbul cover _mocha",
-    "test": "jscs -x src && npm run test-main && npm run build-dist && npm run test-aplus"
+    "test-main": "istanbul cover --root src _mocha",
+    "test": "jscs -x src && npm run build-dist && npm run test-main && npm run test-aplus"
   },
   "author": "brian@hovercraftstudios.com",
   "license": "MIT",
@@ -28,6 +29,7 @@
     "istanbul": "^0.3.17",
     "jscs": "^1.13.1",
     "mocha": "^2.2.5",
-    "promises-aplus-tests": "^2.1.1"
+    "promises-aplus-tests": "^2.1.1",
+    "rimraf": "^2.4.1"
   }
 }

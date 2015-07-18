@@ -1,12 +1,6 @@
 import { isFulfilled, isRejected, silenceError } from './inspect';
 import maybeThenable from './maybeThenable';
 
-export function checkIterable(kind, x) {
-    if (typeof x !== 'object' || x === null) {
-        throw new TypeError('non-iterable passed to ' + kind);
-    }
-}
-
 export function resultsArray(iterable) {
     return Array.isArray(iterable) ? new Array(iterable.length) : [];
 }
