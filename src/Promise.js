@@ -342,17 +342,13 @@ function iterablePromise(handler, iterable) {
 // lift :: (...a -> b) -> (...Promise e a -> Promise e b)
 export function lift(f) {
     return function (...args) {
-        return applyp(f, this, args);
+        return runMerge(f, this, args);
     };
 }
 
 // merge :: (...a -> b) -> ...Promise e a -> Promise e b
 export function merge(f, ...args) {
-    return applyp(f, this, args);
-}
-
-function applyp(f, thisArg, args) {
-    return runMerge(f, thisArg, args);
+    return runMerge(f, this, args);
 }
 
 function runMerge(f, thisArg, args) {
@@ -364,13 +360,21 @@ class MergeHandler {
     constructor(f, c) {
         this.f = f;
         this.c = c;
+        this.promise = void 0;
+        this.args = void 0;
     }
 
     merge(promise, args) {
+        this.promise = promise;
+        this.args = args;
+        taskQueue.add(this);
+    }
+
+    run() {
         try {
-            promise._resolve(this.f.apply(this.c, args));
+            this.promise._resolve(this.f.apply(this.c, this.args));
         } catch (e) {
-            promise._reject(e);
+            this.promise._reject(e);
         }
     }
 }
@@ -469,6 +473,13 @@ class Continuation {
 // ## ES6 Promise polyfill
 // -------------------------------------------------------------
 
+export class CreedPromise extends Promise {
+    constructor(f) {
+        super();
+        runResolver(f, this);
+    }
+}
+
 var g;
 if (typeof self !== 'undefined') {
     g = self;
@@ -477,12 +488,7 @@ if (typeof self !== 'undefined') {
 }
 
 if (g !== void 0 && typeof g.Promise !== 'function') {
-    g.Promise = class CreedPromise extends Promise {
-        constructor(f) {
-            super();
-            runResolver(f, this);
-        }
-    };
+    g.Promise = CreedPromise;
 
     g.Promise.resolve = resolve;
     g.Promise.reject  = reject;
