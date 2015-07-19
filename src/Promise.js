@@ -32,10 +32,10 @@ let marker = {};
 // ## Types
 // -------------------------------------------------------------
 
-// Promise :: Promise e a
-// A promise that is pending initially, and fulfills or fails
-// at some time after being created.
-export class Promise {
+// Future :: Promise e a
+// A promise that is pending initially, and whose value
+// is provided later.
+export class Future {
     constructor() {
         this.ref = void 0;
         this.action = void 0;
@@ -47,7 +47,7 @@ export class Promise {
     // then :: Promise e a -> (a -> b) -> (e -> b) -> Promise e b
     then(f, r) {
         let n = this.near();
-        return isSettled(n) ? n.then(f, r) : then(f, r, n, new Promise());
+        return isSettled(n) ? n.then(f, r) : then(f, r, n, new Future());
     }
 
     // catch :: Promise e a -> (e -> b) -> Promise e b
@@ -65,20 +65,11 @@ export class Promise {
     }
 
     near() {
-        return this._isResolved() ? this._near() : this;
-    }
+        if (!this._isResolved()) {
+            return this;
+        }
 
-    state() {
-        return this._isResolved() ? this.ref.near().state() : PENDING;
-    }
-
-    _isResolved() {
-        return this.ref !== void 0;
-    }
-
-    _near() {
         let ref = this;
-
         while (ref.ref !== void 0) {
             ref = ref.ref;
             if (ref === this) {
@@ -88,6 +79,14 @@ export class Promise {
         }
 
         return this.ref = ref;
+    }
+
+    state() {
+        return this._isResolved() ? this.ref.near().state() : PENDING;
+    }
+
+    _isResolved() {
+        return this.ref !== void 0;
     }
 
     _when(action) {
@@ -149,7 +148,7 @@ export class Promise {
         this.length = 0;
     }
 }
-Promise.prototype._isPromise = marker;
+Future.prototype._isPromise = marker;
 
 // Fulfilled :: a -> Promise _ a
 // A promise that has already acquired its value
@@ -159,7 +158,7 @@ class Fulfilled {
     }
 
     then(f) {
-        return then(f, void 0, this, new Promise());
+        return then(f, void 0, this, new Future());
     }
 
     catch () {
@@ -206,7 +205,7 @@ class Rejected {
     }
 
     catch (r) {
-        return then(void 0, r, this, new Promise());
+        return then(void 0, r, this, new Future());
     }
 
     toString() {
@@ -297,13 +296,13 @@ export function never() {
 // delay :: number -> Promise e a -> Promise e a
 export function delay(ms, x) {
     let p = resolve(x);
-    return ms <= 0 || isRejected(p) ? p : _delay(ms, p, new Promise());
+    return ms <= 0 || isRejected(p) ? p : _delay(ms, p, new Future());
 }
 
 // timeout :: Promise e a -> number -> Promise (e|TimeoutError) a
 export function timeout(ms, x) {
     var p = resolve(x);
-    return isSettled(p) ? p : _timeout(ms, p, new Promise());
+    return isSettled(p) ? p : _timeout(ms, p, new Future());
 }
 
 // -------------------------------------------------------------
@@ -347,7 +346,7 @@ function iterablePromise(handler, iterable) {
         return reject(new TypeError('expected an iterable'));
     }
 
-    let p = new Promise();
+    let p = new Future();
     return resolveIterable(resolveMaybeThenable, handler, iterable, p);
 }
 
@@ -405,7 +404,7 @@ class MergeHandler {
 // Node-style async function to promise-returning function
 export function denodeify(f) {
     return function (...args) {
-        return runNode(f, this, args, new Promise());
+        return runNode(f, this, args, new Future());
     };
 }
 
@@ -423,7 +422,7 @@ export function co(generator) {
 
 function runGenerator(generator, thisArg, args) {
     var iterator = generator.apply(thisArg, args);
-    return runCo(resolve, iterator, new Promise());
+    return runCo(resolve, iterator, new Future());
 }
 
 // -------------------------------------------------------------
@@ -451,7 +450,7 @@ function refForUntrusted(x) {
 }
 
 function extractThenable(then, thenable) {
-    let d = new Promise();
+    let d = new Future();
 
     try {
         then.call(thenable, x => d._resolve(x), e => d._reject(e));
@@ -464,14 +463,6 @@ function extractThenable(then, thenable) {
 
 function cycle() {
     return new Rejected(new TypeError('resolution cycle'));
-}
-
-function runResolver(f, p) {
-    try {
-        f(x => p._resolve(x), e => p._reject(e));
-    } catch (e) {
-        p._reject(e);
-    }
 }
 
 class Continuation {
@@ -489,25 +480,45 @@ class Continuation {
 // ## ES6 Promise polyfill
 // -------------------------------------------------------------
 
-export class CreedPromise extends Promise {
+// Promise :: ((a -> ()) -> (e -> ())) -> Promise e a
+class CreedPromise extends Future {
     constructor(f) {
+        if (typeof f !== 'function') {
+            throw new TypeError('Promise constructor must be passed a resolver function');
+        }
         super();
         runResolver(f, this);
     }
 }
 
-var g;
-if (typeof self !== 'undefined') {
-    g = self;
-} else if (typeof global !== 'undefined') {
-    g = global;
+CreedPromise.resolve = resolve;
+CreedPromise.reject  = reject;
+CreedPromise.all     = all;
+CreedPromise.race    = race;
+
+function runResolver(f, p) {
+    try {
+        f(x => p._resolve(x), e => p._reject(e));
+    } catch (e) {
+        p._reject(e);
+    }
 }
 
-if (g !== void 0 && typeof g.Promise !== 'function') {
-    g.Promise = CreedPromise;
+export function installGlobal() {
+    let orig = typeof Promise === 'function' && Promise;
 
-    g.Promise.resolve = resolve;
-    g.Promise.reject  = reject;
-    g.Promise.all     = all;
-    g.Promise.race    = race;
+    if (typeof self !== 'undefined') {
+        self.Promise = CreedPromise;
+    } else if (typeof global !== 'undefined') {
+        global.Promise = CreedPromise;
+    }
+
+    return orig;
 }
+
+if (typeof Promise !== 'function') {
+    installGlobal();
+}
+
+export { CreedPromise as Promise }
+

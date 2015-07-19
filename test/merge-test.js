@@ -1,4 +1,4 @@
-import { Promise, merge, resolve, reject } from '../src/Promise';
+import { Future, merge, resolve, reject } from '../src/Promise';
 import assert from 'assert';
 
 describe('merge', () => {

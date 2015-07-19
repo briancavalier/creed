@@ -1,5 +1,5 @@
 import { isFulfilled, isRejected, isSettled, isPending, isHandled, isNever, silenceError  } from '../src/inspect';
-import { resolve, reject, never, Promise } from '../src/Promise';
+import { resolve, reject, never, Future } from '../src/Promise';
 import assert from 'assert';
 
 describe('inspect', () => {
@@ -15,7 +15,7 @@ describe('inspect', () => {
         });
 
         it('should be false for pending promise', () => {
-            assert(!isFulfilled(new Promise()));
+            assert(!isFulfilled(new Future()));
         });
 
         it('should be false for never', () => {
@@ -35,7 +35,7 @@ describe('inspect', () => {
         });
 
         it('should be false for pending promise', () => {
-            assert(!isRejected(new Promise()));
+            assert(!isRejected(new Future()));
         });
 
         it('should be false for never', () => {
@@ -55,7 +55,7 @@ describe('inspect', () => {
         });
 
         it('should be false for pending promise', () => {
-            assert(!isSettled(new Promise()));
+            assert(!isSettled(new Future()));
         });
 
         it('should be false for never', () => {
@@ -75,7 +75,7 @@ describe('inspect', () => {
         });
 
         it('should be true for pending promise', () => {
-            assert(isPending(new Promise()));
+            assert(isPending(new Future()));
         });
 
         it('should be true for never', () => {
@@ -95,7 +95,7 @@ describe('inspect', () => {
         });
 
         it('should be false for pending promise', () => {
-            assert(!isNever(new Promise()));
+            assert(!isNever(new Future()));
         });
 
         it('should be true for never', () => {
@@ -131,7 +131,7 @@ describe('inspect', () => {
         });
 
         it('should be false for pending promise', () => {
-            assert(!isHandled(new Promise()));
+            assert(!isHandled(new Future()));
         });
 
         it('should be false for never', () => {
