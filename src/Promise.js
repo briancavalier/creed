@@ -47,7 +47,7 @@ export class Promise {
     // then :: Promise e a -> (a -> b) -> (e -> b) -> Promise e b
     then(f, r) {
         let n = this.near();
-        return n === this ? then(f, r, n, new Promise()) : n.then(f, r);
+        return isSettled(n) ? n.then(f, r) : then(f, r, n, new Promise());
     }
 
     // catch :: Promise e a -> (e -> b) -> Promise e b
@@ -56,8 +56,12 @@ export class Promise {
     }
 
     toString() {
+        return '[object ' + this.inspect() + ']';
+    }
+
+    inspect() {
         let n = this.near();
-        return n === this ? '[object Promise]' : n.toString();
+        return isSettled(n) ? n.inspect() : 'Promise { pending }';
     }
 
     near() {
@@ -163,7 +167,11 @@ class Fulfilled {
     }
 
     toString() {
-        return '[object Promise ' + this.value + ']';
+        return '[object ' + this.inspect() + ']';
+    }
+
+    inspect() {
+        return 'Promise { fulfilled: ' + this.value + ' }';
     }
 
     state() {
@@ -202,7 +210,11 @@ class Rejected {
     }
 
     toString() {
-        return '[object Promise ' + this.value + ']';
+        return '[object ' + this.inspect() + ']';
+    }
+
+    inspect() {
+        return 'Promise { rejected: ' + this.value + ' }';
     }
 
     state() {
@@ -237,7 +249,11 @@ class Never {
     }
 
     toString() {
-        return '[object Never]';
+        return '[object ' + this.inspect() + ']';
+    }
+
+    inspect() {
+        return 'Promise { never }';
     }
 
     state() {
