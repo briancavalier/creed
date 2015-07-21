@@ -22,7 +22,7 @@ var creed = require('creed');
 
 ## REPL Friendly
 
-Creed is REPL friendly, with intuitive and obvious feedback. [Try it out in JSBin](https://jsbin.com/muzoba/edit?js,console), or in a node REPL:
+Creed is REPL friendly, with instant and obvious feedback. [Try it out in JSBin](https://jsbin.com/muzoba/edit?js,console) or [using ES2015 with babel](https://jsbin.com/faxene/edit?js,console), or try it in a node REPL:
 
 ```
 npm install creed
