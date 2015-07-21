@@ -37,6 +37,7 @@
     "jscs": "^1.13.1",
     "mocha": "^2.2.5",
     "promises-aplus-tests": "^2.1.1",
-    "rimraf": "^2.4.1"
+    "rimraf": "^2.4.1",
+    "uglify-js": "^2.4.23"
   }
 }
