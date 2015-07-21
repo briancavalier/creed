@@ -312,7 +312,7 @@ function runResolver(f, thisArg, args, p) {
 // delay :: number -> Promise e a -> Promise e a
 export function delay(ms, x) {
     let p = resolve(x);
-    return ms <= 0 || isRejected(p) ? p : _delay(ms, p, new Future());
+    return ms <= 0 || isRejected(p) || isNever(p) ? p : _delay(ms, p, new Future());
 }
 
 // timeout :: Promise e a -> number -> Promise (e|TimeoutError) a
