@@ -4,20 +4,30 @@
 
 Creed is a forward-looking promise kit with a novel architecture, focused API, and top-tier performance.
 
-* Supports ES6 Iterables
-* Async functions using ES6 Generators
+* ES2015: Iterables
+* Async functions via ES2015 Generators
 * Fatal uncaught errors by default
 * REPL friendly
 
 ## Get it
 
-```
-npm install creed
+`npm install creed` or `bower install creed`
+
+```js
+// Babel ES2015
+import { resolve, reject, all, ... } from 'creed';
+
+// CommonJS
 var creed = require('creed');
+
+// AMD
+define(['creed'], function(creed) { ... });
 ```
 
-```
+```html
 <script src="creed/dist/creed.js"></script>
+
+<script src="creed/dist/creed.min.js"></script>
 ```
 
 ## REPL Friendly
