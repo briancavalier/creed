@@ -7,7 +7,9 @@ exports.rejected = lib.reject;
 exports.deferred = function() {
     return {
         resolve: function(x) { this.promise._resolve(x); },
-        reject: function(e) { this.promise._reject(e); },
-        promise: new lib.Future()
+        reject:  function(e) { this.promise._reject(e); },
+        promise: lib.promise(noop)
     };
 };
+
+function noop() {}

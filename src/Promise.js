@@ -18,6 +18,7 @@ import Merge from './Merge';
 import Settle from './Settle';
 import { resolveIterable, resultsArray } from './iterable';
 
+import runPromise from './runPromise';
 import runNode from './node';
 import runCo from './co.js';
 
@@ -293,6 +294,21 @@ export function never() {
     return new Never();
 }
 
+export function promise(f, ...args) {
+    return runResolver(f, this, args, new Future());
+}
+
+function runResolver(f, thisArg, args, p) {
+    checkFunction(f);
+
+    try {
+        runPromise(f, thisArg, args, p);
+    } catch (e) {
+        p._reject(e);
+    }
+    return p;
+}
+
 // delay :: number -> Promise e a -> Promise e a
 export function delay(ms, x) {
     let p = resolve(x);
@@ -354,13 +370,6 @@ function iterablePromise(handler, iterable) {
 // ## Lifting
 // -------------------------------------------------------------
 
-// lift :: (...a -> b) -> (...Promise e a -> Promise e b)
-export function lift(f) {
-    return function (...args) {
-        return runMerge(f, this, args);
-    };
-}
-
 // merge :: (...a -> b) -> ...Promise e a -> Promise e b
 export function merge(f, ...args) {
     return runMerge(f, this, args);
@@ -400,12 +409,23 @@ class MergeHandler {
 
 // type Nodeback = (e -> value -> ())
 
-// denodify :: (...a -> Nodeback) -> (...a -> Promise)
+// node :: (...a -> Nodeback) -> (...a -> Promise)
 // Node-style async function to promise-returning function
-export function denodeify(f) {
+export function node(f) {
     return function (...args) {
-        return runNode(f, this, args, new Future());
+        return runNodeResolver(f, this, args, new Future());
     };
+}
+
+function runNodeResolver(f, thisArg, args, p) {
+    checkFunction(f);
+
+    try {
+        runNode(f, thisArg, args, p);
+    } catch (e) {
+        p._reject(e);
+    }
+    return p;
 }
 
 // -------------------------------------------------------------
@@ -442,27 +462,30 @@ function refForUntrusted(x) {
     try {
         let then = x.then;
         return typeof then === 'function'
-            ? extractThenable(then, x)
+            ? extractThenable(then, x, new Future())
             : new Fulfilled(x);
     } catch (e) {
         return new Rejected(e);
     }
 }
 
-function extractThenable(then, thenable) {
-    let d = new Future();
-
+function extractThenable(then, thenable, p) {
     try {
-        then.call(thenable, x => d._resolve(x), e => d._reject(e));
+        then.call(thenable, x => p._resolve(x), e => p._reject(e));
     } catch (e) {
-        d._reject(e);
+        p._reject(e);
     }
-
-    return d;
+    return p;
 }
 
 function cycle() {
     return new Rejected(new TypeError('resolution cycle'));
+}
+
+function checkFunction(f) {
+    if (typeof f !== 'function') {
+        throw new TypeError('must provide a resolver function');
+    }
 }
 
 class Continuation {
@@ -480,14 +503,13 @@ class Continuation {
 // ## ES6 Promise polyfill
 // -------------------------------------------------------------
 
+const NOARGS = [];
+
 // Promise :: ((a -> ()) -> (e -> ())) -> Promise e a
 class CreedPromise extends Future {
     constructor(f) {
-        if (typeof f !== 'function') {
-            throw new TypeError('Promise constructor must be passed a resolver function');
-        }
         super();
-        runResolver(f, this);
+        runResolver(f, void 0, NOARGS, this);
     }
 }
 
@@ -495,14 +517,6 @@ CreedPromise.resolve = resolve;
 CreedPromise.reject  = reject;
 CreedPromise.all     = all;
 CreedPromise.race    = race;
-
-function runResolver(f, p) {
-    try {
-        f(x => p._resolve(x), e => p._reject(e));
-    } catch (e) {
-        p._reject(e);
-    }
-}
 
 export function installGlobal() {
     let orig = typeof Promise === 'function' && Promise;

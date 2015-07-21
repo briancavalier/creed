@@ -5,9 +5,9 @@ const UNHANDLED_REJECTION = 'unhandledRejection';
 const HANDLED_REJECTION = 'rejectionHandled';
 
 export default class ErrorHandler {
-    constructor(emitError, reportError) {
+    constructor(emitEvent, reportError) {
         this.errors = [];
-        this.emit = emitError;
+        this.emit = emitEvent;
         this.reportError = reportError;
     }
 
