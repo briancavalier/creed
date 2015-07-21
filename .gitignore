@@ -2,5 +2,4 @@
 experiments/
 node_modules/
 build/
-creed.js
 coverage/

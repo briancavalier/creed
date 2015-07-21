@@ -518,7 +518,7 @@ CreedPromise.reject  = reject;
 CreedPromise.all     = all;
 CreedPromise.race    = race;
 
-export function installGlobal() {
+export function shim() {
     let orig = typeof Promise === 'function' && Promise;
 
     if (typeof self !== 'undefined') {
@@ -531,7 +531,7 @@ export function installGlobal() {
 }
 
 if (typeof Promise !== 'function') {
-    installGlobal();
+    shim();
 }
 
 export { CreedPromise as Promise }

@@ -1,26 +1,33 @@
 {
   "name": "creed",
-  "version": "0.1.3",
-  "description": "Forward-looking async toolkit: promises, iterators, generators",
-  "main": "creed.js",
+  "version": "0.2.0",
+  "description": "Forward-looking promise kit with a novel architecture, focused API, and top-tier performance",
+  "main": "dist/creed.js",
   "files": [
-    "creed.js"
+    "dist/creed.js"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/briancavalier/creed.git"
   },
+  "author": "brian@hovercraftstudios.com",
+  "license": "MIT",
+  "keywords": [
+    "promise",
+    "promises",
+    "promises/a+",
+    "promises-aplus",
+    "async"
+  ],
   "scripts": {
     "build-lib": "babel --loose es6.classes --blacklist es6.modules -q -d build src",
-    "build-dist": "npm run build-lib && esperanto -b -t umd -o creed.js -i ./build/Promise.js -s -n creed",
+    "build-dist": "npm run build-lib && esperanto -b -t umd -o dist/creed.js -i build/Promise.js -s -n creed && uglifyjs -c 'warnings=false' -m -o dist/creed.min.js -- dist/creed.js",
     "prepublish": "npm run build-dist",
-    "clean": "rimraf build creed.js coverage",
+    "clean": "rimraf build coverage",
     "test-aplus": "promises-aplus-tests test/aplus.js",
     "test-main": "istanbul cover --root src _mocha",
     "test": "jscs -x src && npm run build-dist && npm run test-main && npm run test-aplus"
   },
-  "author": "brian@hovercraftstudios.com",
-  "license": "MIT",
   "devDependencies": {
     "assert": "^1.3.0",
     "babel": "^5.6.23",
