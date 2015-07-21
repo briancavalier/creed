@@ -4,7 +4,7 @@
 
 Creed is a forward-looking promise kit with a novel architecture, focused API, and top-tier performance.
 
-* ES2015: Iterables
+* ES2015 Iterables
 * Async functions via ES2015 Generators
 * Fatal uncaught errors by default
 * REPL friendly
