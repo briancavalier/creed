@@ -83,9 +83,9 @@ getUserProfile(user)
 import { node } from 'creed';
 import { readFile } from 'fs';
 
-let readFilePromise = node(readFile);
+let readFileP = node(readFile);
 
-readFile('theFile.txt', 'utf8')
+readFileP('theFile.txt', 'utf8')
     .then(String) // fs.readFile returns a Buffer, transform to a String
     .then(contents => console.log(contents));
 ```
@@ -110,6 +110,8 @@ p.then(result => console.log(result));
 Parameter threading also makes it easy to create reusable tasks that don't rely on closures and scope chain capturing.
 
 ```js
+import { promise } from 'creed';
+
 function xhrGet(url, resolve, reject) => {
     var xhr = new XMLHttpRequest;
     xhr.addEventListener("error", reject);
