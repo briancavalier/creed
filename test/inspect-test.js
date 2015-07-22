@@ -142,7 +142,7 @@ describe('inspect', () => {
 
     describe('getValue', () => {
         it('should get the value', () => {
-            let p = never();
+            let p = resolve(123);
             assert.equal(getValue(p), 123);
         });
     });
