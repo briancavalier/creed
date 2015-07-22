@@ -1,4 +1,4 @@
-import { isFulfilled, isRejected, isSettled, isPending, isHandled, isNever, silenceError  } from '../src/inspect';
+import { isFulfilled, isRejected, isSettled, isPending, isHandled, isNever, getValue, silenceError  } from '../src/inspect';
 import { resolve, reject, never, Future } from '../src/Promise';
 import assert from 'assert';
 
@@ -138,6 +138,13 @@ describe('inspect', () => {
             assert(!isHandled(never()));
         });
 
+    });
+
+    describe('getValue', () => {
+        it('should get the value', () => {
+            let p = never();
+            assert.equal(getValue(p), 123);
+        });
     });
 
     describe('silenceError', () => {

@@ -26,6 +26,19 @@ export function isHandled(p) {
     return (p.state() & HANDLED) > 0;
 }
 
+export function getValue(p) {
+    let n = p.near();
+    if (isRejected(n)) {
+        throw n.value;
+    }
+
+    if (isPending(n)) {
+        throw new TypeError('getValue called on pending promise');
+    }
+
+    return n.value;
+}
+
 export function silenceError(p) {
     if (!isFulfilled(p)) {
         p._runAction(silencer);
