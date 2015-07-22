@@ -2,16 +2,16 @@
 
 # creed
 
-Creed is a forward-looking promise kit with a novel architecture, focused API, and top-tier performance.
+Creed is a forward-looking promise kit optimized for developer happiness.  It has a 
 
 * ES2015 Iterables
 * Async functions via ES2015 Generators
 * Fatal uncaught errors by default
-* REPL friendly
+* [REPL friendly](#repl-friendly)
 
 ## Get it
 
-`npm install creed` or `bower install creed`
+`npm install creed` or `bower install creed` or download from the `dist/` folder.
 
 ```js
 // Babel ES2015
@@ -26,11 +26,9 @@ define(['creed'], function(creed) { ... });
 
 ```html
 <script src="creed/dist/creed.js"></script>
-
-<script src="creed/dist/creed.min.js"></script>
 ```
 
-## REPL Friendly
+## Try it
 
 Creed is REPL friendly, with instant and obvious feedback. [Try it out in JSBin](https://jsbin.com/muzoba/edit?js,console) or [using ES2015 with babel](https://jsbin.com/faxene/edit?js,console), or try it in a node REPL:
 
@@ -50,20 +48,77 @@ Promise { pending }
 Promise { fulfilled: done! }
 > creed.race([creed.delay(100, 'no'), 'winner']);
 Promise { fulfilled: winner }
-> creed.race([]);
-Promise { never }
-> creed.reject(new Error('instant stack traces for uncaught rejections'));
-Promise { rejected: Error: instant stack traces for uncaught rejections }
-> Error: instant stack traces for uncaught rejections
-    at repl:1:14
-    at REPLServer.defaultEval (repl.js:154:27)
-    at bound (domain.js:254:14)
-    at REPLServer.runBound [as eval] (domain.js:267:12)
-    at REPLServer.<anonymous> (repl.js:308:12)
-    at emitOne (events.js:82:20)
-    at REPLServer.emit (events.js:169:7)
-    at REPLServer.Interface._onLine (readline.js:210:10)
-    at REPLServer.Interface._line (readline.js:549:8)
-    at REPLServer.Interface._ttyWrite (readline.js:826:14)
+```
+
+## Make a promise
+
+### Using an async generator
+
+```js
+import { co } from 'creed';
+
+function fetchTextFromUrl(url) {
+    // ...
+    return promise;
+}
+
+let getUserProfile = co(function* (user) {
+    try {
+        let profileUrl = yield getUserProfileUrlFromDB(user);
+        let text = yield fetchTextFromUrl(profileUrl);
+        return text;
+    } catch(e) {
+        return getDefaultText();
+    }
+});
+
+let user = ...;
+getUserProfile(user)
+    .then(profile => console.log(profile));
+```
+
+### From a node API
+
+```js
+import { node } from 'creed';
+import { readFile } from 'fs';
+
+let readFilePromise = node(readFile);
+
+readFile('theFile.txt', 'utf8')
+    .then(String) // fs.readFile returns a Buffer, transform to a String
+    .then(contents => console.log(contents));
+```
+
+### By running a task
+
+```js
+import { promise } from 'creed';
+
+// Run a function, threading in a url parameter
+let p = promise((url, resolve, reject) => {
+    var xhr = new XMLHttpRequest;
+    xhr.addEventListener("error", reject);
+    xhr.addEventListener("load", resolve);
+    xhr.open("GET", url);
+    xhr.send(null);
+}, 'http://...'); // inject url parameter
+
+p.then(result => console.log(result));
+```
+
+Parameter threading also makes it easy to create reusable tasks that don't rely on closures and scope chain capturing.
+
+```js
+function xhrGet(url, resolve, reject) => {
+    var xhr = new XMLHttpRequest;
+    xhr.addEventListener("error", reject);
+    xhr.addEventListener("load", resolve);
+    xhr.open("GET", url);
+    xhr.send(null);
+}
+
+promise(xhrGet, 'http://...')
+    .then(result => console.log(result));
 ```
 
