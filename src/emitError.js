@@ -17,10 +17,12 @@ export default function () {
         };
     } else if (typeof self !== 'undefined' && typeof CustomEvent === 'function') {
         return (function (noop, self, CustomEvent) {
-            let hasCustomEvent = false;
+            var hasCustomEvent;
             try {
                 hasCustomEvent = new CustomEvent(UNHANDLED_REJECTION) instanceof CustomEvent;
-            } catch (e) {}
+            } catch (e) {
+                hasCustomEvent = false;
+            }
 
             return !hasCustomEvent ? noop : function (type, error) {
                 let ev = new CustomEvent(type, {

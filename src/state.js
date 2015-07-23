@@ -1,3 +1,6 @@
+'use strict';
+
+/*eslint no-multi-spaces: 0*/
 export const PENDING   = 1 << 0;
 export const FULFILLED = 1 << 1;
 export const REJECTED  = 1 << 2;

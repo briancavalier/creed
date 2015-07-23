@@ -3,7 +3,7 @@
 export default function (refFor, iterator, promise) {
     coStep(refFor, iterator.next, void 0, iterator, promise);
     return promise;
-};
+}
 
 function coStep(refFor, continuation, x, iterator, promise) {
     try {

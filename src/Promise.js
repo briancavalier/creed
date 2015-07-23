@@ -5,7 +5,7 @@ import ErrorHandler from './ErrorHandler';
 import makeEmitError from './emitError';
 import maybeThenable from './maybeThenable';
 import { PENDING, FULFILLED, REJECTED, NEVER } from './state';
-import { silenceError, isFulfilled, isRejected, isSettled, isPending, isNever } from './inspect';
+import { isFulfilled, isRejected, isSettled, isPending, isNever } from './inspect';
 export { isFulfilled, isRejected, isSettled, isPending, isNever };
 
 import then from './then';
@@ -79,7 +79,8 @@ export class Future {
             }
         }
 
-        return this.ref = ref;
+        this.ref = ref;
+        return ref;
     }
 
     state() {
@@ -514,9 +515,9 @@ class CreedPromise extends Future {
 }
 
 CreedPromise.resolve = resolve;
-CreedPromise.reject  = reject;
-CreedPromise.all     = all;
-CreedPromise.race    = race;
+CreedPromise.reject = reject;
+CreedPromise.all = all;
+CreedPromise.race = race;
 
 export function shim() {
     let orig = typeof Promise === 'function' && Promise;
@@ -534,5 +535,5 @@ if (typeof Promise !== 'function') {
     shim();
 }
 
-export { CreedPromise as Promise }
+export { CreedPromise as Promise };
 
