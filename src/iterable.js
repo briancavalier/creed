@@ -7,7 +7,12 @@ export function resultsArray(iterable) {
 
 export function resolveIterable(resolve, itemHandler, promises, promise) {
     let run = Array.isArray(promises) ? runArray : runIterable;
-    return run(resolve, itemHandler, promises, promise).near();
+    try {
+        run(resolve, itemHandler, promises, promise);
+    } catch (e) {
+        promise._reject(e);
+    }
+    return promise.near();
 }
 
 function runArray(resolve, itemHandler, promises, promise) {
@@ -18,8 +23,6 @@ function runArray(resolve, itemHandler, promises, promise) {
     }
 
     itemHandler.complete(i, promise);
-
-    return promise;
 }
 
 function runIterable(resolve, itemHandler, promises, promise) {
@@ -30,8 +33,6 @@ function runIterable(resolve, itemHandler, promises, promise) {
     }
 
     itemHandler.complete(i, promise);
-
-    return promise;
 }
 
 function handleItem(resolve, itemHandler, x, i, promise) {

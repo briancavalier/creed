@@ -1,7 +1,14 @@
 import { any, resolve, reject } from '../src/Promise';
+import { fail, throwingIterable, arrayIterable } from './lib/test-util';
 import assert from 'assert';
 
 describe('any', () => {
+
+    it('should reject if iterator throws', () => {
+        let error = new Error();
+        return any(throwingIterable(error))
+            .then(fail, e => assert(e === error));
+    });
 
     it('should reject with RangeError for empty iterable', () => {
         return any(new Set()).catch(e => {
@@ -10,29 +17,30 @@ describe('any', () => {
     });
 
     it('should resolve a value', () => {
-        var s = new Set([1, 2, 3]);
+        var a = [1, 2, 3];
+        var s = arrayIterable(a);
         return any(s).then(x => {
-            assert(s.has(x));
+            assert(a.includes(x));
         });
     });
 
     it('should resolve a promise', () => {
         var a = [1, 2, 3];
-        var s = new Set(a.map(resolve));
+        var s = arrayIterable(a.map(resolve));
         return any(s).then(x => {
             assert(a.includes(x));
         });
     });
 
     it('should resolve if at least one input resolves', () => {
-        var s = new Set([reject(1), reject(2), resolve(3)]);
+        var s = arrayIterable([reject(1), reject(2), resolve(3)]);
         return any(s).then(x => {
             assert.equal(x, 3);
         });
     });
 
     it('should reject if all inputs reject', () => {
-        var s = new Set([1, 2, 3].map(reject));
+        var s = arrayIterable([1, 2, 3].map(reject));
         return any(s).catch(() => {
             assert(true);
         });

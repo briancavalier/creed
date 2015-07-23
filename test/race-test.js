@@ -1,10 +1,15 @@
 import { race, resolve, reject, never } from '../src/Promise';
 import { isNever } from '../src/inspect';
+import { fail, throwingIterable } from './lib/test-util';
 import assert from 'assert';
 
-let fail = x => { throw x; };
-
 describe('race', () => {
+
+    it('should reject if iterator throws', () => {
+        let error = new Error();
+        return race(throwingIterable(error))
+            .then(fail, e => assert(e === error));
+    });
 
     it('should return never when input is empty', () => {
         assert(isNever(race([])));

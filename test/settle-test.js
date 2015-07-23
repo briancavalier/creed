@@ -1,8 +1,15 @@
 import { settle, resolve, reject } from '../src/Promise';
 import { isFulfilled, isRejected } from '../src/inspect';
+import { fail, throwingIterable } from './lib/test-util';
 import assert from 'assert';
 
 describe('settle', () => {
+
+    it('should reject if iterator throws', () => {
+        let error = new Error();
+        return settle(throwingIterable(error))
+            .then(fail, e => assert(e === error));
+    });
 
     it('should settle empty iterable', () => {
         return settle(new Set()).then(a => {
