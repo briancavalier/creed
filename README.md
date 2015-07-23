@@ -181,8 +181,6 @@ p:          ---a
 p.catch(f): ---a
 ```
 
-```
-
 ## Control time
 
 ### timeout
