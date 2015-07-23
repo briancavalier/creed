@@ -152,11 +152,14 @@ promise(xhrGet, 'http://...')
 Transform a promise's value by applying a function to the promise's fulfillment value. Returns a new promise for the transformed result.
 
 ```
-p:            ---1
-p.then(add1): ---2
+p:                ---1
+p.then(x => x+1): ---2
 
-p:            ---X
-p.then(f):    ---X
+p:                          ---1
+p.then(x => delay(3, x+1)): ------2
+
+p:         ---X
+p.then(f): ---X
 ```
 
 ## Handle errors
@@ -165,7 +168,20 @@ p.then(f):    ---X
 
 ####`catch :: Promise a -> (err -> b|Promise b) -> Promise b`
 
+Handle a promise error.
 
+```
+p:               ---X
+p.catch(e => 1): ---1
+
+p:                        ---X
+p.catch(x => delay(3, 1)): ------1
+
+p:          ---a
+p.catch(f): ---a
+```
+
+```
 
 ## Control time
 
@@ -374,3 +390,7 @@ settle(a).then(array => {
     
 });
 ```
+
+## Debugging
+
+*TODO*
