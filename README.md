@@ -50,7 +50,42 @@ Promise { fulfilled: done! }
 Promise { fulfilled: winner }
 ```
 
-## API
+# API
+
+## Notation
+
+You'll see diagrams like the following:
+
+```
+promise1: ---a
+
+promise2: ---X
+```
+
+These are timeline diagrams that try to give a simple, representative notion of how a promise behaves over time.  Time proceeds from left to right, using letters and symbols to indicate certain things:
+
+* `-` - an instant in time where the promise is pending
+* a,b,c,d,etc. - a promise fulfillment value at an instant in time
+* `X` - a promise rejection at an instant in time
+* `>` - promise remains pending forever
+
+### Examples
+
+`promise: ---a`
+
+A promise that fulfills with `a` after some time
+
+`promise: a`
+
+A promise that is already fulfilled with `a`.
+
+`promise: ---X`
+
+A promise that rejects after some time
+
+`promise: --->`
+
+A promise that remains pending forever
 
 ## Make a promise
 
