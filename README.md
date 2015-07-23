@@ -6,7 +6,7 @@ Creed is a forward-looking promise toolkit.  It favors intuitiveness, productivi
 
 * [Try it](#try-it)
 * [Get it](#get-it)
-* [API docs](#api)
+* [API docs](docs/api.md)
 
 ## Get it
 
@@ -36,7 +36,32 @@ define(['creed'], function(creed) { ... });
 
 ## Try it
 
-Creed is REPL friendly, with instant and obvious feedback. [Try it out in JSBin](https://jsbin.com/muzoba/edit?js,console) or [using ES2015 with babel](https://jsbin.com/faxene/edit?js,console), or try it in a node REPL:
+Creed is REPL friendly, with instant and obvious feedback. [Try it out in JSBin](https://jsbin.com/muzoba/edit?js,console) or [using ES2015 with babel](https://jsbin.com/faxene/edit?js,console), or try it in a REPL:
+
+### ES2015 (babel-node)
+
+Note that ES2015 [`import` currently doesn't work in `babel-node`](https://github.com/babel/babel/issues/1264).  Use `let` + `require` instead.
+
+```
+npm install creed
+npm install -g babel-node
+babel-node
+> let { resolve, delay, all, race } = require('creed');
+'use strict'
+> resolve('hello');
+Promise { fulfilled: hello }
+> all([1, 2, 3].map(resolve));
+Promise { fulfilled: 1,2,3 }
+> let p = delay(1000, 'done!'); p
+Promise { pending }
+... wait 1 second ...
+> p
+Promise { fulfilled: done! }
+> race([delay(100, 'no'), 'winner']);
+Promise { fulfilled: winner }
+```
+
+### Node
 
 ```
 npm install creed
