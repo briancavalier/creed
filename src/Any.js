@@ -29,8 +29,7 @@ export default class Any {
     check(pending, promise) {
         this.pending = pending;
         if (this.done && pending === 0) {
-            // TODO: Better error
-            promise._reject(new Error());
+            promise._reject(new RangeError('No fulfilled promises in input'));
         }
     }
 }

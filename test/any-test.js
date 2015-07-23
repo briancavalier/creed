@@ -3,9 +3,9 @@ import assert from 'assert';
 
 describe('any', () => {
 
-    it('should reject empty iterable', () => {
-        return any(new Set()).catch(() => {
-            assert(true);
+    it('should reject with RangeError for empty iterable', () => {
+        return any(new Set()).catch(e => {
+            assert(e instanceof RangeError);
         });
     });
 
