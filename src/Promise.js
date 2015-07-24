@@ -54,7 +54,8 @@ export class Future {
 
     // catch :: Promise e a -> (e -> b) -> Promise e b
     catch (r) {
-        return this.then(void 0, r);
+        let n = this.near();
+        return isFulfilled(n) ? this : then(void 0, r, n, new Future());
     }
 
     toString() {
