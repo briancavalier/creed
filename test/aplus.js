@@ -8,7 +8,7 @@ exports.deferred = function() {
     return {
         resolve: function(x) { this.promise._resolve(x); },
         reject:  function(e) { this.promise._reject(e); },
-        promise: lib.promise(noop)
+        promise: lib.runPromise(noop)
     };
 };
 
