@@ -1,24 +1,24 @@
-import { promise, resolve, reject } from '../src/Promise';
+import { runPromise, resolve, reject } from '../src/Promise';
 import assert from 'assert';
 
 let fail = x => { throw x; };
 
-describe('promise', () => {
+describe('runPromise', () => {
 
     it('should throw synchronously when function not provided', () => {
-        assert.throws(promise, TypeError);
+        assert.throws(runPromise, TypeError);
     });
 
     it('should reject if resolver throws', () => {
         let x = {};
-        return promise(fail, x).then(fail, e => {
+        return runPromise(fail, x).then(fail, e => {
             assert(x === e);
         });
     });
 
     it('should reject', () => {
         let x = {};
-        return promise((_, reject) => {
+        return runPromise((_, reject) => {
             reject(x);
         }).then(fail, e => {
             assert(x === e);
@@ -27,7 +27,7 @@ describe('promise', () => {
 
     it('should resolve', () => {
         let x = {};
-        return promise(resolve => {
+        return runPromise(resolve => {
             resolve(x);
         }).then(a => {
             assert(x === a);
@@ -38,7 +38,7 @@ describe('promise', () => {
 
         it('should ignore subsequent throw', () => {
             let x = {};
-            return promise((_, reject) => {
+            return runPromise((_, reject) => {
                 reject(x);
                 throw {};
             }).then(fail, e => {
@@ -49,7 +49,7 @@ describe('promise', () => {
         it('should ignore subsequent reject', () => {
             let x = {};
             let y = {};
-            return promise((_, reject) => {
+            return runPromise((_, reject) => {
                 reject(x);
                 reject(y);
             }).then(fail, e => {
@@ -59,7 +59,7 @@ describe('promise', () => {
 
         it('should ignore subsequent resolve', () => {
             let x = {};
-            return promise((_, reject) => {
+            return runPromise((_, reject) => {
                 reject(x);
                 resolve();
             }).then(fail, e => {
@@ -72,7 +72,7 @@ describe('promise', () => {
 
         it('should ignore subsequent throw', () => {
             let x = {};
-            return promise(resolve => {
+            return runPromise(resolve => {
                 resolve(x);
                 throw {};
             }).then(a => {
@@ -83,7 +83,7 @@ describe('promise', () => {
         it('should ignore subsequent reject', () => {
             let x = {};
             let y = {};
-            return promise((resolve, reject) => {
+            return runPromise((resolve, reject) => {
                 resolve(x);
                 reject(y);
             }).then(a => {
@@ -93,7 +93,7 @@ describe('promise', () => {
 
         it('should ignore subsequent resolve', () => {
             let x = {};
-            return promise(resolve => {
+            return runPromise(resolve => {
                 resolve(x);
                 resolve();
             }).then(a => {
@@ -105,7 +105,7 @@ describe('promise', () => {
     describe('should pass arguments to resolver', () => {
         it('for 1 argument', () => {
             let a = {};
-            return promise((w, resolve) => {
+            return runPromise((w, resolve) => {
                 assert(w === a);
                 resolve();
             }, a);
@@ -114,7 +114,7 @@ describe('promise', () => {
         it('for 2 arguments', () => {
             let a = {};
             let b = {};
-            return promise((w, x, resolve) => {
+            return runPromise((w, x, resolve) => {
                 assert(w === a);
                 assert(x === b);
                 resolve();
@@ -125,7 +125,7 @@ describe('promise', () => {
             let a = {};
             let b = {};
             let c = {};
-            return promise((w, x, y, resolve) => {
+            return runPromise((w, x, y, resolve) => {
                 assert(w === a);
                 assert(x === b);
                 assert(y === c);
@@ -138,7 +138,7 @@ describe('promise', () => {
             let b = {};
             let c = {};
             let d = {};
-            return promise((w, x, y, z, resolve) => {
+            return runPromise((w, x, y, z, resolve) => {
                 assert(w === a);
                 assert(x === b);
                 assert(y === c);

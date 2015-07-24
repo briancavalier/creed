@@ -6,7 +6,7 @@ global.useCreed = true;
 var creed = require('../../dist/creed');
 require('../lib/fakesP');
 
-module.exports = creed.co(function* upload(stream, idOrPath, tag, done) {
+module.exports = creed.coroutine(function* upload(stream, idOrPath, tag, done) {
     var queries = new Array(global.parallelQueries);
     var tx = db.begin();
 

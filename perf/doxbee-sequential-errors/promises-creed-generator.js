@@ -6,7 +6,7 @@ var creed = require('../../dist/creed');
 
 require('../lib/fakesP');
 
-module.exports = creed.co(function* upload(stream, idOrPath, tag, done) {
+module.exports = creed.coroutine(function* upload(stream, idOrPath, tag, done) {
     try {
         var blob = blobManager.create(account);
         var tx = db.begin();

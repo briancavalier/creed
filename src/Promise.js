@@ -18,11 +18,12 @@ import Merge from './Merge';
 import Settle from './Settle';
 import { resolveIterable, resultsArray } from './iterable';
 
-import runPromise from './runPromise';
-import runNode from './node';
-import runCo from './co.js';
+import _runPromise from './runPromise';
+import _runNode from './node';
+import _runCoroutine from './co.js';
 
 let taskQueue = new TaskQueue();
+
 let errorHandler = new ErrorHandler(makeEmitError(), e => {
     throw e.value;
 });
@@ -290,12 +291,15 @@ export function reject(e) {
     return new Rejected(e);
 }
 
-// never :: Never
+// never :: Promise e a
 export function never() {
     return new Never();
 }
 
-export function promise(f, ...args) {
+// type Resolve = (x -> ())
+// type Reject = (e -> ())
+// runPromise :: (...args -> Resolve -> Reject) -> ...args -> promise
+export function runPromise(f, ...args) {
     return runResolver(f, this, args, new Future());
 }
 
@@ -303,12 +307,65 @@ function runResolver(f, thisArg, args, p) {
     checkFunction(f);
 
     try {
-        runPromise(f, thisArg, args, p);
+        _runPromise(f, thisArg, args, p);
     } catch (e) {
         p._reject(e);
     }
     return p;
 }
+
+// -------------------------------------------------------------
+// ## Coroutines
+// -------------------------------------------------------------
+
+// coroutine :: Generator -> (...a -> Promise)
+// Generator to coroutine
+export function coroutine(generator) {
+    return function (...args) {
+        return runGenerator(generator, this, args);
+    };
+}
+
+export function runCoroutine(generator, ...args) {
+    return runGenerator(generator, this, args);
+}
+
+function runGenerator(generator, thisArg, args) {
+    var iterator = generator.apply(thisArg, args);
+    return _runCoroutine(resolve, iterator, new Future());
+}
+
+// -------------------------------------------------------------
+// ## Node-style async
+// -------------------------------------------------------------
+
+// type Nodeback = (e -> value -> ())
+// node :: (...a -> Nodeback) -> (...a -> Promise)
+// Node-style async function to promise-returning function
+export function node(f) {
+    return function (...args) {
+        return runNodeResolver(f, this, args, new Future());
+    };
+}
+
+export function runNode(f, ...args) {
+    return runNodeResolver(f, this, args, new Future());
+}
+
+function runNodeResolver(f, thisArg, args, p) {
+    checkFunction(f);
+
+    try {
+        _runNode(f, thisArg, args, p);
+    } catch (e) {
+        p._reject(e);
+    }
+    return p;
+}
+
+// -------------------------------------------------------------
+// ## Time
+// -------------------------------------------------------------
 
 // delay :: number -> Promise e a -> Promise e a
 export function delay(ms, x) {
@@ -402,48 +459,6 @@ class MergeHandler {
             this.promise._reject(e);
         }
     }
-}
-
-// -------------------------------------------------------------
-// ## Convert node-style async
-// -------------------------------------------------------------
-
-// type Nodeback = (e -> value -> ())
-
-// node :: (...a -> Nodeback) -> (...a -> Promise)
-// Node-style async function to promise-returning function
-export function node(f) {
-    return function (...args) {
-        return runNodeResolver(f, this, args, new Future());
-    };
-}
-
-function runNodeResolver(f, thisArg, args, p) {
-    checkFunction(f);
-
-    try {
-        runNode(f, thisArg, args, p);
-    } catch (e) {
-        p._reject(e);
-    }
-    return p;
-}
-
-// -------------------------------------------------------------
-// ## Generators
-// -------------------------------------------------------------
-
-// co :: Generator -> (...a -> Promise)
-// Generator to coroutine
-export function co(generator) {
-    return function (...args) {
-        return runGenerator(generator, this, args);
-    };
-}
-
-function runGenerator(generator, thisArg, args) {
-    var iterator = generator.apply(thisArg, args);
-    return runCo(resolve, iterator, new Future());
 }
 
 // -------------------------------------------------------------
