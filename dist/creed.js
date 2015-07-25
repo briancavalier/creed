@@ -10,6 +10,7 @@
 
 	var isNode = typeof process !== 'undefined' && Object.prototype.toString.call(process) === '[object process]';
 
+	/* istanbul ignore next */
 	var MutationObs = typeof MutationObserver === 'function' && MutationObserver || typeof WebKitMutationObserver === 'function' && WebKitMutationObserver;
 
 	/** @license MIT License (c) copyright 2010-2014 original author or authors */
@@ -89,8 +90,9 @@
 		return TaskQueue;
 	})();
 
-	"use strict";
+	'use strict';
 
+	/*eslint no-multi-spaces: 0*/
 	var PENDING = 1 << 0;
 	var FULFILLED = 1 << 1;
 	var REJECTED = 1 << 2;
@@ -213,10 +215,12 @@
 	        };
 	    } else if (typeof self !== 'undefined' && typeof CustomEvent === 'function') {
 	        return (function (noop, self, CustomEvent) {
-	            var hasCustomEvent = false;
+	            var hasCustomEvent;
 	            try {
 	                hasCustomEvent = new CustomEvent(makeEmitError__UNHANDLED_REJECTION) instanceof CustomEvent;
-	            } catch (e) {}
+	            } catch (e) {
+	                hasCustomEvent = false;
+	            }
 
 	            return !hasCustomEvent ? noop : function (type, error) {
 	                var ev = new CustomEvent(type, {
@@ -426,8 +430,7 @@
 	    Any.prototype.check = function check(pending, promise) {
 	        this.pending = pending;
 	        if (this.done && pending === 0) {
-	            // TODO: Better error
-	            promise._reject(new Error());
+	            promise._reject(new RangeError('No fulfilled promises in input'));
 	        }
 	    };
 
@@ -565,7 +568,12 @@
 
 	function resolveIterable(resolve, itemHandler, promises, promise) {
 	    var run = Array.isArray(promises) ? runArray : runIterable;
-	    return run(resolve, itemHandler, promises, promise).near();
+	    try {
+	        run(resolve, itemHandler, promises, promise);
+	    } catch (e) {
+	        promise._reject(e);
+	    }
+	    return promise.near();
 	}
 
 	function runArray(resolve, itemHandler, promises, promise) {
@@ -576,8 +584,6 @@
 	    }
 
 	    itemHandler.complete(i, promise);
-
-	    return promise;
 	}
 
 	function runIterable(resolve, itemHandler, promises, promise) {
@@ -609,8 +615,6 @@
 	    }
 
 	    itemHandler.complete(i, promise);
-
-	    return promise;
 	}
 
 	function handleItem(resolve, itemHandler, x, i, promise) {
@@ -653,9 +657,9 @@
 
 	'use strict';
 
+	var _runPromise = _runPromise__runPromise;
 
-
-	function runPromise(f, thisArg, args, promise) {
+	function _runPromise__runPromise(f, thisArg, args, promise) {
 
 	    function resolve(x) {
 	        promise._resolve(x);
@@ -684,9 +688,9 @@
 
 	'use strict';
 
+	var _runNode = _runNode__runNode;
 
-
-	function runNode(f, thisArg, args, promise) {
+	function _runNode__runNode(f, thisArg, args, promise) {
 
 	    function settleNode(e, x) {
 	        if (e) {
@@ -715,12 +719,12 @@
 
 	'use strict';
 
-	function runCo___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+	function _runCoroutine___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	var runCo = function (refFor, iterator, promise) {
+	var _runCoroutine = function (refFor, iterator, promise) {
 	    coStep(refFor, iterator.next, void 0, iterator, promise);
 	    return promise;
-	};
+	}
 
 	function coStep(refFor, continuation, x, iterator, promise) {
 	    try {
@@ -740,7 +744,7 @@
 
 	var Next = (function () {
 	    function Next(refFor, iterator, promise) {
-	        runCo___classCallCheck(this, Next);
+	        _runCoroutine___classCallCheck(this, Next);
 
 	        this.refFor = refFor;
 	        this.iterator = iterator;
@@ -768,6 +772,7 @@
 	function build_Promise___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 	var taskQueue = new TaskQueue();
+
 	var errorHandler = new ErrorHandler(makeEmitError(), function (e) {
 	    throw e.value;
 	});
@@ -779,8 +784,7 @@
 	// -------------------------------------------------------------
 
 	// Future :: Promise e a
-	// A promise that is pending initially, and whose value
-	// is provided later.
+	// A promise whose value cannot be known until some future time
 
 	var Future = (function () {
 	    function Future() {
@@ -803,17 +807,24 @@
 	    // catch :: Promise e a -> (e -> b) -> Promise e b
 
 	    Future.prototype['catch'] = function _catch(r) {
-	        return this.then(void 0, r);
+	        var n = this.near();
+	        return isFulfilled(n) ? this : _then(void 0, r, n, new Future());
 	    };
+
+	    // toString :: Promise e a -> String
 
 	    Future.prototype.toString = function toString() {
 	        return '[object ' + this.inspect() + ']';
 	    };
 
+	    // inspect :: Promise e a -> String
+
 	    Future.prototype.inspect = function inspect() {
 	        var n = this.near();
 	        return isSettled(n) ? n.inspect() : 'Promise { pending }';
 	    };
+
+	    // near :: Promise e a -> Promise e a
 
 	    Future.prototype.near = function near() {
 	        if (!this._isResolved()) {
@@ -829,8 +840,11 @@
 	            }
 	        }
 
-	        return this.ref = ref;
+	        this.ref = ref;
+	        return ref;
 	    };
+
+	    // state :: Promise e a -> Int
 
 	    Future.prototype.state = function state() {
 	        return this._isResolved() ? this.ref.near().state() : PENDING;
@@ -1064,13 +1078,18 @@
 	    return new Rejected(e);
 	}
 
-	// never :: Never
+	// never :: Promise e a
 
 	function never() {
 	    return new Never();
 	}
 
-	function promise(f) {
+	// type Resolve a = (a -> ())
+	// type Reject e = (e -> ())
+	// type Producer e a = (...args -> Resolve a -> Reject e)
+	// runPromise :: Producer e a -> ...args -> Promise e a
+
+	function build_Promise__runPromise(f) {
 	    for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
 	        args[_key - 1] = arguments[_key];
 	    }
@@ -1082,12 +1101,75 @@
 	    checkFunction(f);
 
 	    try {
-	        runPromise(f, thisArg, args, p);
+	        _runPromise(f, thisArg, args, p);
 	    } catch (e) {
 	        p._reject(e);
 	    }
 	    return p;
 	}
+
+	// -------------------------------------------------------------
+	// ## Coroutines
+	// -------------------------------------------------------------
+
+	// coroutine :: Generator -> (...args -> Promise)
+	// Generator to coroutine
+
+	function coroutine(generator) {
+	    return function () {
+	        for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+	            args[_key2] = arguments[_key2];
+	        }
+
+	        return runGenerator(generator, this, args);
+	    };
+	}
+
+	function runGenerator(generator, thisArg, args) {
+	    var iterator = generator.apply(thisArg, args);
+	    return _runCoroutine(resolve, iterator, new Future());
+	}
+
+	// -------------------------------------------------------------
+	// ## Node-style async
+	// -------------------------------------------------------------
+
+	// type Nodeback = (e -> value -> ())
+	// fromNode :: (...args -> Nodeback) -> (...args -> Promise)
+	// Node-style async function to promise-returning function
+
+	function fromNode(f) {
+	    return function () {
+	        for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+	            args[_key3] = arguments[_key3];
+	        }
+
+	        return runNodeResolver(f, this, args, new Future());
+	    };
+	}
+
+	function build_Promise__runNode(f) {
+	    for (var _len4 = arguments.length, args = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
+	        args[_key4 - 1] = arguments[_key4];
+	    }
+
+	    return runNodeResolver(f, this, args, new Future());
+	}
+
+	function runNodeResolver(f, thisArg, args, p) {
+	    checkFunction(f);
+
+	    try {
+	        _runNode(f, thisArg, args, p);
+	    } catch (e) {
+	        p._reject(e);
+	    }
+	    return p;
+	}
+
+	// -------------------------------------------------------------
+	// ## Time
+	// -------------------------------------------------------------
 
 	// delay :: number -> Promise e a -> Promise e a
 
@@ -1096,7 +1178,7 @@
 	    return ms <= 0 || isRejected(p) || isNever(p) ? p : _delay(ms, p, new Future());
 	}
 
-	// timeout :: Promise e a -> number -> Promise (e|TimeoutError) a
+	// timeout :: number -> Promise e a -> Promise (e|TimeoutError) a
 
 	function timeout(ms, x) {
 	    var p = resolve(x);
@@ -1107,7 +1189,7 @@
 	// ## Iterables
 	// -------------------------------------------------------------
 
-	// all :: Iterable (Promise e a) -> Promise e (Iterable a)
+	// all :: Iterable (Promise e a) -> Promise e [a]
 
 	function all(promises) {
 	    var handler = new Merge(allHandler, resultsArray(promises));
@@ -1132,7 +1214,7 @@
 	    return iterablePromise(new Any(), promises);
 	}
 
-	// settle :: Iterable (Promise e a) -> Promise e (Iterable Promise e a)
+	// settle :: Iterable (Promise e a) -> Promise e ([Promise e a])
 
 	function settle(promises) {
 	    var handler = new Settle(resolve, resultsArray(promises));
@@ -1159,8 +1241,8 @@
 	// merge :: (...a -> b) -> ...Promise e a -> Promise e b
 
 	function build_Promise__merge(f) {
-	    for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-	        args[_key2 - 1] = arguments[_key2];
+	    for (var _len5 = arguments.length, args = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
+	        args[_key5 - 1] = arguments[_key5];
 	    }
 
 	    return runMerge(f, this, args);
@@ -1197,58 +1279,6 @@
 
 	    return MergeHandler;
 	})();
-
-	// -------------------------------------------------------------
-	// ## Convert node-style async
-	// -------------------------------------------------------------
-
-	// type Nodeback = (e -> value -> ())
-
-	// node :: (...a -> Nodeback) -> (...a -> Promise)
-	// Node-style async function to promise-returning function
-
-	function node(f) {
-	    return function () {
-	        for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-	            args[_key3] = arguments[_key3];
-	        }
-
-	        return runNodeResolver(f, this, args, new Future());
-	    };
-	}
-
-	function runNodeResolver(f, thisArg, args, p) {
-	    checkFunction(f);
-
-	    try {
-	        runNode(f, thisArg, args, p);
-	    } catch (e) {
-	        p._reject(e);
-	    }
-	    return p;
-	}
-
-	// -------------------------------------------------------------
-	// ## Generators
-	// -------------------------------------------------------------
-
-	// co :: Generator -> (...a -> Promise)
-	// Generator to coroutine
-
-	function co(generator) {
-	    return function () {
-	        for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
-	            args[_key4] = arguments[_key4];
-	        }
-
-	        return runGenerator(generator, this, args);
-	    };
-	}
-
-	function runGenerator(generator, thisArg, args) {
-	    var iterator = generator.apply(thisArg, args);
-	    return runCo(resolve, iterator, new Future());
-	}
 
 	// -------------------------------------------------------------
 	// # Internals
@@ -1354,7 +1384,10 @@
 	exports.resolve = resolve;
 	exports.reject = reject;
 	exports.never = never;
-	exports.promise = promise;
+	exports.runPromise = build_Promise__runPromise;
+	exports.coroutine = coroutine;
+	exports.fromNode = fromNode;
+	exports.runNode = build_Promise__runNode;
 	exports.delay = build_Promise__delay;
 	exports.timeout = timeout;
 	exports.all = all;
@@ -1362,8 +1395,6 @@
 	exports.any = any;
 	exports.settle = settle;
 	exports.merge = build_Promise__merge;
-	exports.node = node;
-	exports.co = co;
 	exports.shim = shim;
 	exports.Future = Future;
 	exports.Promise = CreedPromise;
