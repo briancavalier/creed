@@ -1,6 +1,6 @@
 {
   "name": "creed",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Forward-looking promise kit with a novel architecture, focused API, and top-tier performance",
   "main": "dist/creed.js",
   "files": [
