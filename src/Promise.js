@@ -300,9 +300,9 @@ export function never() {
     return new Never();
 }
 
-// type Resolve a = (a -> ())
-// type Reject e = (e -> ())
-// type Producer e a = (...args -> Resolve a -> Reject e)
+// type Resolve a = a -> ()
+// type Reject e = e -> ()
+// type Producer e a = (...args -> Resolve a -> Reject e -> ())
 // runPromise :: Producer e a -> ...args -> Promise e a
 export function runPromise(f, ...args) {
     return runResolver(f, this, args, new Future());
@@ -323,7 +323,7 @@ function runResolver(f, thisArg, args, p) {
 // ## Coroutines
 // -------------------------------------------------------------
 
-// coroutine :: Generator -> (...args -> Promise)
+// coroutine :: Generator e a -> (...args -> Promise e a)
 // Generator to coroutine
 export function coroutine(generator) {
     return function (...args) {
@@ -340,8 +340,10 @@ function runGenerator(generator, thisArg, args) {
 // ## Node-style async
 // -------------------------------------------------------------
 
-// type Nodeback = (e -> value -> ())
-// fromNode :: (...args -> Nodeback) -> (...args -> Promise)
+// type NodeApi e a = ...args -> Nodeback e a -> ()
+// type Nodeback e a = e -> a -> ()
+
+// fromNode :: NodeApi e a -> (...args -> Promise e a)
 // Node-style async function to promise-returning function
 export function fromNode(f) {
     return function (...args) {
@@ -349,6 +351,7 @@ export function fromNode(f) {
     };
 }
 
+// fromNode :: NodeApi e a -> ...args -> Promise e a
 export function runNode(f, ...args) {
     return runNodeResolver(f, this, args, new Future());
 }
@@ -406,7 +409,7 @@ export function any(promises) {
     return iterablePromise(new Any(), promises);
 }
 
-// settle :: Iterable (Promise e a) -> Promise e ([Promise e a])
+// settle :: Iterable (Promise e a) -> Promise e [Promise e a]
 export function settle(promises) {
     let handler = new Settle(resolve, resultsArray(promises));
     return iterablePromise(handler, promises);
@@ -466,7 +469,7 @@ class MergeHandler {
 // # Internals
 // -------------------------------------------------------------
 
-// isPromise :: a -> boolean
+// isPromise :: * -> boolean
 function isPromise(x) {
     return x !== null && typeof x === 'object' && x._isPromise === marker;
 }
