@@ -38,11 +38,11 @@ A promise that remains pending forever
 
 ## Make a promise
 
-### co
+### coroutine
 
-####`co :: Generator a -> (...args -> Promise a)`
+####`coroutine :: Generator a -> (...args -> Promise a)`
 
-Create an async coroutine from a generator and `yield`.
+Create an async coroutine from a promise-yielding generator.
 
 ```js
 import { co } from 'creed';
@@ -53,7 +53,7 @@ function fetchTextFromUrl(url) {
 }
 
 // Declare an async coroutine from a generator
-let getUserProfile = co(function* (user) {
+let getUserProfile = coroutine(function* (user) {
     try {
         let profileUrl = yield getUserProfileUrlFromDB(user);
         let text = yield fetchTextFromUrl(profileUrl);
@@ -69,9 +69,9 @@ getUserProfile(user)
     .then(profile => console.log(profile));
 ```
 
-### node
+### fromNode
 
-####`node :: (...args -> (err -> a)) -> (...args -> Promise a)`
+####`fromNode :: (...args -> (err -> a)) -> (...args -> Promise a)`
 
 Turn a Node-style API into a promised API.
 
@@ -80,16 +80,16 @@ import { node } from 'creed';
 import { readFile } from 'fs';
 
 // Make a promised version of fs.readFile
-let readFileP = node(readFile);
+let readFileP = fromNode(readFile);
 
 readFileP('theFile.txt', 'utf8')
     .then(String) // fs.readFile returns a Buffer, transform to a String
     .then(contents => console.log(contents));
 ```
 
-### promise
+### runPromise
 
-####`promise :: (...args -> (a -> ()) -> (err -> ()) -> ...args -> Promise a`
+####`runPromise :: (...args -> (a -> ()) -> (err -> ()) -> ...args -> Promise a`
 
 Run a function to produce a promised result.
 

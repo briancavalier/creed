@@ -20,7 +20,7 @@ import { resolveIterable, resultsArray } from './iterable';
 
 import _runPromise from './runPromise';
 import _runNode from './node';
-import _runCoroutine from './co.js';
+import _runCoroutine from './coroutine.js';
 
 let taskQueue = new TaskQueue();
 
@@ -35,8 +35,7 @@ let marker = {};
 // -------------------------------------------------------------
 
 // Future :: Promise e a
-// A promise that is pending initially, and whose value
-// is provided later.
+// A promise whose value cannot be known until some future time
 export class Future {
     constructor() {
         this.ref = void 0;
@@ -58,15 +57,18 @@ export class Future {
         return isFulfilled(n) ? this : then(void 0, r, n, new Future());
     }
 
+    // toString :: Promise e a -> String
     toString() {
         return '[object ' + this.inspect() + ']';
     }
 
+    // inspect :: Promise e a -> String
     inspect() {
         let n = this.near();
         return isSettled(n) ? n.inspect() : 'Promise { pending }';
     }
 
+    // near :: Promise e a -> Promise e a
     near() {
         if (!this._isResolved()) {
             return this;
@@ -85,6 +87,7 @@ export class Future {
         return ref;
     }
 
+    // state :: Promise e a -> Int
     state() {
         return this._isResolved() ? this.ref.near().state() : PENDING;
     }
@@ -297,9 +300,10 @@ export function never() {
     return new Never();
 }
 
-// type Resolve = (x -> ())
-// type Reject = (e -> ())
-// runPromise :: (...args -> Resolve -> Reject) -> ...args -> promise
+// type Resolve a = (a -> ())
+// type Reject e = (e -> ())
+// type Producer e a = (...args -> Resolve a -> Reject e)
+// runPromise :: Producer e a -> ...args -> Promise e a
 export function runPromise(f, ...args) {
     return runResolver(f, this, args, new Future());
 }
@@ -319,16 +323,12 @@ function runResolver(f, thisArg, args, p) {
 // ## Coroutines
 // -------------------------------------------------------------
 
-// coroutine :: Generator -> (...a -> Promise)
+// coroutine :: Generator -> (...args -> Promise)
 // Generator to coroutine
 export function coroutine(generator) {
     return function (...args) {
         return runGenerator(generator, this, args);
     };
-}
-
-export function runCoroutine(generator, ...args) {
-    return runGenerator(generator, this, args);
 }
 
 function runGenerator(generator, thisArg, args) {
@@ -341,9 +341,9 @@ function runGenerator(generator, thisArg, args) {
 // -------------------------------------------------------------
 
 // type Nodeback = (e -> value -> ())
-// node :: (...a -> Nodeback) -> (...a -> Promise)
+// fromNode :: (...args -> Nodeback) -> (...args -> Promise)
 // Node-style async function to promise-returning function
-export function node(f) {
+export function fromNode(f) {
     return function (...args) {
         return runNodeResolver(f, this, args, new Future());
     };
@@ -374,7 +374,7 @@ export function delay(ms, x) {
     return ms <= 0 || isRejected(p) || isNever(p) ? p : _delay(ms, p, new Future());
 }
 
-// timeout :: Promise e a -> number -> Promise (e|TimeoutError) a
+// timeout :: number -> Promise e a -> Promise (e|TimeoutError) a
 export function timeout(ms, x) {
     var p = resolve(x);
     return isSettled(p) ? p : _timeout(ms, p, new Future());
@@ -384,7 +384,7 @@ export function timeout(ms, x) {
 // ## Iterables
 // -------------------------------------------------------------
 
-// all :: Iterable (Promise e a) -> Promise e (Iterable a)
+// all :: Iterable (Promise e a) -> Promise e [a]
 export function all(promises) {
     let handler = new Merge(allHandler, resultsArray(promises));
     return iterablePromise(handler, promises);
@@ -406,7 +406,7 @@ export function any(promises) {
     return iterablePromise(new Any(), promises);
 }
 
-// settle :: Iterable (Promise e a) -> Promise e (Iterable Promise e a)
+// settle :: Iterable (Promise e a) -> Promise e ([Promise e a])
 export function settle(promises) {
     let handler = new Settle(resolve, resultsArray(promises));
     return iterablePromise(handler, promises);
