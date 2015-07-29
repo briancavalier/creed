@@ -1,4 +1,4 @@
-import { race, resolve, reject, never } from '../src/Promise';
+import { race, resolve, reject, never } from '../src/main';
 import { isNever } from '../src/inspect';
 import { fail, throwingIterable } from './lib/test-util';
 import assert from 'assert';

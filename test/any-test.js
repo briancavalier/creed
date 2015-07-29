@@ -1,4 +1,4 @@
-import { any, resolve, reject } from '../src/Promise';
+import { any, resolve, reject } from '../src/main';
 import { fail, throwingIterable, arrayIterable } from './lib/test-util';
 import assert from 'assert';
 

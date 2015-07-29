@@ -1,8 +1,8 @@
 [![Build Status](https://travis-ci.org/briancavalier/creed.svg?branch=master)](https://travis-ci.org/briancavalier/creed)
 
-# creed
+# creed :: async
 
-Creed is a forward-looking promise toolkit.  It favors intuitiveness, productivity, and developer happiness. It has a small, focused API, makes uncaught errors obvious by default, and supports ES2105 features.
+Creed simplifies async by letting you write coroutines using ES2015 generators and promises.  It also provides a small, focused promise API, makes uncaught errors obvious by default, and supports other ES2105 features such as iterables.
 
 * [Try it](#try-it)
 * [Get it](#get-it)

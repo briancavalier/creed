@@ -21,7 +21,7 @@
   ],
   "scripts": {
     "build-lib": "babel --loose es6.classes --blacklist es6.modules -q -d build src",
-    "build-dist": "npm run build-lib && esperanto -b -t umd -o dist/creed.js -i build/Promise.js -s -n creed && uglifyjs -c 'warnings=false' -m -o dist/creed.min.js -- dist/creed.js",
+    "build-dist": "npm run build-lib && esperanto -b -t umd -o dist/creed.js -i build/main.js -s -n creed && uglifyjs -c 'warnings=false' -m -o dist/creed.min.js -- dist/creed.js",
     "prepublish": "npm run build-dist",
     "clean": "rimraf build coverage",
     "test-aplus": "promises-aplus-tests test/aplus.js",

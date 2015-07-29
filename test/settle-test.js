@@ -1,4 +1,4 @@
-import { settle, resolve, reject } from '../src/Promise';
+import { settle, resolve, reject } from '../src/main';
 import { isFulfilled, isRejected } from '../src/inspect';
 import { fail, throwingIterable } from './lib/test-util';
 import assert from 'assert';

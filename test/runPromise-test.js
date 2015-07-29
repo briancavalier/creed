@@ -1,4 +1,4 @@
-import { runPromise, resolve, reject } from '../src/Promise';
+import { runPromise, resolve, reject } from '../src/main';
 import assert from 'assert';
 
 let fail = x => { throw x; };
