@@ -28,7 +28,7 @@ export {
 // ## Coroutine
 // -------------------------------------------------------------
 
-// coroutine :: Generator e a -> (...args -> Promise e a)
+// coroutine :: Generator e a -> (...* -> Promise e a)
 // Make a coroutine from a promise-yielding generator
 export function coroutine(generator) {
     return function (...args) {
@@ -45,7 +45,7 @@ function runGenerator(generator, thisArg, args) {
 // ## Node-style async
 // -------------------------------------------------------------
 
-// type NodeApi e a = ...args -> Nodeback e a -> ()
+// type NodeApi e a = ...* -> Nodeback e a -> ()
 // type Nodeback e a = e -> a -> ()
 
 // fromNode :: NodeApi e a -> (...args -> Promise e a)
@@ -56,7 +56,7 @@ export function fromNode(f) {
     };
 }
 
-// fromNode :: NodeApi e a -> ...args -> Promise e a
+// fromNode :: NodeApi e a -> ...* -> Promise e a
 // Run a Node API, returning a promise for the outcome
 export function runNode(f, ...args) {
     return runNodeResolver(f, this, args, new Future());
@@ -79,8 +79,8 @@ function runNodeResolver(f, thisArg, args, p) {
 
 // type Resolve a = a -> ()
 // type Reject e = e -> ()
-// type Producer e a = (...args -> Resolve a -> Reject e -> ())
-// runPromise :: Producer e a -> ...args -> Promise e a
+// type Producer e a = (...* -> Resolve a -> Reject e -> ())
+// runPromise :: Producer e a -> ...* -> Promise e a
 export function runPromise(f, ...args) {
     return runResolver(f, this, args, new Future());
 }
@@ -131,7 +131,7 @@ export function settle(promises) {
 // ## Lifting
 // -------------------------------------------------------------
 
-// merge :: (...a -> b) -> ...Promise e a -> Promise e b
+// merge :: (...* -> b) -> ...Promise e a -> Promise e b
 export function merge(f, ...args) {
     return runMerge(f, this, args);
 }
