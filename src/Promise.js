@@ -9,7 +9,7 @@ import { isNever, isSettled } from './inspect';
 
 import then from './then';
 import _map from './map';
-import _concat from './concat';
+import _chain from './chain';
 
 import Race from './Race';
 import Merge from './Merge';
@@ -37,8 +37,14 @@ export class Future {
         this.length = 0;
     }
 
+    // empty :: Never
     static empty() {
         return never();
+    }
+
+    // of :: a -> Promise e a
+    static of(x) {
+        return just(x);
     }
 
     // then :: Promise e a -> (a -> b) -> Promise e b
@@ -55,18 +61,33 @@ export class Future {
         return n === this ? then(void 0, r, n, new Future()) : n.catch(r);
     }
 
+    // map :: Promise e a -> (a -> b) -> Promise e b
     map(f) {
         let n = this.near();
         return n === this ? _map(f, n, new Future()) : n.map(f);
     }
 
+    ap(p) {
+        let n = this.near();
+        let pp = resolve(p);
+        return n === this ? this.chain(f => pp.map(f)) : n.ap(pp);
+    }
+
+    // chain :: Promise e a -> (a -> Promise e b) -> Promise e b
+    chain(f) {
+        let n = this.near();
+        return n === this ? _chain(f, n, new Future()) : n.chain(f);
+    }
+
+    // map :: Promise e a -> Promise e a -> Promise e a
     concat(b) {
         let n = this.near();
         let bp = resolve(b);
+
         return n !== this ? n.concat(bp)
-            : isNever(bp) ? this
-            : isSettled(bp) ? b
-            : _concat(n, bp, new Future());
+            : isNever(bp) ? n
+            : isSettled(bp) ? bp
+            : race([n, bp]);
     }
 
     // toString :: Promise e a -> String
@@ -180,6 +201,10 @@ class Fulfilled {
         return never();
     }
 
+    static of(x) {
+        return just(x);
+    }
+
     then(f) {
         return typeof f === 'function' ? then(f, void 0, this, new Future()) : this;
     }
@@ -190,6 +215,14 @@ class Fulfilled {
 
     map(f) {
         return _map(f, this, new Future());
+    }
+
+    ap(p) {
+        return resolve(p).map(this.value);
+    }
+
+    chain(f) {
+        return _chain(f, this, new Future());
     }
 
     concat() {
@@ -235,6 +268,10 @@ class Rejected {
         return never();
     }
 
+    static of(x) {
+        return just(x);
+    }
+
     then(_, r) {
         return typeof r === 'function' ? this.catch(r) : this;
     }
@@ -244,6 +281,14 @@ class Rejected {
     }
 
     map() {
+        return this;
+    }
+
+    ap() {
+        return this;
+    }
+
+    chain() {
         return this;
     }
 
@@ -286,6 +331,10 @@ class Never {
         return never();
     }
 
+    static of(x) {
+        return just(x);
+    }
+
     then() {
         return this;
     }
@@ -295,6 +344,14 @@ class Never {
     }
 
     map() {
+        return this;
+    }
+
+    ap() {
+        return this;
+    }
+
+    chain() {
         return this;
     }
 
@@ -346,6 +403,11 @@ export function reject(e) {
 // never :: Promise e a
 export function never() {
     return new Never();
+}
+
+// just :: a -> Promise e a
+export function just(x) {
+    return new Fulfilled(x);
 }
 
 // -------------------------------------------------------------

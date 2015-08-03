@@ -1,7 +1,7 @@
 'use strict';
 
 import { isFulfilled, isRejected, isSettled, isPending, isNever } from './inspect';
-import { Future, resolve, reject, never, all, race, iterablePromise, taskQueue } from './Promise';
+import { Future, resolve, reject, never, just, all, race, iterablePromise, taskQueue } from './Promise';
 
 import _delay from './delay';
 import _timeout from './timeout';
@@ -20,7 +20,7 @@ import _runCoroutine from './coroutine.js';
 // -------------------------------------------------------------
 
 export {
-    resolve, reject, never, all, race,
+    resolve, reject, never, just, all, race,
     isFulfilled, isRejected, isSettled, isPending, isNever
 };
 
@@ -208,5 +208,3 @@ export { CreedPromise as Promise };
 if (typeof Promise !== 'function') {
     shim();
 }
-
-
