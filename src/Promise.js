@@ -70,7 +70,7 @@ export class Future {
     // ap :: Promise e (a -> b) -> Promise e a -> Promise e b
     ap(p) {
         let n = this.near();
-        let pp = resolve(p);
+        let pp = resolveThenable(p);
         return n === this ? this.chain(f => pp.map(f)) : n.ap(pp);
     }
 
@@ -83,7 +83,7 @@ export class Future {
     // concat :: Promise e a -> Promise e a -> Promise e a
     concat(b) {
         let n = this.near();
-        let bp = resolve(b);
+        let bp = resolveThenable(b);
 
         return n !== this ? n.concat(bp)
             : isNever(bp) ? n
@@ -219,7 +219,7 @@ class Fulfilled {
     }
 
     ap(p) {
-        return resolve(p).map(this.value);
+        return resolveThenable(p).map(this.value);
     }
 
     chain(f) {
@@ -393,7 +393,7 @@ export function resolve(x) {
         return x.near();
     }
 
-    return maybeThenable(x) ? refForUntrusted(x) : new Fulfilled(x);
+    return maybeThenable(x) ? refForMaybeThenable(just, x) : new Fulfilled(x);
 }
 
 // reject :: e -> Promise e a
@@ -455,21 +455,26 @@ function isPromise(x) {
 }
 
 function resolveMaybeThenable(x) {
-    return isPromise(x) ? x.near() : refForUntrusted(x);
+    return isPromise(x) ? x.near() : refForMaybeThenable(just, x);
 }
 
-function refForUntrusted(x) {
+function resolveThenable(x) {
+    return isPromise(x) ? x.near() : refForMaybeThenable(reject, x);
+}
+
+function refForMaybeThenable(otherwise, x) {
     try {
         let then = x.then;
         return typeof then === 'function'
-            ? extractThenable(then, x, new Future())
-            : new Fulfilled(x);
+            ? extractThenable(then, x)
+            : otherwise(x);
     } catch (e) {
         return new Rejected(e);
     }
 }
 
-function extractThenable(then, thenable, p) {
+function extractThenable(then, thenable) {
+    let p = new Future();
     try {
         then.call(thenable, x => p._resolve(x), e => p._reject(e));
     } catch (e) {
