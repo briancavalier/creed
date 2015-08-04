@@ -67,6 +67,7 @@ export class Future {
         return n === this ? _map(f, n, new Future()) : n.map(f);
     }
 
+    // ap :: Promise e (a -> b) -> Promise e a -> Promise e b
     ap(p) {
         let n = this.near();
         let pp = resolve(p);
@@ -79,7 +80,7 @@ export class Future {
         return n === this ? _chain(f, n, new Future()) : n.chain(f);
     }
 
-    // map :: Promise e a -> Promise e a -> Promise e a
+    // concat :: Promise e a -> Promise e a -> Promise e a
     concat(b) {
         let n = this.near();
         let bp = resolve(b);

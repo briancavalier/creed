@@ -29,7 +29,7 @@ class Chain {
 }
 
 function checkAndResolve(x) {
-    if(maybeThenable(x) && typeof x.then === 'function') {
+    if (maybeThenable(x) && typeof x.then === 'function') {
         return x;
     }
 
