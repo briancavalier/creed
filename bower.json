@@ -5,7 +5,7 @@
     "Brian Cavalier <brian@hovercraftstudios.com>"
   ],
   "license": "MIT",
-  "description": "forward-looking promise kit with a novel architecture, focused API, and top-tier performance",
+  "description": "Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, fantasy-land",
   "main": "dist/creed.js",
   "repository": {
     "type": "git",

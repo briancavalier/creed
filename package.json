@@ -1,7 +1,7 @@
 {
   "name": "creed",
   "version": "0.3.0",
-  "description": "Forward-looking promise kit with a novel architecture, focused API, and top-tier performance",
+  "description": "Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, fantasy-land",
   "main": "dist/creed.js",
   "files": [
     "dist/creed.js"

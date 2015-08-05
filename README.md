@@ -2,11 +2,49 @@
 
 # creed :: async
 
-Creed simplifies async by letting you write coroutines using ES2015 generators and promises.  It also provides a small, focused promise API, makes uncaught errors obvious by default, and supports other ES2105 features such as iterables.
+Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, [fantasy-land](https://github.com/fantasyland/fantasy-land).
 
+Creed simplifies async by letting you write coroutines using ES2015 generators and promises, and encourages functional programming via fantasy-land.  It also makes uncaught errors obvious by default, and supports other ES2105 features such as iterables.
+
+* [Example](#example)
 * [Try it](#try-it)
 * [Get it](#get-it)
 * [API docs](docs/api.md)
+
+## Example
+
+Using creed coroutines and FP to solve the [async-problem](https://github.com/plaid/async-problem):
+
+```js
+'use strict';
+
+import { runNode, all, coroutine } from '../..';
+import { readFile } from 'fs';
+import { join } from 'path';
+
+// joinPath :: String -> String -> String
+const joinPath = init => tail => join(init, tail);
+
+// readFileP :: String -> String -> Promise Error Buffer
+const readFileP = encoding => file => runNode(readFile, file, {encoding});
+
+// pipe :: (a -> b) -> (b -> c) -> (a -> c)
+const pipe = (f, g) => x => g(f(x));
+
+// concatFiles :: String -> Promise Error String
+const concatFiles = coroutine(function* (dir) {
+    const readUtf8P = pipe(joinPath(dir), readFileP('utf8'));
+
+    const index = yield readUtf8P('index.txt');
+    const results = yield all(index.match(/^.*(?=\n)/gm).map(readUtf8P));
+    return results.join('');
+});
+
+const main = process => concatFiles(process.argv[2])
+    .then(s => process.stdout.write(s));
+
+main(process);
+```
 
 ## Get it
 
@@ -14,20 +52,20 @@ Creed simplifies async by letting you write coroutines using ES2015 generators a
 
 `bower install --save creed`
 
+As a module:
+
 ```js
 // ES2015
 import { resolve, reject, all, ... } from 'creed';
-```
 
-```js
 // Node/CommonJS
 var creed = require('creed');
-```
 
-```js
 // AMD
 define(['creed'], function(creed) { ... });
 ```
+
+As `window.creed`:
 
 ```html
 <!-- Browser global: window.creed -->
@@ -58,25 +96,5 @@ Promise { pending }
 > p
 Promise { fulfilled: done! }
 > race([delay(100, 'no'), 'winner']);
-Promise { fulfilled: winner }
-```
-
-### Node
-
-```
-npm install creed
-node
-> var creed = require('creed');
-undefined
-> creed.resolve('hello');
-Promise { fulfilled: hello }
-> creed.all([1, 2, 3].map(creed.resolve));
-Promise { fulfilled: 1,2,3 }
-> var p = creed.delay(1000, 'done!'); p
-Promise { pending }
-... wait 1 second ...
-> p
-Promise { fulfilled: done! }
-> creed.race([creed.delay(100, 'no'), 'winner']);
 Promise { fulfilled: winner }
 ```

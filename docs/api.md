@@ -38,9 +38,7 @@ A promise that remains pending forever
 
 ## Make a promise
 
-### coroutine
-
-####`coroutine :: Generator a -> (...args -> Promise a)`
+**coroutine :: Generator a -> (...args -> Promise a)**
 
 Create an async coroutine from a promise-yielding generator.
 
@@ -94,10 +92,10 @@ readFileP('theFile.txt', 'utf8')
 Run a function to produce a promised result.
 
 ```js
-import { promise } from 'creed';
+import { runPromise } from 'creed';
 
 // Run a function, threading in a url parameter
-let p = promise((url, resolve, reject) => {
+let p = runPromise((url, resolve, reject) => {
     var xhr = new XMLHttpRequest;
     xhr.addEventListener("error", reject);
     xhr.addEventListener("load", resolve);
@@ -111,7 +109,7 @@ p.then(result => console.log(result));
 Parameter threading also makes it easy to create reusable tasks that don't rely on closures and scope chain capturing.
 
 ```js
-import { promise } from 'creed';
+import { runPromise } from 'creed';
 
 function xhrGet(url, resolve, reject) => {
     var xhr = new XMLHttpRequest;
@@ -121,7 +119,7 @@ function xhrGet(url, resolve, reject) => {
     xhr.send(null);
 }
 
-promise(xhrGet, 'http://...')
+runPromise(xhrGet, 'http://...')
     .then(result => console.log(result));
 ```
 
