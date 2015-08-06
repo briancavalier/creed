@@ -6,6 +6,62 @@
 
 	'use strict';
 
+	/*eslint no-multi-spaces: 0*/
+	var PENDING = 1 << 0;
+	var FULFILLED = 1 << 1;
+	var REJECTED = 1 << 2;
+	var SETTLED = FULFILLED | REJECTED;
+	var NEVER = 1 << 3;
+
+	var HANDLED = 1 << 4;
+
+	'use strict';
+
+	function isPending(p) {
+	    return (p.state() & PENDING) > 0;
+	}
+
+	function isFulfilled(p) {
+	    return (p.state() & FULFILLED) > 0;
+	}
+
+	function isRejected(p) {
+	    return (p.state() & REJECTED) > 0;
+	}
+
+	function isSettled(p) {
+	    return (p.state() & SETTLED) > 0;
+	}
+
+	function isNever(p) {
+	    return (p.state() & NEVER) > 0;
+	}
+
+	function isHandled(p) {
+	    return (p.state() & HANDLED) > 0;
+	}
+
+	function silenceError(p) {
+	    if (!isFulfilled(p)) {
+	        p._runAction(silencer);
+	    }
+	}
+
+	var silencer = {
+	    fulfilled: function fulfilled() {},
+	    rejected: function rejected(p) {
+	        p._state |= HANDLED;
+	    }
+	};
+
+	exports.isFulfilled = isFulfilled;
+	exports.isRejected = isRejected;
+	exports.isSettled = isSettled;
+	exports.isPending = isPending;
+	exports.isNever = isNever;
+
+	'use strict';
+
 	/*global process,MutationObserver,WebKitMutationObserver */
 
 	var isNode = typeof process !== 'undefined' && Object.prototype.toString.call(process) === '[object process]';
@@ -89,62 +145,6 @@
 
 		return TaskQueue;
 	})();
-
-	'use strict';
-
-	/*eslint no-multi-spaces: 0*/
-	var PENDING = 1 << 0;
-	var FULFILLED = 1 << 1;
-	var REJECTED = 1 << 2;
-	var SETTLED = FULFILLED | REJECTED;
-	var NEVER = 1 << 3;
-
-	var HANDLED = 1 << 4;
-
-	'use strict';
-
-	function isPending(p) {
-	    return (p.state() & PENDING) > 0;
-	}
-
-	function isFulfilled(p) {
-	    return (p.state() & FULFILLED) > 0;
-	}
-
-	function isRejected(p) {
-	    return (p.state() & REJECTED) > 0;
-	}
-
-	function isSettled(p) {
-	    return (p.state() & SETTLED) > 0;
-	}
-
-	function isNever(p) {
-	    return (p.state() & NEVER) > 0;
-	}
-
-	function isHandled(p) {
-	    return (p.state() & HANDLED) > 0;
-	}
-
-	function silenceError(p) {
-	    if (!isFulfilled(p)) {
-	        p._runAction(silencer);
-	    }
-	}
-
-	var silencer = {
-	    fulfilled: function fulfilled() {},
-	    rejected: function rejected(p) {
-	        p._state |= HANDLED;
-	    }
-	};
-
-	exports.isFulfilled = isFulfilled;
-	exports.isRejected = isRejected;
-	exports.isSettled = isSettled;
-	exports.isPending = isPending;
-	exports.isNever = isNever;
 
 	'use strict';
 
@@ -303,6 +303,789 @@
 
 	'use strict';
 
+	var _map = map;
+
+	function _map___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	function map(f, p, promise) {
+	    p._when(new _map__Map(f, promise));
+	    return promise;
+	}
+
+	var _map__Map = (function () {
+	    function Map(f, promise) {
+	        _map___classCallCheck(this, Map);
+
+	        this.f = f;
+	        this.promise = promise;
+	    }
+
+	    Map.prototype.fulfilled = function fulfilled(p) {
+	        try {
+	            var f = this.f;
+	            this.promise._fulfill(f(p.value));
+	        } catch (e) {
+	            this.promise._reject(e);
+	        }
+	    };
+
+	    Map.prototype.rejected = function rejected(p) {
+	        this.promise._become(p);
+	        return false;
+	    };
+
+	    return Map;
+	})();
+
+	'use strict';
+
+	var _chain = chain;
+
+	function _chain___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	function chain(f, p, future) {
+	    p._when(new Chain(f, future));
+	    return future;
+	}
+
+	var Chain = (function () {
+	    function Chain(f, future) {
+	        _chain___classCallCheck(this, Chain);
+
+	        this.f = f;
+	        this.future = future;
+	    }
+
+	    Chain.prototype.fulfilled = function fulfilled(p) {
+	        try {
+	            var f = this.f;
+	            this.future._resolve(f(p.value).near());
+	        } catch (e) {
+	            this.future._reject(e);
+	        }
+	    };
+
+	    Chain.prototype.rejected = function rejected(p) {
+	        this.future._become(p);
+	        return false;
+	    };
+
+	    return Chain;
+	})();
+
+	'use strict';
+
+	function Race___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	var Race = (function () {
+	    function Race(never) {
+	        Race___classCallCheck(this, Race);
+
+	        this.never = never;
+	    }
+
+	    Race.prototype.valueAt = function valueAt(x, i, promise) {
+	        promise._fulfill(x);
+	    };
+
+	    Race.prototype.fulfillAt = function fulfillAt(p, i, promise) {
+	        promise._become(p);
+	    };
+
+	    Race.prototype.rejectAt = function rejectAt(p, i, promise) {
+	        promise._become(p);
+	    };
+
+	    Race.prototype.complete = function complete(total, promise) {
+	        if (total === 0) {
+	            promise._become(this.never());
+	        }
+	    };
+
+	    return Race;
+	})();
+
+	'use strict';
+
+	function Merge___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	var Merge = (function () {
+	    function Merge(mergeHandler, results) {
+	        Merge___classCallCheck(this, Merge);
+
+	        this.done = false;
+	        this.pending = 0;
+	        this.results = results;
+	        this.mergeHandler = mergeHandler;
+	    }
+
+	    Merge.prototype.valueAt = function valueAt(x, i, promise) {
+	        this.results[i] = x;
+	        this.check(this.pending - 1, promise);
+	    };
+
+	    Merge.prototype.fulfillAt = function fulfillAt(p, i, promise) {
+	        this.valueAt(p.value, i, promise);
+	    };
+
+	    Merge.prototype.rejectAt = function rejectAt(p, i, promise) {
+	        promise._become(p);
+	    };
+
+	    Merge.prototype.complete = function complete(total, promise) {
+	        this.done = true;
+	        this.check(this.pending + total, promise);
+	    };
+
+	    Merge.prototype.check = function check(pending, promise) {
+	        this.pending = pending;
+	        if (this.done && pending === 0) {
+	            this.mergeHandler.merge(promise, this.results);
+	        }
+	    };
+
+	    return Merge;
+	})();
+
+	'use strict';
+
+	function build_iterable___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	function resultsArray(iterable) {
+	    return Array.isArray(iterable) ? new Array(iterable.length) : [];
+	}
+
+	function resolveIterable(resolve, itemHandler, promises, promise) {
+	    var run = Array.isArray(promises) ? runArray : runIterable;
+	    try {
+	        run(resolve, itemHandler, promises, promise);
+	    } catch (e) {
+	        promise._reject(e);
+	    }
+	    return promise.near();
+	}
+
+	function runArray(resolve, itemHandler, promises, promise) {
+	    var i = 0;
+
+	    for (; i < promises.length; ++i) {
+	        handleItem(resolve, itemHandler, promises[i], i, promise);
+	    }
+
+	    itemHandler.complete(i, promise);
+	}
+
+	function runIterable(resolve, itemHandler, promises, promise) {
+	    var i = 0;
+
+	    var _iteratorNormalCompletion = true;
+	    var _didIteratorError = false;
+	    var _iteratorError = undefined;
+
+	    try {
+	        for (var _iterator = promises[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	            var x = _step.value;
+
+	            handleItem(resolve, itemHandler, x, i++, promise);
+	        }
+	    } catch (err) {
+	        _didIteratorError = true;
+	        _iteratorError = err;
+	    } finally {
+	        try {
+	            if (!_iteratorNormalCompletion && _iterator['return']) {
+	                _iterator['return']();
+	            }
+	        } finally {
+	            if (_didIteratorError) {
+	                throw _iteratorError;
+	            }
+	        }
+	    }
+
+	    itemHandler.complete(i, promise);
+	}
+
+	function handleItem(resolve, itemHandler, x, i, promise) {
+	    if (maybeThenable(x)) {
+	        var p = resolve(x);
+
+	        if (promise._isResolved()) {
+	            silenceError(p);
+	        } else if (isFulfilled(p)) {
+	            itemHandler.fulfillAt(p, i, promise);
+	        } else if (isRejected(p)) {
+	            itemHandler.rejectAt(p, i, promise);
+	        } else {
+	            p._runAction(new SettleAt(itemHandler, i, promise));
+	        }
+	    } else {
+	        itemHandler.valueAt(x, i, promise);
+	    }
+	}
+
+	var SettleAt = (function () {
+	    function SettleAt(handler, index, promise) {
+	        build_iterable___classCallCheck(this, SettleAt);
+
+	        this.handler = handler;
+	        this.index = index;
+	        this.promise = promise;
+	    }
+
+	    SettleAt.prototype.fulfilled = function fulfilled(p) {
+	        this.handler.fulfillAt(p, this.index, this.promise);
+	    };
+
+	    SettleAt.prototype.rejected = function rejected(p) {
+	        return this.handler.rejectAt(p, this.index, this.promise);
+	    };
+
+	    return SettleAt;
+	})();
+
+	'use strict';
+
+	function build_Promise___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	var taskQueue = new TaskQueue();
+	var errorHandler = new ErrorHandler(makeEmitError(), function (e) {
+	    throw e.value;
+	});
+
+	var marker = {};
+
+	// -------------------------------------------------------------
+	// ## Types
+	// -------------------------------------------------------------
+
+	// Future :: Promise e a
+	// A promise whose value cannot be known until some future time
+
+	var Future = (function () {
+	    function Future() {
+	        build_Promise___classCallCheck(this, Future);
+
+	        this.ref = void 0;
+	        this.action = void 0;
+	        this.length = 0;
+	    }
+
+	    // empty :: Never
+
+	    Future.empty = function empty() {
+	        return never();
+	    };
+
+	    // of :: a -> Promise e a
+
+	    Future.of = function of(x) {
+	        return just(x);
+	    };
+
+	    // then :: Promise e a -> (a -> b) -> Promise e b
+	    // then :: Promise e a -> () -> (e -> b) -> Promise e b
+	    // then :: Promise e a -> (a -> b) -> (e -> b) -> Promise e b
+
+	    Future.prototype.then = function then(f, r) {
+	        var n = this.near();
+	        return n === this ? _then(f, r, n, new Future()) : n.then(f, r);
+	    };
+
+	    // catch :: Promise e a -> (e -> b) -> Promise e b
+
+	    Future.prototype['catch'] = function _catch(r) {
+	        var n = this.near();
+	        return n === this ? _then(void 0, r, n, new Future()) : n['catch'](r);
+	    };
+
+	    // map :: Promise e a -> (a -> b) -> Promise e b
+
+	    Future.prototype.map = function map(f) {
+	        var n = this.near();
+	        return n === this ? _map(f, n, new Future()) : n.map(f);
+	    };
+
+	    // ap :: Promise e (a -> b) -> Promise e a -> Promise e b
+
+	    Future.prototype.ap = function ap(p) {
+	        var n = this.near();
+	        var pp = resolveThenable(p);
+	        return n === this ? this.chain(function (f) {
+	            return pp.map(f);
+	        }) : n.ap(pp);
+	    };
+
+	    // chain :: Promise e a -> (a -> Promise e b) -> Promise e b
+
+	    Future.prototype.chain = function chain(f) {
+	        var n = this.near();
+	        return n === this ? _chain(f, n, new Future()) : n.chain(f);
+	    };
+
+	    // concat :: Promise e a -> Promise e a -> Promise e a
+
+	    Future.prototype.concat = function concat(b) {
+	        var n = this.near();
+	        var bp = resolveThenable(b);
+
+	        return n !== this ? n.concat(bp) : isNever(bp) ? n : isSettled(bp) ? bp : race([n, bp]);
+	    };
+
+	    // toString :: Promise e a -> String
+
+	    Future.prototype.toString = function toString() {
+	        return '[object ' + this.inspect() + ']';
+	    };
+
+	    // inspect :: Promise e a -> String
+
+	    Future.prototype.inspect = function inspect() {
+	        var n = this.near();
+	        return n === this ? 'Promise { pending }' : n.inspect();
+	    };
+
+	    // near :: Promise e a -> Promise e a
+
+	    Future.prototype.near = function near() {
+	        if (!this._isResolved()) {
+	            return this;
+	        }
+
+	        var ref = this;
+	        while (ref.ref !== void 0) {
+	            ref = ref.ref;
+	            if (ref === this) {
+	                ref = cycle();
+	                break;
+	            }
+	        }
+
+	        this.ref = ref;
+	        return ref;
+	    };
+
+	    // state :: Promise e a -> Int
+
+	    Future.prototype.state = function state() {
+	        return this._isResolved() ? this.ref.near().state() : PENDING;
+	    };
+
+	    Future.prototype._isResolved = function _isResolved() {
+	        return this.ref !== void 0;
+	    };
+
+	    Future.prototype._when = function _when(action) {
+	        this._runAction(action);
+	    };
+
+	    Future.prototype._runAction = function _runAction(action) {
+	        if (this.action === void 0) {
+	            this.action = action;
+	            if (this._isResolved()) {
+	                taskQueue.add(this);
+	            }
+	        } else {
+	            this[this.length++] = action;
+	        }
+	    };
+
+	    Future.prototype._resolve = function _resolve(x) {
+	        this._become(resolve(x));
+	    };
+
+	    Future.prototype._fulfill = function _fulfill(x) {
+	        this._become(new Fulfilled(x));
+	    };
+
+	    Future.prototype._reject = function _reject(e) {
+	        if (this._isResolved()) {
+	            return;
+	        }
+
+	        this.__become(new Rejected(e));
+	    };
+
+	    Future.prototype._become = function _become(ref) {
+	        if (this._isResolved()) {
+	            return;
+	        }
+
+	        this.__become(ref);
+	    };
+
+	    Future.prototype.__become = function __become(ref) {
+	        this.ref = ref;
+	        if (this.action !== void 0) {
+	            taskQueue.add(this);
+	        }
+	    };
+
+	    Future.prototype.run = function run() {
+	        var ref = this.ref.near();
+	        ref._runAction(this.action);
+	        this.action = void 0;
+
+	        for (var i = 0; i < this.length; ++i) {
+	            ref._runAction(this[i]);
+	            this[i] = void 0;
+	        }
+
+	        this.length = 0;
+	    };
+
+	    return Future;
+	})();
+
+	Future.prototype._isPromise = marker;
+
+	// Fulfilled :: a -> Promise _ a
+	// A promise that has already acquired its value
+
+	var Fulfilled = (function () {
+	    function Fulfilled(x) {
+	        build_Promise___classCallCheck(this, Fulfilled);
+
+	        this.value = x;
+	    }
+
+	    Fulfilled.empty = function empty() {
+	        return never();
+	    };
+
+	    Fulfilled.of = function of(x) {
+	        return just(x);
+	    };
+
+	    Fulfilled.prototype.then = function then(f) {
+	        return typeof f === 'function' ? _then(f, void 0, this, new Future()) : this;
+	    };
+
+	    Fulfilled.prototype['catch'] = function _catch() {
+	        return this;
+	    };
+
+	    Fulfilled.prototype.map = function map(f) {
+	        return _map(f, this, new Future());
+	    };
+
+	    Fulfilled.prototype.ap = function ap(p) {
+	        return resolveThenable(p).map(this.value);
+	    };
+
+	    Fulfilled.prototype.chain = function chain(f) {
+	        return _chain(f, this, new Future());
+	    };
+
+	    Fulfilled.prototype.concat = function concat() {
+	        return this;
+	    };
+
+	    Fulfilled.prototype.toString = function toString() {
+	        return '[object ' + this.inspect() + ']';
+	    };
+
+	    Fulfilled.prototype.inspect = function inspect() {
+	        return 'Promise { fulfilled: ' + this.value + ' }';
+	    };
+
+	    Fulfilled.prototype.state = function state() {
+	        return FULFILLED;
+	    };
+
+	    Fulfilled.prototype.near = function near() {
+	        return this;
+	    };
+
+	    Fulfilled.prototype._when = function _when(action) {
+	        taskQueue.add(new Continuation(action, this));
+	    };
+
+	    Fulfilled.prototype._runAction = function _runAction(action) {
+	        action.fulfilled(this);
+	    };
+
+	    return Fulfilled;
+	})();
+
+	Fulfilled.prototype._isPromise = marker;
+
+	// Rejected :: e -> Promise e _
+	// A promise that is known to have failed to acquire its value
+
+	var Rejected = (function () {
+	    function Rejected(e) {
+	        build_Promise___classCallCheck(this, Rejected);
+
+	        this.value = e;
+	        this._state = REJECTED;
+	        errorHandler.track(this);
+	    }
+
+	    Rejected.empty = function empty() {
+	        return never();
+	    };
+
+	    Rejected.of = function of(x) {
+	        return just(x);
+	    };
+
+	    Rejected.prototype.then = function then(_, r) {
+	        return typeof r === 'function' ? this['catch'](r) : this;
+	    };
+
+	    Rejected.prototype['catch'] = function _catch(r) {
+	        return _then(void 0, r, this, new Future());
+	    };
+
+	    Rejected.prototype.map = function map() {
+	        return this;
+	    };
+
+	    Rejected.prototype.ap = function ap() {
+	        return this;
+	    };
+
+	    Rejected.prototype.chain = function chain() {
+	        return this;
+	    };
+
+	    Rejected.prototype.concat = function concat() {
+	        return this;
+	    };
+
+	    Rejected.prototype.toString = function toString() {
+	        return '[object ' + this.inspect() + ']';
+	    };
+
+	    Rejected.prototype.inspect = function inspect() {
+	        return 'Promise { rejected: ' + this.value + ' }';
+	    };
+
+	    Rejected.prototype.state = function state() {
+	        return this._state;
+	    };
+
+	    Rejected.prototype.near = function near() {
+	        return this;
+	    };
+
+	    Rejected.prototype._when = function _when(action) {
+	        taskQueue.add(new Continuation(action, this));
+	    };
+
+	    Rejected.prototype._runAction = function _runAction(action) {
+	        if (action.rejected(this)) {
+	            errorHandler.untrack(this);
+	        }
+	    };
+
+	    return Rejected;
+	})();
+
+	Rejected.prototype._isPromise = marker;
+
+	// Never :: Promise _ _
+	// A promise that will never acquire its value nor fail
+
+	var Never = (function () {
+	    function Never() {
+	        build_Promise___classCallCheck(this, Never);
+	    }
+
+	    Never.empty = function empty() {
+	        return never();
+	    };
+
+	    Never.of = function of(x) {
+	        return just(x);
+	    };
+
+	    Never.prototype.then = function then() {
+	        return this;
+	    };
+
+	    Never.prototype['catch'] = function _catch() {
+	        return this;
+	    };
+
+	    Never.prototype.map = function map() {
+	        return this;
+	    };
+
+	    Never.prototype.ap = function ap() {
+	        return this;
+	    };
+
+	    Never.prototype.chain = function chain() {
+	        return this;
+	    };
+
+	    Never.prototype.concat = function concat(b) {
+	        return b;
+	    };
+
+	    Never.prototype.toString = function toString() {
+	        return '[object ' + this.inspect() + ']';
+	    };
+
+	    Never.prototype.inspect = function inspect() {
+	        return 'Promise { never }';
+	    };
+
+	    Never.prototype.state = function state() {
+	        return PENDING | NEVER;
+	    };
+
+	    Never.prototype.near = function near() {
+	        return this;
+	    };
+
+	    Never.prototype._when = function _when() {};
+
+	    Never.prototype._runAction = function _runAction() {};
+
+	    return Never;
+	})();
+
+	Never.prototype._isPromise = marker;
+
+	// -------------------------------------------------------------
+	// ## Creating promises
+	// -------------------------------------------------------------
+
+	// resolve :: Thenable e a -> Promise e a
+	// resolve :: a -> Promise e a
+
+	function resolve(x) {
+	    if (isPromise(x)) {
+	        return x.near();
+	    }
+
+	    return maybeThenable(x) ? refForMaybeThenable(just, x) : new Fulfilled(x);
+	}
+
+	// reject :: e -> Promise e a
+
+	function reject(e) {
+	    return new Rejected(e);
+	}
+
+	// never :: Promise e a
+
+	function never() {
+	    return new Never();
+	}
+
+	// just :: a -> Promise e a
+
+	function just(x) {
+	    return new Fulfilled(x);
+	}
+
+	// -------------------------------------------------------------
+	// ## Iterables
+	// -------------------------------------------------------------
+
+	// all :: Iterable (Promise e a) -> Promise e [a]
+
+	function all(promises) {
+	    var handler = new Merge(allHandler, resultsArray(promises));
+	    return iterablePromise(handler, promises);
+	}
+
+	var allHandler = {
+	    merge: function merge(ref, args) {
+	        ref._fulfill(args);
+	    }
+	};
+
+	// race :: Iterable (Promise e a) -> Promise e a
+
+	function race(promises) {
+	    return iterablePromise(new Race(never), promises);
+	}
+
+	function isIterable(x) {
+	    return typeof x === 'object' && x !== null;
+	}
+	function iterablePromise(handler, iterable) {
+	    if (!isIterable(iterable)) {
+	        return reject(new TypeError('expected an iterable'));
+	    }
+
+	    var p = new Future();
+	    return resolveIterable(resolveMaybeThenable, handler, iterable, p);
+	}
+
+	// -------------------------------------------------------------
+	// # Internals
+	// -------------------------------------------------------------
+
+	// isPromise :: * -> boolean
+	function isPromise(x) {
+	    return x !== null && typeof x === 'object' && x._isPromise === marker;
+	}
+
+	function resolveMaybeThenable(x) {
+	    return isPromise(x) ? x.near() : refForMaybeThenable(just, x);
+	}
+
+	function resolveThenable(x) {
+	    return isPromise(x) ? x.near() : refForMaybeThenable(reject, x);
+	}
+
+	function refForMaybeThenable(otherwise, x) {
+	    try {
+	        var then = x.then;
+	        return typeof then === 'function' ? extractThenable(then, x) : otherwise(x);
+	    } catch (e) {
+	        return new Rejected(e);
+	    }
+	}
+
+	function extractThenable(then, thenable) {
+	    var p = new Future();
+	    try {
+	        then.call(thenable, function (x) {
+	            return p._resolve(x);
+	        }, function (e) {
+	            return p._reject(e);
+	        });
+	    } catch (e) {
+	        p._reject(e);
+	    }
+	    return p;
+	}
+
+	function cycle() {
+	    return new Rejected(new TypeError('resolution cycle'));
+	}
+
+	var Continuation = (function () {
+	    function Continuation(action, ref) {
+	        build_Promise___classCallCheck(this, Continuation);
+
+	        this.action = action;
+	        this.ref = ref;
+	    }
+
+	    Continuation.prototype.run = function run() {
+	        this.ref._runAction(this.action);
+	    };
+
+	    return Continuation;
+	})();
+
+	exports.resolve = resolve;
+	exports.reject = reject;
+	exports.never = never;
+	exports.just = just;
+	exports.all = all;
+	exports.race = race;
+
+	'use strict';
+
 	var _delay = _delay__delay;
 
 	function _delay___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
@@ -439,80 +1222,6 @@
 
 	'use strict';
 
-	function Race___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
-	var Race = (function () {
-	    function Race(never) {
-	        Race___classCallCheck(this, Race);
-
-	        this.never = never;
-	    }
-
-	    Race.prototype.valueAt = function valueAt(x, i, promise) {
-	        promise._fulfill(x);
-	    };
-
-	    Race.prototype.fulfillAt = function fulfillAt(p, i, promise) {
-	        promise._become(p);
-	    };
-
-	    Race.prototype.rejectAt = function rejectAt(p, i, promise) {
-	        promise._become(p);
-	    };
-
-	    Race.prototype.complete = function complete(total, promise) {
-	        if (total === 0) {
-	            promise._become(this.never());
-	        }
-	    };
-
-	    return Race;
-	})();
-
-	'use strict';
-
-	function Merge___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
-	var Merge = (function () {
-	    function Merge(mergeHandler, results) {
-	        Merge___classCallCheck(this, Merge);
-
-	        this.done = false;
-	        this.pending = 0;
-	        this.results = results;
-	        this.mergeHandler = mergeHandler;
-	    }
-
-	    Merge.prototype.valueAt = function valueAt(x, i, promise) {
-	        this.results[i] = x;
-	        this.check(this.pending - 1, promise);
-	    };
-
-	    Merge.prototype.fulfillAt = function fulfillAt(p, i, promise) {
-	        this.valueAt(p.value, i, promise);
-	    };
-
-	    Merge.prototype.rejectAt = function rejectAt(p, i, promise) {
-	        promise._become(p);
-	    };
-
-	    Merge.prototype.complete = function complete(total, promise) {
-	        this.done = true;
-	        this.check(this.pending + total, promise);
-	    };
-
-	    Merge.prototype.check = function check(pending, promise) {
-	        this.pending = pending;
-	        if (this.done && pending === 0) {
-	            this.mergeHandler.merge(promise, this.results);
-	        }
-	    };
-
-	    return Merge;
-	})();
-
-	'use strict';
-
 	function Settle___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 	var Settle = (function () {
@@ -556,103 +1265,6 @@
 	    };
 
 	    return Settle;
-	})();
-
-	'use strict';
-
-	function build_iterable___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
-	function resultsArray(iterable) {
-	    return Array.isArray(iterable) ? new Array(iterable.length) : [];
-	}
-
-	function resolveIterable(resolve, itemHandler, promises, promise) {
-	    var run = Array.isArray(promises) ? runArray : runIterable;
-	    try {
-	        run(resolve, itemHandler, promises, promise);
-	    } catch (e) {
-	        promise._reject(e);
-	    }
-	    return promise.near();
-	}
-
-	function runArray(resolve, itemHandler, promises, promise) {
-	    var i = 0;
-
-	    for (; i < promises.length; ++i) {
-	        handleItem(resolve, itemHandler, promises[i], i, promise);
-	    }
-
-	    itemHandler.complete(i, promise);
-	}
-
-	function runIterable(resolve, itemHandler, promises, promise) {
-	    var i = 0;
-
-	    var _iteratorNormalCompletion = true;
-	    var _didIteratorError = false;
-	    var _iteratorError = undefined;
-
-	    try {
-	        for (var _iterator = promises[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-	            var x = _step.value;
-
-	            handleItem(resolve, itemHandler, x, i++, promise);
-	        }
-	    } catch (err) {
-	        _didIteratorError = true;
-	        _iteratorError = err;
-	    } finally {
-	        try {
-	            if (!_iteratorNormalCompletion && _iterator['return']) {
-	                _iterator['return']();
-	            }
-	        } finally {
-	            if (_didIteratorError) {
-	                throw _iteratorError;
-	            }
-	        }
-	    }
-
-	    itemHandler.complete(i, promise);
-	}
-
-	function handleItem(resolve, itemHandler, x, i, promise) {
-	    if (maybeThenable(x)) {
-	        var p = resolve(x);
-
-	        if (promise._isResolved()) {
-	            silenceError(p);
-	        } else if (isFulfilled(p)) {
-	            itemHandler.fulfillAt(p, i, promise);
-	        } else if (isRejected(p)) {
-	            itemHandler.rejectAt(p, i, promise);
-	        } else {
-	            p._runAction(new SettleAt(itemHandler, i, promise));
-	        }
-	    } else {
-	        itemHandler.valueAt(x, i, promise);
-	    }
-	}
-
-	var SettleAt = (function () {
-	    function SettleAt(handler, index, promise) {
-	        build_iterable___classCallCheck(this, SettleAt);
-
-	        this.handler = handler;
-	        this.index = index;
-	        this.promise = promise;
-	    }
-
-	    SettleAt.prototype.fulfilled = function fulfilled(p) {
-	        this.handler.fulfillAt(p, this.index, this.promise);
-	    };
-
-	    SettleAt.prototype.rejected = function rejected(p) {
-	        return this.handler.rejectAt(p, this.index, this.promise);
-	    };
-
-	    return SettleAt;
 	})();
 
 	'use strict';
@@ -767,358 +1379,14 @@
 
 	'use strict';
 
-	function build_Promise___inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
+	function main___inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
 
-	function build_Promise___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
-	var taskQueue = new TaskQueue();
-
-	var errorHandler = new ErrorHandler(makeEmitError(), function (e) {
-	    throw e.value;
-	});
-
-	var marker = {};
-
-	// -------------------------------------------------------------
-	// ## Types
-	// -------------------------------------------------------------
-
-	// Future :: Promise e a
-	// A promise whose value cannot be known until some future time
-
-	var Future = (function () {
-	    function Future() {
-	        build_Promise___classCallCheck(this, Future);
-
-	        this.ref = void 0;
-	        this.action = void 0;
-	        this.length = 0;
-	    }
-
-	    // then :: Promise e a -> (a -> b) -> Promise e b
-	    // then :: Promise e a -> () -> (e -> b) -> Promise e b
-	    // then :: Promise e a -> (a -> b) -> (e -> b) -> Promise e b
-
-	    Future.prototype.then = function then(f, r) {
-	        var n = this.near();
-	        return isSettled(n) ? n.then(f, r) : _then(f, r, n, new Future());
-	    };
-
-	    // catch :: Promise e a -> (e -> b) -> Promise e b
-
-	    Future.prototype['catch'] = function _catch(r) {
-	        var n = this.near();
-	        return isFulfilled(n) ? this : _then(void 0, r, n, new Future());
-	    };
-
-	    // toString :: Promise e a -> String
-
-	    Future.prototype.toString = function toString() {
-	        return '[object ' + this.inspect() + ']';
-	    };
-
-	    // inspect :: Promise e a -> String
-
-	    Future.prototype.inspect = function inspect() {
-	        var n = this.near();
-	        return isSettled(n) ? n.inspect() : 'Promise { pending }';
-	    };
-
-	    // near :: Promise e a -> Promise e a
-
-	    Future.prototype.near = function near() {
-	        if (!this._isResolved()) {
-	            return this;
-	        }
-
-	        var ref = this;
-	        while (ref.ref !== void 0) {
-	            ref = ref.ref;
-	            if (ref === this) {
-	                ref = cycle();
-	                break;
-	            }
-	        }
-
-	        this.ref = ref;
-	        return ref;
-	    };
-
-	    // state :: Promise e a -> Int
-
-	    Future.prototype.state = function state() {
-	        return this._isResolved() ? this.ref.near().state() : PENDING;
-	    };
-
-	    Future.prototype._isResolved = function _isResolved() {
-	        return this.ref !== void 0;
-	    };
-
-	    Future.prototype._when = function _when(action) {
-	        this._runAction(action);
-	    };
-
-	    Future.prototype._runAction = function _runAction(action) {
-	        if (this.action === void 0) {
-	            this.action = action;
-	            if (this._isResolved()) {
-	                taskQueue.add(this);
-	            }
-	        } else {
-	            this[this.length++] = action;
-	        }
-	    };
-
-	    Future.prototype._resolve = function _resolve(x) {
-	        this._become(resolve(x));
-	    };
-
-	    Future.prototype._fulfill = function _fulfill(x) {
-	        this._become(new Fulfilled(x));
-	    };
-
-	    Future.prototype._reject = function _reject(e) {
-	        if (this._isResolved()) {
-	            return;
-	        }
-
-	        this.__become(new Rejected(e));
-	    };
-
-	    Future.prototype._become = function _become(ref) {
-	        if (this._isResolved()) {
-	            return;
-	        }
-
-	        this.__become(ref);
-	    };
-
-	    Future.prototype.__become = function __become(ref) {
-	        this.ref = ref;
-	        if (this.action !== void 0) {
-	            taskQueue.add(this);
-	        }
-	    };
-
-	    Future.prototype.run = function run() {
-	        var ref = this.ref.near();
-	        ref._runAction(this.action);
-	        this.action = void 0;
-
-	        for (var i = 0; i < this.length; ++i) {
-	            ref._runAction(this[i]);
-	            this[i] = void 0;
-	        }
-
-	        this.length = 0;
-	    };
-
-	    return Future;
-	})();
-
-	Future.prototype._isPromise = marker;
-
-	// Fulfilled :: a -> Promise _ a
-	// A promise that has already acquired its value
-
-	var Fulfilled = (function () {
-	    function Fulfilled(x) {
-	        build_Promise___classCallCheck(this, Fulfilled);
-
-	        this.value = x;
-	    }
-
-	    Fulfilled.prototype.then = function then(f) {
-	        return _then(f, void 0, this, new Future());
-	    };
-
-	    Fulfilled.prototype['catch'] = function _catch() {
-	        return this;
-	    };
-
-	    Fulfilled.prototype.toString = function toString() {
-	        return '[object ' + this.inspect() + ']';
-	    };
-
-	    Fulfilled.prototype.inspect = function inspect() {
-	        return 'Promise { fulfilled: ' + this.value + ' }';
-	    };
-
-	    Fulfilled.prototype.state = function state() {
-	        return FULFILLED;
-	    };
-
-	    Fulfilled.prototype.near = function near() {
-	        return this;
-	    };
-
-	    Fulfilled.prototype._when = function _when(action) {
-	        taskQueue.add(new Continuation(action, this));
-	    };
-
-	    Fulfilled.prototype._runAction = function _runAction(action) {
-	        action.fulfilled(this);
-	    };
-
-	    return Fulfilled;
-	})();
-
-	Fulfilled.prototype._isPromise = marker;
-
-	// Rejected :: e -> Promise e _
-	// A promise that is known to have failed to acquire its value
-
-	var Rejected = (function () {
-	    function Rejected(e) {
-	        build_Promise___classCallCheck(this, Rejected);
-
-	        this.value = e;
-	        this._state = REJECTED;
-	        errorHandler.track(this);
-	    }
-
-	    Rejected.prototype.then = function then(_, r) {
-	        return typeof r === 'function' ? this['catch'](r) : this;
-	    };
-
-	    Rejected.prototype['catch'] = function _catch(r) {
-	        return _then(void 0, r, this, new Future());
-	    };
-
-	    Rejected.prototype.toString = function toString() {
-	        return '[object ' + this.inspect() + ']';
-	    };
-
-	    Rejected.prototype.inspect = function inspect() {
-	        return 'Promise { rejected: ' + this.value + ' }';
-	    };
-
-	    Rejected.prototype.state = function state() {
-	        return this._state;
-	    };
-
-	    Rejected.prototype.near = function near() {
-	        return this;
-	    };
-
-	    Rejected.prototype._when = function _when(action) {
-	        taskQueue.add(new Continuation(action, this));
-	    };
-
-	    Rejected.prototype._runAction = function _runAction(action) {
-	        if (action.rejected(this)) {
-	            errorHandler.untrack(this);
-	        }
-	    };
-
-	    return Rejected;
-	})();
-
-	Rejected.prototype._isPromise = marker;
-
-	// Never :: Promise _ _
-	// A promise that will never acquire its value nor fail
-
-	var Never = (function () {
-	    function Never() {
-	        build_Promise___classCallCheck(this, Never);
-	    }
-
-	    Never.prototype.then = function then() {
-	        return this;
-	    };
-
-	    Never.prototype['catch'] = function _catch() {
-	        return this;
-	    };
-
-	    Never.prototype.toString = function toString() {
-	        return '[object ' + this.inspect() + ']';
-	    };
-
-	    Never.prototype.inspect = function inspect() {
-	        return 'Promise { never }';
-	    };
-
-	    Never.prototype.state = function state() {
-	        return PENDING | NEVER;
-	    };
-
-	    Never.prototype.near = function near() {
-	        return this;
-	    };
-
-	    Never.prototype._when = function _when() {};
-
-	    Never.prototype._runAction = function _runAction() {};
-
-	    return Never;
-	})();
-
-	Never.prototype._isPromise = marker;
-
-	// -------------------------------------------------------------
-	// ## Creating promises
-	// -------------------------------------------------------------
-
-	// resolve :: Thenable e a -> Promise e a
-	// resolve :: a -> Promise e a
-
-	function resolve(x) {
-	    if (isPromise(x)) {
-	        return x.near();
-	    }
-
-	    return maybeThenable(x) ? refForUntrusted(x) : new Fulfilled(x);
-	}
-
-	// reject :: e -> Promise e a
-
-	function reject(e) {
-	    return new Rejected(e);
-	}
-
-	// never :: Promise e a
-
-	function never() {
-	    return new Never();
-	}
-
-	// type Resolve a = (a -> ())
-	// type Reject e = (e -> ())
-	// type Producer e a = (...args -> Resolve a -> Reject e)
-	// runPromise :: Producer e a -> ...args -> Promise e a
-
-	function build_Promise__runPromise(f) {
-	    for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-	        args[_key - 1] = arguments[_key];
-	    }
-
-	    return runResolver(f, this, args, new Future());
-	}
-
-	function runResolver(f, thisArg, args, p) {
-	    checkFunction(f);
-
-	    try {
-	        _runPromise(f, thisArg, args, p);
-	    } catch (e) {
-	        p._reject(e);
-	    }
-	    return p;
-	}
-
-	// -------------------------------------------------------------
-	// ## Coroutines
-	// -------------------------------------------------------------
-
-	// coroutine :: Generator -> (...args -> Promise)
-	// Generator to coroutine
+	function main___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 	function coroutine(generator) {
 	    return function () {
-	        for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-	            args[_key2] = arguments[_key2];
+	        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	            args[_key] = arguments[_key];
 	        }
 
 	        return runGenerator(generator, this, args);
@@ -1134,23 +1402,28 @@
 	// ## Node-style async
 	// -------------------------------------------------------------
 
-	// type Nodeback = (e -> value -> ())
-	// fromNode :: (...args -> Nodeback) -> (...args -> Promise)
-	// Node-style async function to promise-returning function
+	// type Nodeback e a = e -> a -> ()
+	// type NodeApi e a = ...* -> Nodeback e a -> ()
+
+	// fromNode :: NodeApi e a -> (...args -> Promise e a)
+	// Turn a Node API into a promise API
 
 	function fromNode(f) {
 	    return function () {
-	        for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-	            args[_key3] = arguments[_key3];
+	        for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+	            args[_key2] = arguments[_key2];
 	        }
 
 	        return runNodeResolver(f, this, args, new Future());
 	    };
 	}
 
-	function build_Promise__runNode(f) {
-	    for (var _len4 = arguments.length, args = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
-	        args[_key4 - 1] = arguments[_key4];
+	// fromNode :: NodeApi e a -> ...* -> Promise e a
+	// Run a Node API, returning a promise for the outcome
+
+	function main__runNode(f) {
+	    for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+	        args[_key3 - 1] = arguments[_key3];
 	    }
 
 	    return runNodeResolver(f, this, args, new Future());
@@ -1168,12 +1441,40 @@
 	}
 
 	// -------------------------------------------------------------
+	// ## Make a promise
+	// -------------------------------------------------------------
+
+	// type Resolve a = a -> ()
+	// type Reject e = e -> ()
+	// type Producer e a = (...* -> Resolve a -> Reject e -> ())
+	// runPromise :: Producer e a -> ...* -> Promise e a
+
+	function main__runPromise(f) {
+	    for (var _len4 = arguments.length, args = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
+	        args[_key4 - 1] = arguments[_key4];
+	    }
+
+	    return runResolver(f, this, args, new Future());
+	}
+
+	function runResolver(f, thisArg, args, p) {
+	    checkFunction(f);
+
+	    try {
+	        _runPromise(f, thisArg, args, p);
+	    } catch (e) {
+	        p._reject(e);
+	    }
+	    return p;
+	}
+
+	// -------------------------------------------------------------
 	// ## Time
 	// -------------------------------------------------------------
 
 	// delay :: number -> Promise e a -> Promise e a
 
-	function build_Promise__delay(ms, x) {
+	function main__delay(ms, x) {
 	    var p = resolve(x);
 	    return ms <= 0 || isRejected(p) || isNever(p) ? p : _delay(ms, p, new Future());
 	}
@@ -1189,58 +1490,26 @@
 	// ## Iterables
 	// -------------------------------------------------------------
 
-	// all :: Iterable (Promise e a) -> Promise e [a]
-
-	function all(promises) {
-	    var handler = new Merge(allHandler, resultsArray(promises));
-	    return iterablePromise(handler, promises);
-	}
-
-	var allHandler = {
-	    merge: function merge(ref, args) {
-	        ref._fulfill(args);
-	    }
-	};
-
-	// race :: Iterable (Promise e a) -> Promise e a
-
-	function race(promises) {
-	    return iterablePromise(new Race(never), promises);
-	}
-
 	// any :: Iterable (Promise e a) -> Promise e a
 
 	function any(promises) {
 	    return iterablePromise(new Any(), promises);
 	}
 
-	// settle :: Iterable (Promise e a) -> Promise e ([Promise e a])
+	// settle :: Iterable (Promise e a) -> Promise e [Promise e a]
 
 	function settle(promises) {
 	    var handler = new Settle(resolve, resultsArray(promises));
 	    return iterablePromise(handler, promises);
 	}
 
-	function isIterable(x) {
-	    return typeof x === 'object' && x !== null;
-	}
-
-	function iterablePromise(handler, iterable) {
-	    if (!isIterable(iterable)) {
-	        return reject(new TypeError('expected an iterable'));
-	    }
-
-	    var p = new Future();
-	    return resolveIterable(resolveMaybeThenable, handler, iterable, p);
-	}
-
 	// -------------------------------------------------------------
 	// ## Lifting
 	// -------------------------------------------------------------
 
-	// merge :: (...a -> b) -> ...Promise e a -> Promise e b
+	// merge :: (...* -> b) -> ...Promise e a -> Promise e b
 
-	function build_Promise__merge(f) {
+	function main__merge(f) {
 	    for (var _len5 = arguments.length, args = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
 	        args[_key5 - 1] = arguments[_key5];
 	    }
@@ -1255,7 +1524,7 @@
 
 	var MergeHandler = (function () {
 	    function MergeHandler(f, c) {
-	        build_Promise___classCallCheck(this, MergeHandler);
+	        main___classCallCheck(this, MergeHandler);
 
 	        this.f = f;
 	        this.c = c;
@@ -1280,65 +1549,11 @@
 	    return MergeHandler;
 	})();
 
-	// -------------------------------------------------------------
-	// # Internals
-	// -------------------------------------------------------------
-
-	// isPromise :: a -> boolean
-	function isPromise(x) {
-	    return x !== null && typeof x === 'object' && x._isPromise === marker;
-	}
-
-	function resolveMaybeThenable(x) {
-	    return isPromise(x) ? x.near() : refForUntrusted(x);
-	}
-
-	function refForUntrusted(x) {
-	    try {
-	        var then = x.then;
-	        return typeof then === 'function' ? extractThenable(then, x, new Future()) : new Fulfilled(x);
-	    } catch (e) {
-	        return new Rejected(e);
-	    }
-	}
-
-	function extractThenable(then, thenable, p) {
-	    try {
-	        then.call(thenable, function (x) {
-	            return p._resolve(x);
-	        }, function (e) {
-	            return p._reject(e);
-	        });
-	    } catch (e) {
-	        p._reject(e);
-	    }
-	    return p;
-	}
-
-	function cycle() {
-	    return new Rejected(new TypeError('resolution cycle'));
-	}
-
 	function checkFunction(f) {
 	    if (typeof f !== 'function') {
 	        throw new TypeError('must provide a resolver function');
 	    }
 	}
-
-	var Continuation = (function () {
-	    function Continuation(action, ref) {
-	        build_Promise___classCallCheck(this, Continuation);
-
-	        this.action = action;
-	        this.ref = ref;
-	    }
-
-	    Continuation.prototype.run = function run() {
-	        this.ref._runAction(this.action);
-	    };
-
-	    return Continuation;
-	})();
 
 	// -------------------------------------------------------------
 	// ## ES6 Promise polyfill
@@ -1346,13 +1561,15 @@
 
 	var NOARGS = [];
 
-	// Promise :: ((a -> ()) -> (e -> ())) -> Promise e a
+	// type Resolve a = a -> ()
+	// type Reject e = e -> ()
+	// Promise :: (Resolve a -> Reject e) -> Promise e a
 
 	var CreedPromise = (function (_Future) {
-	    build_Promise___inherits(CreedPromise, _Future);
+	    main___inherits(CreedPromise, _Future);
 
 	    function CreedPromise(f) {
-	        build_Promise___classCallCheck(this, CreedPromise);
+	        main___classCallCheck(this, CreedPromise);
 
 	        _Future.call(this);
 	        runResolver(f, void 0, NOARGS, this);
@@ -1381,22 +1598,16 @@
 	    shim();
 	}
 
-	exports.resolve = resolve;
-	exports.reject = reject;
-	exports.never = never;
-	exports.runPromise = build_Promise__runPromise;
 	exports.coroutine = coroutine;
 	exports.fromNode = fromNode;
-	exports.runNode = build_Promise__runNode;
-	exports.delay = build_Promise__delay;
+	exports.runNode = main__runNode;
+	exports.runPromise = main__runPromise;
+	exports.delay = main__delay;
 	exports.timeout = timeout;
-	exports.all = all;
-	exports.race = race;
 	exports.any = any;
 	exports.settle = settle;
-	exports.merge = build_Promise__merge;
+	exports.merge = main__merge;
 	exports.shim = shim;
-	exports.Future = Future;
 	exports.Promise = CreedPromise;
 
 }));
