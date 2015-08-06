@@ -1,59 +1,22 @@
+# creed.js
 
-# API
-
-## Notation
-
-You'll see diagrams like:
-
-```
-promise1: ---a
-
-promise2: ---X
-```
-
-These are timeline diagrams that try to give a simple, representative notion of how a promise behaves over time.  Time proceeds from left to right, using letters and symbols to indicate certain things:
-
-* `-` - an instant in time where the promise is pending
-* a,b,c,d,etc. - a promise fulfillment value at an instant in time
-* `X` - a promise rejection at an instant in time
-* `>` - promise remains pending forever
-
-### Examples
-
-`promise: ---a`
-
-A promise that fulfills with `a` after some time
-
-`promise: a`
-
-A promise that is already fulfilled with `a`.
-
-`promise: ---X`
-
-A promise that rejects after some time
-
-`promise: --->`
-
-A promise that remains pending forever
-
-## Make a promise
-
-**coroutine :: Generator a -> (...args -> Promise a)**
+## coroutine
+### coroutine :: Generator a &rarr; (...* &rarr; Promise e a)
 
 Create an async coroutine from a promise-yielding generator.
 
 ```js
-import { co } from 'creed';
+import { coroutine } from 'creed';
 
 function fetchTextFromUrl(url) {
-    // ...
+    /* Get the text */
     return promise;
 }
 
-// Declare an async coroutine from a generator
-let getUserProfile = coroutine(function* (user) {
+/* Declare an async coroutine from a generator */
+let getUserProfile = coroutine(function* (userId) {
     try {
-        let profileUrl = yield getUserProfileUrlFromDB(user);
+        let profileUrl = yield getUserProfileUrlFromDB(userId);
         let text = yield fetchTextFromUrl(profileUrl);
         return text;
     } catch(e) {
@@ -61,23 +24,23 @@ let getUserProfile = coroutine(function* (user) {
     }
 });
 
-// Call it like a function
-let user = ...;
-getUserProfile(user)
+/* Call it like a function */
+getUserProfile(123)
     .then(profile => console.log(profile));
 ```
 
-### fromNode
+## fromNode
+### fromNode :: NodeApi e a &rarr; (...* &rarr; Promise e a)
+#### type NodeApi e a = ...* &rarr; Nodeback e a &rarr; ()
+#### type Nodeback e a = e &rarr; a &rarr; ()
 
-####`fromNode :: (...args -> (err -> a)) -> (...args -> Promise a)`
-
-Turn a Node-style API into a promised API.
+Turn a Node API into a promise API
 
 ```js
-import { node } from 'creed';
+import { fromNode } from 'creed';
 import { readFile } from 'fs';
 
-// Make a promised version of fs.readFile
+/* Make a promised version of fs.readFile */
 let readFileP = fromNode(readFile);
 
 readFileP('theFile.txt', 'utf8')
@@ -85,16 +48,17 @@ readFileP('theFile.txt', 'utf8')
     .then(contents => console.log(contents));
 ```
 
-### runPromise
-
-####`runPromise :: (...args -> (a -> ()) -> (err -> ()) -> ...args -> Promise a`
+**runPromise :: Producer e a &rarr; ...* &rarr; Promise e a**<br/>
+type Producer e a = (...* &rarr; Resolve a &rarr; Reject e &rarr; ())<br/>
+type Resolve a = a &rarr; ()<br/>
+type Reject e = e &rarr; ()
 
 Run a function to produce a promised result.
 
 ```js
 import { runPromise } from 'creed';
 
-// Run a function, threading in a url parameter
+/* Run a function, threading in a url parameter */
 let p = runPromise((url, resolve, reject) => {
     var xhr = new XMLHttpRequest;
     xhr.addEventListener("error", reject);
@@ -106,7 +70,7 @@ let p = runPromise((url, resolve, reject) => {
 p.then(result => console.log(result));
 ```
 
-Parameter threading also makes it easy to create reusable tasks that don't rely on closures and scope chain capturing.
+Parameter threading also makes it easy to create reusable tasksthat don't rely on closures and scope chain capturing.
 
 ```js
 import { runPromise } from 'creed';
@@ -123,257 +87,317 @@ runPromise(xhrGet, 'http://...')
     .then(result => console.log(result));
 ```
 
-## Transform
+**resolve :: Thenable e a &rarr; Promise e a**<br>
+**resolve :: a &rarr; Promise e a**
 
-### then
-
-####`then :: Promise a -> (a -> b|Promise b) -> Promise b`
-
-[Promises/A+ then](http://promisesaplus.com/)
-
-Transform a promise's value by applying a function to the promise's fulfillment value. Returns a new promise for the transformed result.
-
-```
-p:              ---1
-p.then(x => 2): ---2
-
-p:                        ---1
-p.then(x => delay(3, 2)): ------2
-
-p:                       ---1
-p.then(x => reject(..)): ---X
-
-p:         ---X
-p.then(f): ---X
-```
-
-## Handle errors
-
-### catch
-
-####`catch :: Promise a -> (err -> b|Promise b) -> Promise b`
-
-Recover from a promise error.
-
-```
-p:               ---X
-p.catch(e => 1): ---1
-
-p:                        ---X
-p.catch(x => delay(3, 1)): ------1
-
-p:          ---a
-p.catch(f): ---a
-```
-
-## Control time
-
-### timeout
-
-####`timeout :: Milliseconds -> a|Promise a -> Promise a`
-
-Reject a promise if it doesn't settle within a particular time.
-
-```
-p1:             ---a
-timeout(5, p1): ---a
-
-p2:             -----a
-timeout(3, p2): --X
-```
+Make a promise from a value or coerce any Thenable to a promise.
 
 ```js
-import { timeout } from 'creed';
-import rest from 'rest';
+import { resolve } from 'creed';
 
-function getContentWithTimeout(url) {
-    return timeout(1000, rest(url));
-}
+resolve(123)
+    .then(x => console.log(x)); //=> 123
 
-let content = getContentWithTimeout('http://...');
+resolve(jQuery.get('http://...')) // coerce any thenable
+    .then(x => console.log(x)); //=> 123
 ```
 
-### delay
+**just :: a &rarr; Promise e a**
 
-####`delay :: Milliseconds -> a|Promise a -> Promise a`
+Make a fulfulled promise for a value
 
-Make a promise that reveals it's fulfillment after a delay.  Rejections are not delayed.
+```js
+import { just } from 'creed';
 
+just(123)
+    .then(x => console.log(x)); //=> 123
 ```
-p1:           ---a
-delay(5, p1): --------a
 
-p2:           ---X
-delay(5, p2): ---X
+**reject :: Error e => e &rarr; Promise e a**
+
+Make a rejected promise for an error
+
+```js
+import { reject } from 'creed';
+
+reject(new TypeError('oops!'))
+    .catch(e => console.log(e.message)); //=> oops!
 ```
+
+**never :: Promise e a**
+
+Make a promise that remains pending forever
+
+```js
+import { never } from 'creed';
+
+never()
+    .then(x => console.log(x)); // nothing logged, ever
+```
+
+**delay :: Int &rarr; a &rarr; Promise e a**<br/>
+**delay :: Int &rarr; Promise e a &rarr; Promise e a**
+
+Create a delayed promise for a value, or further delay the fulfillment
+of an existing promise.  Delay only delays fulfillment: it has no
+effect on rejected promises.
+
+```js
+import { delay, reject } from 'creed';
+
+delay(5000, 'hi')
+    .then(x => console.log(x)); //=> 'hi' after 5 seconds
+
+delay(5000, delay(1000, 'hi'))
+    .then(x => console.log(x)); //=> 'hi' after 6 seconds
+
+delay(5000, reject(new Error('oops')))
+    .catch(e => console.log(e.message)); //=> 'oops' immediately
+```
+
+**timeout :: Int &rarr; Promise e a &rarr; Promise e a
+
+Create a promise that will reject after a specified time unless
+it settles earlier.
 
 ```js
 import { delay } from 'creed';
 
-delay(1000, 'hi')
-    .then(x => console.log(x)); // 'hi' after 1 second
-    
+timeout(2000, delay(1000, 'hi'))
+    .then(x => console.log(x)); //=> 'hi' after 1 second
 
-function countdown(x) {
-    console.log(x);
-    
-    return x === 0 ? x : delay(1000, x-1).then(countdown);
-}
-
-countdown(3);
+timeout(1000, delay(2000, 'hi')); //=> TimeoutError after 1 second
 ```
+
+**merge :: (...* -> b) -> ...Promise e a -> Promise e b**
+
+Merge promises by passing their fulfillment values to a merge
+function.  Returns a promise for the result of the merge function.
+Effectively liftN for promises.
 
 ```js
-3 // immediately
-2 // after 1 second
-1 // after 2 seconds
-0 // after 3 seconds
+import { merge, resolve } from 'creed';
+
+merge((x, y) => x + y, resolve(123), resolve(1))
+    .then(z => console.log(z)); //=> 124
 ```
 
-## Resolve collections
+**.then :: Promise e a &rarr; (a &rarr; b|Promise e b) &rarr; Promise e b**
 
-Creed's collection methods accept ES6 Iterables.  You can pass an Array, a Set, a Generator, etc. of promises.
+[Promises/A+ then](http://promisesaplus.com/).
+Transform a promise's value by applying a function to the
+promise's fulfillment value. Returns a new promise for the
+transformed result.
 
-### all
+```js
+import { resolve } from 'creed';
 
-####`all :: Iterable Promise a -> Promise Array a`
+resolve(1)
+    .then(x => x + 1) // return a transformed value
+    .then(y => console.log(y)); //=> 2
 
-Create a promise that fulfills when all input promises have fulfilled, or rejects when *one* input promise rejects.
-
+resolve(1)
+    .then(x => resolve(x + 1)) // return transformed promise
+    .then(y => console.log(y)); //=> 2
 ```
-p1:                --a
-p2:                ------b
-p3:                ----c
-all([p1, p2, p3]): ------[a,b,c]
 
-p1:                --a
-p2:                ------b
-p3:                ----X
-all([p1, p2, p3]): ----X
+**.catch :: Promise e a &rarr; (e &rarr; b|Promise e b) &rarr; Promise e b**
+
+Catch and handle a promise error.
+
+```js
+import { reject, resolve } from 'creed';
+
+reject(new Error('oops!'))
+    .catch(e => 123) // recover by returning a new value
+    .then(x => console.log(x)); //=> 123
+
+reject(new Error('oops!'))
+    .catch(e => resolve(123)) // recover by returning a promise
+    .then(x => console.log(x)); //=> 123
 ```
+
+**.map :: Promise e a &rarr; (a &rarr; b) &rarr; Promise e b**
+
+[Fantasy-land Functor](https://github.com/fantasyland/fantasy-land#functor).
+Transform a promise's value by applying a function.  The return
+value of the function will be used verbatim, even if it is a promise.
+Returns a new promise for the transformed value.
+
+```js
+import { resolve } from 'creed';
+
+resolve(1)
+    .map(x => x + 1) // return a transformed value
+    .then(y => console.log(y)); //=> 2
+```
+
+**.ap :: Promise e (a &rarr; b) &rarr; Promise e a &rarr; Promise e b**
+
+[Fantasy-land Apply](https://github.com/fantasyland/fantasy-land#apply).
+Apply a promised function to a promised value.  Returns anew promise for the result.
+
+```js
+import { resolve } from 'creed';
+
+resolve(x => x + 1)
+    .ap(resolve(123))
+    .then(y => console.log(y)); //=> 124
+
+resolve(x => y => x+y)
+    .ap(resolve(1))
+    .ap(resolve(123))
+    .then(y => console.log(y)); //=> 124
+```
+
+**.chain :: Promise e a &rarr; (a &rarr; Promise e b) &rarr; Promise e b**
+
+[Fantasy-land Chain](https://github.com/fantasyland/fantasy-land#chain).
+Sequence async actions.  When a promise fulfills, run another
+async action and return a promise for its result.
+
+```js
+let profileText = getUserProfileUrlFromDB(userId)
+    .chain(fetchTextFromUrl);
+
+profileText.then(text => console.log(text)); //=> <user profile text>
+```
+
+**.concat :: Promise e a &rarr; Promise e a &rarr; Promise e a**
+
+[Fantasy-land Semigroup](https://github.com/fantasyland/fantasy-land#semigroup).
+Returns a promise equivalent to the *earlier* of two promises
+
+```js
+import { delay } from 'creed';
+
+delay(200, 'bar').concat(delay(100, 'foo'))
+    .then(x => console.log(x)); //=> 'foo'
+```
+
+**all :: Iterable (Promise e a) &rarr; Promise e [a]**
+
+Await all promises from an Iterable.  Returns a promise that fulfills
+with an array containing all input promise fulfillment values,
+or rejects if at least one input promise rejects.
 
 ```js
 import { all, resolve } from 'creed';
 
-let s = new Set();
-s.add(resolve(1));
-s.add(resolve(2));
-s.add(resolve(3));
+all([resolve(123), resolve(456)])
+    .then(x => console.log(x)); //=> [123, 456]
 
-all(s).then(array => console.log(array)); // 1,2,3
+let promises = new Set();
+promises.add(resolve(123));
+promises.add(resolve(456));
+
+all(promises)
+    .then(x => console.log(x)); //=> [123, 456]
 ```
+
+**race :: Iterable (Promise e a) &rarr; Promise e a**
+
+Returns a promise equivalent to the input promise that *settles* earliest.
+If there are input promises that are already settled or settle
+simultaneously, race prefers the one encountered first in the
+iteration order.
+
+**Note:** As per the ES6-spec, racing an empty iterable returns `never()`
+
+**any :: Iterable (Promise e a) &rarr; Promise e a**
+
+Returns a promise equivalent to the input promise that *fulfills*
+earliest.  If all input promises reject, the returned promise rejects.
+
+**settle :: Iterable (Promise e a) &rarr; Promise e [Promise e a]**
+
+Returns a promise that fulfills with an array of settled promises.
+
+**isFulfilled :: Promise e a -> boolean**
+
+Returns true if the promise is fulfilled.
 
 ```js
-import { all, resolve } from 'creed';
+import { isFulfilled, resolve, reject, delay, never } from 'creed';
 
-function* yieldSomePromises() {
-    yield resolve(1);
-    yield resolve(2);
-    yield resolve(3);
-}
-
-all(yieldSomePromises())
-    .then(array => console.log(array)); // 1,2,3
+isFulfilled(resolve(123)); //=> true
+isFulfilled(reject(new Error())); //=> false
+isFulfilled(delay(0, 123)); //=> true
+isFulfilled(delay(1, 123)); //=> false
+isFulfilled(never()); //=> false
 ```
 
-### race
+**isRejected :: Promise e a -> boolean**
 
-####`race :: Iterable Promise a -> Promise a`
-
-A competitive race to settle. The returned promise will settle in the same way as the earliest promise in array to settle.
-
-```
-p1:                 --a
-p2:                 ------X
-p3:                 ----c
-race([p1, p2, p3]): --a
-
-p1:                 --X
-p2:                 ------b
-p3:                 ----c
-race([p1, p2, p3]): --X
-
-race([]):           ------->
-```
+Returns true if the promise is rejected.
 
 ```js
-import { race, resolve, delay } from 'creed';
+import { isRejected, resolve, reject, delay, never } from 'creed';
 
-let a = [
-    delay(100, 1),
-    resolve(2),
-    delay(200, 3)
-];
-
-race(a).then(x => console.log(x)); // 2
+isRejected(resolve(123)); //=> false
+isRejected(reject(new Error())); //=> true
+isRejected(never()); //=> false
 ```
 
-### any
+**isSettled :: Promise e a -> boolean**
 
-####`any :: Iterable Promise a -> Promise a`
-
-Create a promise that fulfills when the earliest input promise fulfills, or rejects when all input promises have rejected.
-
-```
-p1:                --X
-p2:                ------b
-p3:                ----c
-any([p1, p2, p3]): ----c
-
-p1:                --X
-p2:                ------X
-p3:                ----X
-any([p1, p2, p3]): ------X
-
-any([]):           X
-```
+Returns true if the promise is either fulfilled or rejected.
 
 ```js
-import { any } from 'creed';
+import { isSettled, resolve, reject, delay, never } from 'creed';
 
-let a = [
-    reject(new Error('fail 1')),
-    delay(100, 2),
-    reject(new Error('fail 3')),
-];
-
-any(a).then(x => console.log(x)); // 2
+isSettled(resolve(123)); //=> true
+isSettled(reject(new Error())); //=> true
+isSettled(delay(0, 123)); //=> true
+isSettled(delay(1, 123)); //=> false
+isSettled(never()); //=> false
 ```
 
-### settle
+**isPending :: Promise e a -> boolean**
 
-####`settle :: Iterable Promise a -> Promise Array Promise a`
-
-Create a promise that fulfills with an array of settled promises whose state and value can be inspected synchronously.
-
-```
-p1:                --a
-p2:                ------b
-p3:                ----c
-all([p1, p2, p3]): ------[a,b,c]
-
-p1:                --a
-p2:                ------b
-p3:                ----X
-all([p1, p2, p3]): ----X
-```
+Returns true if the promise is pending (not yet fulfilled or rejected).
 
 ```js
-import { settle, resolve, reject, isFulfilled, getValue } from 'creed';
+import { isPending, resolve, reject, delay, never } from 'creed';
 
-let a = [reject(1), 2, resolve(3), reject(4)];
-
-settle(a).then(array => {
-    
-    let fulfilled = array.filter(isFulfilled);
-    
-    for(let p of fulfilled) {
-        console.log(getValue(p));
-    }
-    
-});
+isPending(resolve(123)); //=> false
+isPending(reject(new Error())); //=> false
+isPending(delay(0, 123)); //=> false
+isPending(delay(1, 123)); //=> true
+isPending(never()); //=> true
 ```
 
-## Debugging
+**isNever :: Promise e a -> boolean**
 
-*TODO*
+Returns true if it is known that the promise will remain pending
+forever.  In practice, this means that the promise is one that was
+returned by `never()` or a promise that has been resolved to such.
+
+```js
+import { isNever, resolve, reject, delay, never, race } from 'creed';
+
+isNever(resolve(123)); //=> false
+isNever(reject(new Error())); //=> false
+isNever(delay(0, 123)); //=> false
+isNever(delay(1, 123)); //=> false
+isNever(never()); //=> true
+isNever(resolve(never())); //=> true
+isNever(delay(1000, never())); //=> true
+isNever(race([])); //=> true
+```
+
+**shim :: () -> PromiseConstructor|undefined**
+
+Polyfills the global `Promise` constructor with an ES6-compliant
+creed `Promise`.  If there was a pre-existing global `Promise`,
+it is returned.
+
+```js
+import { shim } from 'creed';
+
+// Install creed's ES6-compliant Promise as global
+let NativePromise = shim();
+
+// Create a creed promise
+Promise.resolve(123);
+```
