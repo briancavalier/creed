@@ -45,11 +45,11 @@ function runGenerator(generator, thisArg, args) {
 // ## Node-style async
 // -------------------------------------------------------------
 
-// type NodeApi e a = ...* -> Nodeback e a -> ()
 // type Nodeback e a = e -> a -> ()
+// type NodeApi e a = ...* -> Nodeback e a -> ()
 
 // fromNode :: NodeApi e a -> (...args -> Promise e a)
-// Turn a Node API into a promise-returning function
+// Turn a Node API into a promise API
 export function fromNode(f) {
     return function (...args) {
         return runNodeResolver(f, this, args, new Future());
