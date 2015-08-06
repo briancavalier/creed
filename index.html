@@ -16,22 +16,42 @@
   <link  href='https://cdn.rawgit.com/rstacruz/flatdoc/v0.9.0/theme-white/style.css' rel='stylesheet'>
   <script src='https://cdn.rawgit.com/rstacruz/flatdoc/v0.9.0/theme-white/script.js'></script>
 
+  <!-- Highlightjs -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/github-gist.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+
+  <style>
+    body {
+      font-size: 1em;
+    }
+    .menubar {
+      width: 400px;
+    }
+    .content-root {
+      padding-left: 400px;
+    }
+  </style>
+
   <!-- Meta -->
   <meta content="creed" property="og:title">
-  <meta content="Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, fantasy-land" name="description">
+  <meta content="Sophisticated and functionally-minded async with advanced features" name="description">
 
   <!-- Initializer -->
   <script>
     Flatdoc.run({
-      fetcher: Flatdoc.github('briancavalier/creed', 'docs/api.md')
+      highlight: function (code, lang) {
+        return hljs.highlight(lang, code).value;
+      },
+      fetcher: Flatdoc.file('README.md')
+//      fetcher: Flatdoc.github('briancavalier/creed', 'README.md')
     });
   </script>
 </head>
-<body role='flatdoc'>
+<body role='flatdoc' class="big-h3 no-literate large-brief">
 
   <div class='header'>
     <div class='left'>
-      <h1>Your Project</h1>
+      <h1>creed :: async</h1>
       <ul>
         <li><a href='https://github.com/briancavalier/creed'>View on GitHub</a></li>
         <li><a href='https://github.com/briancavalier/creed/issues'>Issues</a></li>
