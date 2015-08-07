@@ -462,11 +462,11 @@ Returns true if the promise is fulfilled.
 ```js
 import { isFulfilled, resolve, reject, delay, never } from 'creed';
 
-isFulfilled(resolve(123)); //=> true
+isFulfilled(resolve(123));        //=> true
 isFulfilled(reject(new Error())); //=> false
-isFulfilled(delay(0, 123)); //=> true
-isFulfilled(delay(1, 123)); //=> false
-isFulfilled(never()); //=> false
+isFulfilled(delay(0, 123));       //=> true
+isFulfilled(delay(1, 123));       //=> false
+isFulfilled(never());             //=> false
 ```
 
 ### isRejected :: Promise e a &rarr; boolean
@@ -476,11 +476,11 @@ Returns true if the promise is rejected.
 ```js
 import { isRejected, resolve, reject, delay, never } from 'creed';
 
-isRejected(resolve(123)); //=> false
+isRejected(resolve(123));        //=> false
 isRejected(reject(new Error())); //=> true
-isRejected(delay(0, 123)); //=> false
-isRejected(delay(1, 123)); //=> false
-isRejected(never()); //=> false
+isRejected(delay(0, 123));       //=> false
+isRejected(delay(1, 123));       //=> false
+isRejected(never());             //=> false
 ```
 
 ### isSettled :: Promise e a &rarr; boolean
@@ -490,11 +490,11 @@ Returns true if the promise is either fulfilled or rejected.
 ```js
 import { isSettled, resolve, reject, delay, never } from 'creed';
 
-isSettled(resolve(123)); //=> true
+isSettled(resolve(123));        //=> true
 isSettled(reject(new Error())); //=> true
-isSettled(delay(0, 123)); //=> true
-isSettled(delay(1, 123)); //=> false
-isSettled(never()); //=> false
+isSettled(delay(0, 123));       //=> true
+isSettled(delay(1, 123));       //=> false
+isSettled(never());             //=> false
 ```
 
 ### isPending :: Promise e a &rarr; boolean
@@ -504,11 +504,11 @@ Returns true if the promise is pending (not yet fulfilled or rejected).
 ```js
 import { isPending, resolve, reject, delay, never } from 'creed';
 
-isPending(resolve(123)); //=> false
+isPending(resolve(123));        //=> false
 isPending(reject(new Error())); //=> false
-isPending(delay(0, 123)); //=> false
-isPending(delay(1, 123)); //=> true
-isPending(never()); //=> true
+isPending(delay(0, 123));       //=> false
+isPending(delay(1, 123));       //=> true
+isPending(never());             //=> true
 ```
 
 ### isNever :: Promise e a &rarr; boolean
@@ -520,14 +520,38 @@ returned by `never()` or a promise that has been resolved to such.
 ```js
 import { isNever, resolve, reject, delay, never, race } from 'creed';
 
-isNever(resolve(123)); //=> false
-isNever(reject(new Error())); //=> false
-isNever(delay(0, 123)); //=> false
-isNever(delay(1, 123)); //=> false
-isNever(never()); //=> true
-isNever(resolve(never())); //=> true
+isNever(resolve(123));         //=> false
+isNever(reject(new Error()));  //=> false
+isNever(delay(0, 123));        //=> false
+isNever(delay(1, 123));        //=> false
+isNever(never());              //=> true
+isNever(resolve(never()));     //=> true
 isNever(delay(1000, never())); //=> true
-isNever(race([])); //=> true
+isNever(race([]));             //=> true
+```
+
+### getValue :: Promise e a &rarr -> a
+
+Extract the value of a *fulfilled* promise.  Throws if called on a pending or rejected promise, so check first with `isFulfilled`.
+
+```js
+import { getValue, resolve, reject, delay } from 'creed';
+
+getValue(resolve(123)); //=> 123
+getValue(reject());     //=> throws TypeError
+getValue(delay(100));   //=> throws TypeError
+```
+
+### getReason :: Promise e a &rarr -> e
+
+Extract the reason of a *rejected* promise.  Throws if called on a pending or fulfilled promise, so check first with `isRejected`.
+
+```js
+import { getReason, isFulfilled, resolve, reject, delay } from 'creed';
+
+getReason(resolve(123));      //=> throws TypeError
+getReason(reject('because')); //=> 'because'
+getReason(delay(100));        //=> throws TypeError
 ```
 
 ## Polyfill
