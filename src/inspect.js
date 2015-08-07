@@ -32,6 +32,24 @@ export function silenceError(p) {
     }
 }
 
+export function getValue(p) {
+    let n = p.near();
+    if (!isFulfilled(n)) {
+        throw new TypeError('getValue called on ' + p);
+    }
+
+    return p.value;
+}
+
+export function getReason(p) {
+    let n = p.near();
+    if (!isRejected(n)) {
+        throw new TypeError('getReason called on ' + p);
+    }
+
+    return p.value;
+}
+
 const silencer = {
     fulfilled() {},
     rejected(p) {

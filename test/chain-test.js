@@ -1,4 +1,4 @@
-import { just } from '../src/main';
+import { fulfill } from '../src/main';
 import assert from 'assert';
 
 function assertSame(ap, bp) {
@@ -8,10 +8,10 @@ function assertSame(ap, bp) {
 describe('chain', function() {
 
     it('should satisfy associativity', () => {
-        let f = x => just(x + 'f');
-        let g = x => just(x + 'g');
+        let f = x => fulfill(x + 'f');
+        let g = x => fulfill(x + 'g');
 
-        var m = just('m');
+        var m = fulfill('m');
 
         return assertSame(
             m.chain(x => f(x).chain(g)),

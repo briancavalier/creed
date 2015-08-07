@@ -22,11 +22,15 @@ let errorHandler = new ErrorHandler(makeEmitError(), e => {
     throw e.value;
 });
 
-//let marker = {};
-
 // -------------------------------------------------------------
 // ## Types
 // -------------------------------------------------------------
+
+// data Promise e a where
+//   Future    :: Promise e a
+//   Fulfilled :: a -> Promise e a
+//   Rejected  :: Error e => e -> Promise e a
+//   Never     :: Promise e a
 
 // Future :: Promise e a
 // A promise whose value cannot be known until some future time
@@ -37,14 +41,14 @@ export class Future {
         this.length = 0;
     }
 
-    // empty :: Never
+    // empty :: Promise e a
     static empty() {
         return never();
     }
 
     // of :: a -> Promise e a
     static of(x) {
-        return just(x);
+        return fulfill(x);
     }
 
     // then :: Promise e a -> (a -> b) -> Promise e b
@@ -181,19 +185,11 @@ export class Future {
     }
 }
 
-// Fulfilled :: a -> Promise _ a
+// Fulfilled :: a -> Promise e a
 // A promise that has already acquired its value
 class Fulfilled {
     constructor(x) {
         this.value = x;
-    }
-
-    static empty() {
-        return never();
-    }
-
-    static of(x) {
-        return just(x);
     }
 
     then(f) {
@@ -245,21 +241,13 @@ class Fulfilled {
     }
 }
 
-// Rejected :: e -> Promise e _
+// Rejected :: Error e => e -> Promise e a
 // A promise that is known to have failed to acquire its value
 class Rejected {
     constructor(e) {
         this.value = e;
         this._state = REJECTED;
         errorHandler.track(this);
-    }
-
-    static empty() {
-        return never();
-    }
-
-    static of(x) {
-        return just(x);
     }
 
     then(_, r) {
@@ -313,17 +301,9 @@ class Rejected {
     }
 }
 
-// Never :: Promise _ _
+// Never :: Promise e a
 // A promise that will never acquire its value nor fail
 class Never {
-    static empty() {
-        return never();
-    }
-
-    static of(x) {
-        return just(x);
-    }
-
     then() {
         return this;
     }
@@ -382,7 +362,7 @@ Never.prototype.constructor = Future;
 // resolve :: a -> Promise e a
 export function resolve(x) {
     return isPromise(x) ? x.near()
-        : maybeThenable(x) ? refForMaybeThenable(just, x)
+        : maybeThenable(x) ? refForMaybeThenable(fulfill, x)
         : new Fulfilled(x);
 }
 
@@ -396,8 +376,8 @@ export function never() {
     return new Never();
 }
 
-// just :: a -> Promise e a
-export function just(x) {
+// fulfill :: a -> Promise e a
+export function fulfill(x) {
     return new Fulfilled(x);
 }
 
@@ -446,7 +426,7 @@ function isPromise(x) {
 }
 
 function resolveMaybeThenable(x) {
-    return isPromise(x) ? x.near() : refForMaybeThenable(just, x);
+    return isPromise(x) ? x.near() : refForMaybeThenable(fulfill, x);
 }
 
 function resolveThenable(x) {

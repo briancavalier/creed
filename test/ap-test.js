@@ -1,4 +1,4 @@
-import { just } from '../src/main';
+import { fulfill } from '../src/main';
 import assert from 'assert';
 
 function assertSame(ap, bp) {
@@ -8,17 +8,17 @@ function assertSame(ap, bp) {
 describe('ap', () => {
 
     it('should satisfy identity', () => {
-        let v = just({});
-        return assertSame(just(x => x).ap(v), v);
+        let v = fulfill({});
+        return assertSame(fulfill(x => x).ap(v), v);
     });
 
     it('should satisfy composition', () => {
-        let u = just(x => 'u' + x);
-        let v = just(x => 'v' + x);
-        let w = just('w');
+        let u = fulfill(x => 'u' + x);
+        let v = fulfill(x => 'v' + x);
+        let w = fulfill('w');
 
         return assertSame(
-            just(f => g => x => f(g(x))).ap(u).ap(v).ap(w),
+            fulfill(f => g => x => f(g(x))).ap(u).ap(v).ap(w),
             u.ap(v.ap(w))
         );
     });
@@ -26,15 +26,15 @@ describe('ap', () => {
     it('should satisfy homomorphism', () => {
         let f = x => x + 'f';
         let x = 'x';
-        return assertSame(just(f).ap(just(x)), just(f(x)));
+        return assertSame(fulfill(f).ap(fulfill(x)), fulfill(f(x)));
     });
 
     it('should satisfy interchange', () => {
         let f = x => x + 'f';
-        let u = just(f);
+        let u = fulfill(f);
         let y = 'y';
 
-        return assertSame(u.ap(just(y)), just(f => f(y)).ap(u));
+        return assertSame(u.ap(fulfill(y)), fulfill(f => f(y)).ap(u));
     });
 
 });

@@ -1,7 +1,7 @@
 'use strict';
 
-import { isFulfilled, isRejected, isSettled, isPending, isNever } from './inspect';
-import { Future, resolve, reject, never, just, all, race, iterablePromise, taskQueue } from './Promise';
+import { isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason } from './inspect';
+import { Future, resolve, reject, never, fulfill, all, race, iterablePromise, taskQueue } from './Promise';
 
 import _delay from './delay';
 import _timeout from './timeout';
@@ -20,8 +20,9 @@ import _runCoroutine from './coroutine.js';
 // -------------------------------------------------------------
 
 export {
-    resolve, reject, never, just, all, race,
-    isFulfilled, isRejected, isSettled, isPending, isNever
+    resolve, reject, never, fulfill, all, race,
+    isFulfilled, isRejected, isSettled, isPending, isNever,
+    getValue, getReason
 };
 
 // -------------------------------------------------------------
