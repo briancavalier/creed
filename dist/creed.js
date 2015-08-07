@@ -229,7 +229,6 @@
 	        // Returning falsy here means to call the default reportRejection API.
 	        // This is safe even in browserify since process.emit always returns
 	        // falsy in browserify:
-	        // https://github.com/defunctzombie/node-process/blob/master/browser.js#L40-L46
 	        return function (type, error) {
 	            return type === makeEmitError__UNHANDLED_REJECTION ? process.emit(type, error.value, error) : process.emit(type, error);
 	        };
@@ -263,6 +262,7 @@
 
 	// istanbul ignore next */
 	function noop() {}
+	// https://github.com/defunctzombie/node-process/blob/master/browser.js#L40-L46
 
 	'use strict';
 
@@ -595,6 +595,9 @@
 	        this.length = 0;
 	    }
 
+	    // Fulfilled :: a -> Promise e a
+	    // A promise that has already acquired its value
+
 	    // empty :: Promise e a
 
 	    Future.empty = function empty() {
@@ -759,6 +762,9 @@
 	        this.value = x;
 	    }
 
+	    // Rejected :: Error e => e -> Promise e a
+	    // A promise that is known to have failed to acquire its value
+
 	    Fulfilled.prototype.then = function then(f) {
 	        return typeof f === 'function' ? _then(f, void 0, this, new Future()) : this;
 	    };
@@ -810,9 +816,6 @@
 	    return Fulfilled;
 	})();
 
-	// Rejected :: Error e => e -> Promise e a
-	// A promise that is known to have failed to acquire its value
-
 	var Rejected = (function () {
 	    function Rejected(e) {
 	        build_Promise___classCallCheck(this, Rejected);
@@ -821,6 +824,9 @@
 	        this._state = REJECTED;
 	        errorHandler.track(this);
 	    }
+
+	    // Never :: Promise e a
+	    // A promise that will never acquire its value nor fail
 
 	    Rejected.prototype.then = function then(_, r) {
 	        return typeof r === 'function' ? this['catch'](r) : this;
@@ -874,9 +880,6 @@
 
 	    return Rejected;
 	})();
-
-	// Never :: Promise e a
-	// A promise that will never acquire its value nor fail
 
 	var Never = (function () {
 	    function Never() {
@@ -987,6 +990,7 @@
 	function isIterable(x) {
 	    return typeof x === 'object' && x !== null;
 	}
+
 	function iterablePromise(handler, iterable) {
 	    if (!isIterable(iterable)) {
 	        return reject(new TypeError('expected an iterable'));
@@ -1102,7 +1106,7 @@
 
 	function TimeoutError___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	function TimeoutError___inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
+	function TimeoutError___inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	var TimeoutError = (function (_Error) {
 	    TimeoutError___inherits(TimeoutError, _Error);
@@ -1358,7 +1362,7 @@
 
 	'use strict';
 
-	function main___inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; }
+	function main___inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	function main___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
@@ -1561,6 +1565,7 @@
 	CreedPromise.reject = reject;
 	CreedPromise.all = all;
 	CreedPromise.race = race;
+
 	function shim() {
 	    var orig = typeof Promise === 'function' && Promise;
 
