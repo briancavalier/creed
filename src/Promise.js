@@ -186,7 +186,7 @@ export class Future {
 }
 
 // Fulfilled :: a -> Promise e a
-// A promise that has already acquired its value
+// A promise whose value is already known
 class Fulfilled {
     constructor(x) {
         this.value = x;
@@ -242,7 +242,7 @@ class Fulfilled {
 }
 
 // Rejected :: Error e => e -> Promise e a
-// A promise that is known to have failed to acquire its value
+// A promise whose value cannot be known due to some reason/error
 class Rejected {
     constructor(e) {
         this.value = e;
@@ -302,7 +302,7 @@ class Rejected {
 }
 
 // Never :: Promise e a
-// A promise that will never acquire its value nor fail
+// A promise that waits forever for its value to be known
 class Never {
     then() {
         return this;
@@ -421,7 +421,6 @@ export function iterablePromise(handler, iterable) {
 
 // isPromise :: * -> boolean
 function isPromise(x) {
-    //return x instanceof Future;
     return x != null && typeof x === 'object' && x.constructor === Future;
 }
 

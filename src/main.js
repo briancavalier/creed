@@ -57,7 +57,7 @@ export function fromNode(f) {
     };
 }
 
-// fromNode :: NodeApi e a -> ...* -> Promise e a
+// runNode :: NodeApi e a -> ...* -> Promise e a
 // Run a Node API, returning a promise for the outcome
 export function runNode(f, ...args) {
     return runNodeResolver(f, this, args, new Future());
