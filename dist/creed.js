@@ -47,6 +47,24 @@
 	    }
 	}
 
+	function getValue(p) {
+	    var n = p.near();
+	    if (!isFulfilled(n)) {
+	        throw new TypeError('getValue called on ' + p);
+	    }
+
+	    return p.value;
+	}
+
+	function getReason(p) {
+	    var n = p.near();
+	    if (!isRejected(n)) {
+	        throw new TypeError('getReason called on ' + p);
+	    }
+
+	    return p.value;
+	}
+
 	var silencer = {
 	    fulfilled: function fulfilled() {},
 	    rejected: function rejected(p) {
@@ -59,6 +77,8 @@
 	exports.isSettled = isSettled;
 	exports.isPending = isPending;
 	exports.isNever = isNever;
+	exports.getValue = getValue;
+	exports.getReason = getReason;
 
 	'use strict';
 
@@ -553,11 +573,15 @@
 	    throw e.value;
 	});
 
-	var marker = {};
-
 	// -------------------------------------------------------------
 	// ## Types
 	// -------------------------------------------------------------
+
+	// data Promise e a where
+	//   Future    :: Promise e a
+	//   Fulfilled :: a -> Promise e a
+	//   Rejected  :: Error e => e -> Promise e a
+	//   Never     :: Promise e a
 
 	// Future :: Promise e a
 	// A promise whose value cannot be known until some future time
@@ -571,7 +595,7 @@
 	        this.length = 0;
 	    }
 
-	    // empty :: Never
+	    // empty :: Promise e a
 
 	    Future.empty = function empty() {
 	        return never();
@@ -580,7 +604,7 @@
 	    // of :: a -> Promise e a
 
 	    Future.of = function of(x) {
-	        return just(x);
+	        return fulfill(x);
 	    };
 
 	    // then :: Promise e a -> (a -> b) -> Promise e b
@@ -652,17 +676,8 @@
 	            return this;
 	        }
 
-	        var ref = this;
-	        while (ref.ref !== void 0) {
-	            ref = ref.ref;
-	            if (ref === this) {
-	                ref = cycle();
-	                break;
-	            }
-	        }
-
-	        this.ref = ref;
-	        return ref;
+	        this.ref = this.ref.near();
+	        return this.ref;
 	    };
 
 	    // state :: Promise e a -> Int
@@ -715,7 +730,7 @@
 	    };
 
 	    Future.prototype.__become = function __become(ref) {
-	        this.ref = ref;
+	        this.ref = ref === this ? cycle() : ref;
 	        if (this.action !== void 0) {
 	            taskQueue.add(this);
 	        }
@@ -737,25 +752,12 @@
 	    return Future;
 	})();
 
-	Future.prototype._isPromise = marker;
-
-	// Fulfilled :: a -> Promise _ a
-	// A promise that has already acquired its value
-
 	var Fulfilled = (function () {
 	    function Fulfilled(x) {
 	        build_Promise___classCallCheck(this, Fulfilled);
 
 	        this.value = x;
 	    }
-
-	    Fulfilled.empty = function empty() {
-	        return never();
-	    };
-
-	    Fulfilled.of = function of(x) {
-	        return just(x);
-	    };
 
 	    Fulfilled.prototype.then = function then(f) {
 	        return typeof f === 'function' ? _then(f, void 0, this, new Future()) : this;
@@ -808,9 +810,7 @@
 	    return Fulfilled;
 	})();
 
-	Fulfilled.prototype._isPromise = marker;
-
-	// Rejected :: e -> Promise e _
+	// Rejected :: Error e => e -> Promise e a
 	// A promise that is known to have failed to acquire its value
 
 	var Rejected = (function () {
@@ -821,14 +821,6 @@
 	        this._state = REJECTED;
 	        errorHandler.track(this);
 	    }
-
-	    Rejected.empty = function empty() {
-	        return never();
-	    };
-
-	    Rejected.of = function of(x) {
-	        return just(x);
-	    };
 
 	    Rejected.prototype.then = function then(_, r) {
 	        return typeof r === 'function' ? this['catch'](r) : this;
@@ -883,23 +875,13 @@
 	    return Rejected;
 	})();
 
-	Rejected.prototype._isPromise = marker;
-
-	// Never :: Promise _ _
+	// Never :: Promise e a
 	// A promise that will never acquire its value nor fail
 
 	var Never = (function () {
 	    function Never() {
 	        build_Promise___classCallCheck(this, Never);
 	    }
-
-	    Never.empty = function empty() {
-	        return never();
-	    };
-
-	    Never.of = function of(x) {
-	        return just(x);
-	    };
 
 	    Never.prototype.then = function then() {
 	        return this;
@@ -948,7 +930,7 @@
 	    return Never;
 	})();
 
-	Never.prototype._isPromise = marker;
+	Future.prototype.constructor = Fulfilled.prototype.constructor = Rejected.prototype.constructor = Never.prototype.constructor = Future;
 
 	// -------------------------------------------------------------
 	// ## Creating promises
@@ -958,11 +940,7 @@
 	// resolve :: a -> Promise e a
 
 	function resolve(x) {
-	    if (isPromise(x)) {
-	        return x.near();
-	    }
-
-	    return maybeThenable(x) ? refForMaybeThenable(just, x) : new Fulfilled(x);
+	    return isPromise(x) ? x.near() : maybeThenable(x) ? refForMaybeThenable(fulfill, x) : new Fulfilled(x);
 	}
 
 	// reject :: e -> Promise e a
@@ -977,9 +955,9 @@
 	    return new Never();
 	}
 
-	// just :: a -> Promise e a
+	// fulfill :: a -> Promise e a
 
-	function just(x) {
+	function fulfill(x) {
 	    return new Fulfilled(x);
 	}
 
@@ -1024,11 +1002,12 @@
 
 	// isPromise :: * -> boolean
 	function isPromise(x) {
-	    return x !== null && typeof x === 'object' && x._isPromise === marker;
+	    //return x instanceof Future;
+	    return x != null && typeof x === 'object' && x.constructor === Future;
 	}
 
 	function resolveMaybeThenable(x) {
-	    return isPromise(x) ? x.near() : refForMaybeThenable(just, x);
+	    return isPromise(x) ? x.near() : refForMaybeThenable(fulfill, x);
 	}
 
 	function resolveThenable(x) {
@@ -1080,7 +1059,7 @@
 	exports.resolve = resolve;
 	exports.reject = reject;
 	exports.never = never;
-	exports.just = just;
+	exports.fulfill = fulfill;
 	exports.all = all;
 	exports.race = race;
 
