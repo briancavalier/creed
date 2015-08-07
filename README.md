@@ -530,7 +530,7 @@ isNever(delay(1000, never())); //=> true
 isNever(race([]));             //=> true
 ```
 
-### getValue :: Promise e a &rarr -> a
+### getValue :: Promise e a &rarr; a
 
 Extract the value of a *fulfilled* promise.  Throws if called on a pending or rejected promise, so check first with `isFulfilled`.
 
@@ -542,7 +542,7 @@ getValue(reject());     //=> throws TypeError
 getValue(delay(100));   //=> throws TypeError
 ```
 
-### getReason :: Promise e a &rarr -> e
+### getReason :: Promise e a &rarr; e
 
 Extract the reason of a *rejected* promise.  Throws if called on a pending or fulfilled promise, so check first with `isRejected`.
 
