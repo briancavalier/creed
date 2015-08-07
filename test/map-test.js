@@ -1,4 +1,4 @@
-import { just } from '../src/main';
+import { fulfill } from '../src/main';
 import assert from 'assert';
 
 function assertSame(ap, bp) {
@@ -8,14 +8,14 @@ function assertSame(ap, bp) {
 describe('map', function() {
 
     it('should satisfy identity', () => {
-        var u = just({});
+        var u = fulfill({});
         return assertSame(u.map(x => x), u);
     });
 
     it('should satisfy composition', () => {
         let f = x => x + 'f';
         let g = x => x + 'g';
-        let u = just('e');
+        let u = fulfill('e');
 
         return assertSame(u.map(x => f(g(x))), u.map(g).map(f));
     });

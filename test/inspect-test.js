@@ -1,4 +1,4 @@
-import { isFulfilled, isRejected, isSettled, isPending, isHandled, isNever, silenceError  } from '../src/inspect';
+import { isFulfilled, isRejected, isSettled, isPending, isHandled, isNever, silenceError, getValue, getReason } from '../src/inspect';
 import { resolve, reject, never, Future } from '../src/Promise';
 import assert from 'assert';
 
@@ -138,6 +138,46 @@ describe('inspect', () => {
             assert(!isHandled(never()));
         });
 
+    });
+
+    describe('getValue', () => {
+
+        it('should get value from fulfilled promise', () => {
+            let x = {};
+            assert.strictEqual(x, getValue(resolve(x)));
+        });
+
+        it('should throw for rejected promise', () => {
+            assert.throws(() => getValue(reject()));
+        });
+
+        it('should throw for pending promise', () => {
+            assert.throws(() => getValue(new Future()));
+        });
+
+        it('should throw for never', () => {
+            assert.throws(() => getValue(never()));
+        });
+    });
+
+    describe('getReason', () => {
+
+        it('should get reason from rejected promise', () => {
+            let x = {};
+            assert.strictEqual(x, getReason(reject(x)));
+        });
+
+        it('should throw for rejected promise', () => {
+            assert.throws(() => getReason(resolve()));
+        });
+
+        it('should throw for pending promise', () => {
+            assert.throws(() => getReason(new Future()));
+        });
+
+        it('should throw for never', () => {
+            assert.throws(() => getReason(never()));
+        });
     });
 
     describe('silenceError', () => {

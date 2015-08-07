@@ -215,7 +215,7 @@ merge((x, y) => x + y, resolve(123), resolve(1))
 
 ### resolve :: a|Thenable e a &rarr; Promise e a
 
-Make a promise from a value or coerce any Thenable to a promise.
+Coerce a value or Thenable to a promise.
 
 ```js
 import { resolve } from 'creed';
@@ -223,24 +223,34 @@ import { resolve } from 'creed';
 resolve(123)
     .then(x => console.log(x)); //=> 123
 
+resolve(resolve(123))
+    .then(x => console.log(x)); //=> 123
+    
 resolve(jQuery.get('http://...')) // coerce any thenable
     .then(x => console.log(x)); //=> 123
 ```
 
-### just :: a &rarr; Promise e a
+### fulfill :: a &rarr; Promise e a
 
-Make a fulfilled promise for a value
+Lift a value into a promise.
 
 ```js
-import { just } from 'creed';
+import { fulfill, resolve } from 'creed';
 
-just(123)
+fulfill(123)
+    .then(x => console.log(x)); //=> 123
+    
+// Note the difference from resolve
+fulfill(fulfill(123))
+    .then(x => console.log(x)); //=> '[object Promise { fulfilled: 123 }]'
+
+resolve(fulfill(123))
     .then(x => console.log(x)); //=> 123
 ```
 
 ### reject :: Error e => e &rarr; Promise e a
 
-Make a rejected promise for an error
+Make a rejected promise for an error.
 
 ```js
 import { reject } from 'creed';
@@ -251,7 +261,7 @@ reject(new TypeError('oops!'))
 
 ### never :: Promise e a
 
-Make a promise that remains pending forever
+Make a promise that remains pending forever.
 
 ```js
 import { never } from 'creed';
@@ -259,6 +269,8 @@ import { never } from 'creed';
 never()
     .then(x => console.log(x)); // nothing logged, ever
 ```
+
+Note: `never` consumes virtually no resources.  It does not hold references to any functions passed to `then`, `map`, `chain`, etc. 
 
 ## Transform promises
 
@@ -430,6 +442,17 @@ earliest.  If all input promises reject, the returned promise rejects.
 
 Returns a promise that fulfills with an array of settled promises.
 
+```js
+import { settle, resolve, reject, isFulfilled, getValue } from 'creed';
+
+// Find all the fulfilled promises in an iterable
+settle([resolve(123), reject(new Error('oops')), resolve(456)])
+    .map(settled => {
+        return settled.filter(isFulfilled).map(getValue);
+    })
+    .then(fulfilled => console.log(fulfilled.join(','))); //=> 123,456
+```
+
 ## Inspect
 
 ### isFulfilled :: Promise e a &rarr; boolean
@@ -511,7 +534,7 @@ isNever(race([])); //=> true
 
 ### shim :: () &rarr; PromiseConstructor|undefined
 
-Polyfills the global `Promise` constructor with an ES6-compliant
+Polyfill the global `Promise` constructor with an ES6-compliant
 creed `Promise`.  If there was a pre-existing global `Promise`,
 it is returned.
 
