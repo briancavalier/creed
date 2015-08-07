@@ -22,7 +22,7 @@ let errorHandler = new ErrorHandler(makeEmitError(), e => {
     throw e.value;
 });
 
-let marker = {};
+//let marker = {};
 
 // -------------------------------------------------------------
 // ## Types
@@ -108,17 +108,8 @@ export class Future {
             return this;
         }
 
-        let ref = this;
-        while (ref.ref !== void 0) {
-            ref = ref.ref;
-            if (ref === this) {
-                ref = cycle();
-                break;
-            }
-        }
-
-        this.ref = ref;
-        return ref;
+        this.ref = this.ref.near();
+        return this.ref;
     }
 
     // state :: Promise e a -> Int
@@ -170,7 +161,7 @@ export class Future {
     }
 
     __become(ref) {
-        this.ref = ref;
+        this.ref = ref === this ? cycle() : ref;
         if (this.action !== void 0) {
             taskQueue.add(this);
         }
@@ -189,7 +180,6 @@ export class Future {
         this.length = 0;
     }
 }
-Future.prototype._isPromise = marker;
 
 // Fulfilled :: a -> Promise _ a
 // A promise that has already acquired its value
@@ -254,7 +244,6 @@ class Fulfilled {
         action.fulfilled(this);
     }
 }
-Fulfilled.prototype._isPromise = marker;
 
 // Rejected :: e -> Promise e _
 // A promise that is known to have failed to acquire its value
@@ -323,7 +312,6 @@ class Rejected {
         }
     }
 }
-Rejected.prototype._isPromise = marker;
 
 // Never :: Promise _ _
 // A promise that will never acquire its value nor fail
@@ -380,7 +368,11 @@ class Never {
 
     _runAction() {}
 }
-Never.prototype._isPromise = marker;
+
+Future.prototype.constructor =
+Fulfilled.prototype.constructor =
+Rejected.prototype.constructor =
+Never.prototype.constructor = Future;
 
 // -------------------------------------------------------------
 // ## Creating promises
@@ -389,11 +381,9 @@ Never.prototype._isPromise = marker;
 // resolve :: Thenable e a -> Promise e a
 // resolve :: a -> Promise e a
 export function resolve(x) {
-    if (isPromise(x)) {
-        return x.near();
-    }
-
-    return maybeThenable(x) ? refForMaybeThenable(just, x) : new Fulfilled(x);
+    return isPromise(x) ? x.near()
+        : maybeThenable(x) ? refForMaybeThenable(just, x)
+        : new Fulfilled(x);
 }
 
 // reject :: e -> Promise e a
@@ -451,7 +441,8 @@ export function iterablePromise(handler, iterable) {
 
 // isPromise :: * -> boolean
 function isPromise(x) {
-    return x !== null && typeof x === 'object' && x._isPromise === marker;
+    //return x instanceof Future;
+    return x != null && typeof x === 'object' && x.constructor === Future;
 }
 
 function resolveMaybeThenable(x) {

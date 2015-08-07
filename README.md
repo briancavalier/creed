@@ -432,7 +432,7 @@ Returns a promise that fulfills with an array of settled promises.
 
 ## Inspect
 
-### isFulfilled :: Promise e a -> boolean
+### isFulfilled :: Promise e a &rarr; boolean
 
 Returns true if the promise is fulfilled.
 
@@ -446,7 +446,7 @@ isFulfilled(delay(1, 123)); //=> false
 isFulfilled(never()); //=> false
 ```
 
-### isRejected :: Promise e a -> boolean
+### isRejected :: Promise e a &rarr; boolean
 
 Returns true if the promise is rejected.
 
@@ -455,10 +455,12 @@ import { isRejected, resolve, reject, delay, never } from 'creed';
 
 isRejected(resolve(123)); //=> false
 isRejected(reject(new Error())); //=> true
+isRejected(delay(0, 123)); //=> false
+isRejected(delay(1, 123)); //=> false
 isRejected(never()); //=> false
 ```
 
-### isSettled :: Promise e a -> boolean
+### isSettled :: Promise e a &rarr; boolean
 
 Returns true if the promise is either fulfilled or rejected.
 
@@ -472,7 +474,7 @@ isSettled(delay(1, 123)); //=> false
 isSettled(never()); //=> false
 ```
 
-### isPending :: Promise e a -> boolean
+### isPending :: Promise e a &rarr; boolean
 
 Returns true if the promise is pending (not yet fulfilled or rejected).
 
@@ -486,7 +488,7 @@ isPending(delay(1, 123)); //=> true
 isPending(never()); //=> true
 ```
 
-### isNever :: Promise e a -> boolean
+### isNever :: Promise e a &rarr; boolean
 
 Returns true if it is known that the promise will remain pending
 forever.  In practice, this means that the promise is one that was
@@ -507,7 +509,7 @@ isNever(race([])); //=> true
 
 ## Polyfill
 
-### shim :: () -> PromiseConstructor|undefined
+### shim :: () &rarr; PromiseConstructor|undefined
 
 Polyfills the global `Promise` constructor with an ES6-compliant
 creed `Promise`.  If there was a pre-existing global `Promise`,
