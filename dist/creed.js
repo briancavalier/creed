@@ -53,7 +53,7 @@
 	        throw new TypeError('getValue called on ' + p);
 	    }
 
-	    return p.value;
+	    return n.value;
 	}
 
 	function getReason(p) {
@@ -62,7 +62,7 @@
 	        throw new TypeError('getReason called on ' + p);
 	    }
 
-	    return p.value;
+	    return n.value;
 	}
 
 	var silencer = {
@@ -596,7 +596,7 @@
 	    }
 
 	    // Fulfilled :: a -> Promise e a
-	    // A promise that has already acquired its value
+	    // A promise whose value is already known
 
 	    // empty :: Promise e a
 
@@ -763,7 +763,7 @@
 	    }
 
 	    // Rejected :: Error e => e -> Promise e a
-	    // A promise that is known to have failed to acquire its value
+	    // A promise whose value cannot be known due to some reason/error
 
 	    Fulfilled.prototype.then = function then(f) {
 	        return typeof f === 'function' ? _then(f, void 0, this, new Future()) : this;
@@ -826,7 +826,7 @@
 	    }
 
 	    // Never :: Promise e a
-	    // A promise that will never acquire its value nor fail
+	    // A promise that waits forever for its value to be known
 
 	    Rejected.prototype.then = function then(_, r) {
 	        return typeof r === 'function' ? this['catch'](r) : this;
@@ -1006,7 +1006,6 @@
 
 	// isPromise :: * -> boolean
 	function isPromise(x) {
-	    //return x instanceof Future;
 	    return x != null && typeof x === 'object' && x.constructor === Future;
 	}
 
@@ -1401,7 +1400,7 @@
 	    };
 	}
 
-	// fromNode :: NodeApi e a -> ...* -> Promise e a
+	// runNode :: NodeApi e a -> ...* -> Promise e a
 	// Run a Node API, returning a promise for the outcome
 
 	function main__runNode(f) {
