@@ -38,7 +38,7 @@ export function getValue(p) {
         throw new TypeError('getValue called on ' + p);
     }
 
-    return p.value;
+    return n.value;
 }
 
 export function getReason(p) {
@@ -47,7 +47,7 @@ export function getReason(p) {
         throw new TypeError('getReason called on ' + p);
     }
 
-    return p.value;
+    return n.value;
 }
 
 const silencer = {
