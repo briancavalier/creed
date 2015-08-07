@@ -535,11 +535,11 @@ isNever(race([]));             //=> true
 Extract the value of a *fulfilled* promise.  Throws if called on a pending or rejected promise, so check first with `isFulfilled`.
 
 ```js
-import { getValue, resolve, reject, delay } from 'creed';
+import { getValue, resolve, reject, never } from 'creed';
 
 getValue(resolve(123)); //=> 123
 getValue(reject());     //=> throws TypeError
-getValue(delay(100));   //=> throws TypeError
+getValue(never());      //=> throws TypeError
 ```
 
 ### getReason :: Promise e a &rarr; e
@@ -547,11 +547,11 @@ getValue(delay(100));   //=> throws TypeError
 Extract the reason of a *rejected* promise.  Throws if called on a pending or fulfilled promise, so check first with `isRejected`.
 
 ```js
-import { getReason, isFulfilled, resolve, reject, delay } from 'creed';
+import { getReason, isFulfilled, resolve, reject, never } from 'creed';
 
 getReason(resolve(123));      //=> throws TypeError
 getReason(reject('because')); //=> 'because'
-getReason(delay(100));        //=> throws TypeError
+getReason(never());           //=> throws TypeError
 ```
 
 ## Polyfill
