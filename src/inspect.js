@@ -26,12 +26,6 @@ export function isHandled(p) {
     return (p.state() & HANDLED) > 0;
 }
 
-export function silenceError(p) {
-    if (!isFulfilled(p)) {
-        p._runAction(silencer);
-    }
-}
-
 export function getValue(p) {
     let n = p.near();
     if (!isFulfilled(n)) {
@@ -48,6 +42,12 @@ export function getReason(p) {
     }
 
     return n.value;
+}
+
+export function silenceError(p) {
+    if (!isFulfilled(p)) {
+        p._runAction(silencer);
+    }
 }
 
 const silencer = {
