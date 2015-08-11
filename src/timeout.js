@@ -1,6 +1,5 @@
 'use strict';
 
-import { isPending } from './inspect';
 import TimeoutError from './TimeoutError';
 
 export default function (ms, p, promise) {
