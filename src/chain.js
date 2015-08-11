@@ -1,27 +1,27 @@
 'use strict';
 
-export default function chain(f, p, future) {
-    p._when(new Chain(f, future));
-    return future;
+export default function chain(f, p, promise) {
+    p._when(new Chain(f, promise));
+    return promise;
 }
 
 class Chain {
-    constructor(f, future) {
+    constructor(f, promise) {
         this.f = f;
-        this.future = future;
+        this.promise = promise;
     }
 
     fulfilled(p) {
         try {
             let f = this.f;
-            this.future._resolve(f(p.value).near());
+            this.promise._resolve(f(p.value).near());
         } catch (e) {
-            this.future._reject(e);
+            this.promise._reject(e);
         }
     }
 
     rejected(p) {
-        this.future._become(p);
+        this.promise._become(p);
         return false;
     }
 }
