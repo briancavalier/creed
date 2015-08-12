@@ -160,8 +160,8 @@ runNode(readFile, 'theFile.txt', 'utf8')
 ```
 
 ### runPromise :: Producer e a &rarr; ...* &rarr; Promise e a
-type Producer e a = (...* &rarr; Resolve a &rarr; Reject e &rarr; ())<br/>
-type Resolve a = a &rarr; ()<br/>
+type Producer e a = (...* &rarr; Resolve e a &rarr; Reject e &rarr; ())<br/>
+type Resolve e a = a|Thenable e a &rarr; ()<br/>
 type Reject e = e &rarr; ()
 
 Run a function to produce a promised result.
