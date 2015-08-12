@@ -381,6 +381,13 @@ export function fulfill(x) {
     return new Fulfilled(x);
 }
 
+// future :: () -> { resolve: Resolve e a, promise: Promise e a }
+// type Resolve e a = a|Thenable e a -> ()
+export function future() {
+    let promise = new Future();
+    return { resolve: x => promise._resolve(x), promise };
+}
+
 // -------------------------------------------------------------
 // ## Iterables
 // -------------------------------------------------------------

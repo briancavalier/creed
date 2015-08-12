@@ -214,6 +214,30 @@ merge((x, y) => x + y, resolve(123), resolve(1))
 
 ## Make promises
 
+### future :: () &rarr; { resolve: Resolve e a, promise: Promise e a }
+type Resolve e a = a|Thenable e a &rarr; ()<br/>
+
+Create a `{ resolve, promise }` pair, where `resolve` is a function that seals the fate of `promise`.
+
+```js
+import { future, reject } from 'creed';
+
+// Fulfill
+let { resolve, promise } = future();
+resolve(123);
+promise.then(x => console.log(x)); //=> 123
+
+// Resolve to another promise
+let anotherPromise = ...;
+let { resolve, promise } = future();
+resolve(anotherPromise); //=> make promise's fate the same as anotherPromise's
+
+// Reject
+let { resolve, promise } = future();
+resolve(reject(new Error('oops')));
+promise.catch(e => console.log(e)); //=> [Error: oops]
+```
+
 ### resolve :: a|Thenable e a &rarr; Promise e a
 
 Coerce a value or Thenable to a promise.
