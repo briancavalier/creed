@@ -24,11 +24,38 @@
     body {
       font-size: 1em;
     }
+    
     .menubar {
       width: 400px;
     }
+
     .content-root {
       padding-left: 400px;
+    }
+
+    .content {
+      padding-top: 0;
+    }
+
+    .large-brief .content > h1:first-child + p, .content > p.brief {
+      font-family: inherit;
+    }
+
+    .content h1::before, .content h2::before, .content .big-heading::before, body.big-h3 .content h3::before {
+      background: none;
+    }
+
+    .content h1, .content h2, .content .big-heading, body.big-h3 .content h3 {
+      padding-top: 0;
+      margin-top: 1.5em;
+    }
+
+    .content h1 {
+      font-size: 2em;
+    }
+
+    .content h2 {
+      text-transform: none;
     }
   </style>
 
