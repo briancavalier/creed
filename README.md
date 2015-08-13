@@ -2,7 +2,7 @@
 
 Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, [fantasy-land](https://github.com/fantasyland/fantasy-land).
 
-Creed simplifies async by letting you write coroutines using ES2015 generators and promises, and encourages functional programming via fantasy-land.  It also makes uncaught errors obvious by default, and supports other ES2105 features such as iterables.
+Creed simplifies async by letting you write coroutines using ES2015 generators and promises, and encourages functional programming via fantasy-land.  It also makes uncaught errors obvious by default, and supports other ES2015 features such as iterables.
 
 <a href="http://promises-aplus.github.com/promises-spec"><img width="82" height="82" alt="Promises/A+" src="http://promises-aplus.github.com/promises-spec/assets/logo-small.png"></a>
 <a href="https://github.com/fantasyland/fantasy-land"><img width="82" height="82" alt="Fantasy Land" src="https://raw.github.com/puffnfresh/fantasy-land/master/logo.png"></a>
@@ -181,7 +181,8 @@ let p = runPromise((url, resolve, reject) => {
 p.then(result => console.log(result));
 ```
 
-Parameter threading also makes it easy to create reusable tasksthat don't rely on closures and scope chain capturing.
+Parameter threading also makes it easy to create reusable tasks
+that don't rely on closures and scope chain capturing.
 
 ```js
 import { runPromise } from 'creed';
@@ -270,7 +271,8 @@ never()
     .then(x => console.log(x)); // nothing logged, ever
 ```
 
-Note: `never` consumes virtually no resources.  It does not hold references to any functions passed to `then`, `map`, `chain`, etc. 
+Note: `never` consumes virtually no resources.  It does not hold references
+to any functions passed to `then`, `map`, `chain`, etc. 
 
 ## Transform promises
 
@@ -327,7 +329,8 @@ resolve(1)
 ### .ap :: Promise e (a &rarr; b) &rarr; Promise e a &rarr; Promise e b
 
 [Fantasy-land Apply](https://github.com/fantasyland/fantasy-land#apply).
-Apply a promised function to a promised value.  Returns anew promise for the result.
+Apply a promised function to a promised value.  Returns a new promise
+for the result.
 
 ```js
 import { resolve } from 'creed';
@@ -532,7 +535,8 @@ isNever(race([]));             //=> true
 
 ### getValue :: Promise e a &rarr; a
 
-Extract the value of a *fulfilled* promise.  Throws if called on a pending or rejected promise, so check first with `isFulfilled`.
+Extract the value of a *fulfilled* promise.  Throws if called on a
+pending or rejected promise, so check first with `isFulfilled`.
 
 ```js
 import { getValue, resolve, reject, never } from 'creed';
@@ -544,7 +548,8 @@ getValue(never());      //=> throws TypeError
 
 ### getReason :: Promise e a &rarr; e
 
-Extract the reason of a *rejected* promise.  Throws if called on a pending or fulfilled promise, so check first with `isRejected`.
+Extract the reason of a *rejected* promise.  Throws if called on a
+pending or fulfilled promise, so check first with `isRejected`.
 
 ```js
 import { getReason, isFulfilled, resolve, reject, never } from 'creed';
