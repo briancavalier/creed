@@ -30,7 +30,7 @@
     "clean": "rimraf build coverage",
     "test-aplus": "promises-aplus-tests test/aplus.js",
     "test-main": "istanbul cover --root src _mocha",
-    "lint": "jscs -x src && eslint src",
+    "lint": "jscs -x src && jsinspect src && eslint src",
     "test": "npm run lint && npm run build-dist && npm run test-main && npm run test-aplus"
   },
   "devDependencies": {
@@ -41,6 +41,7 @@
     "esperanto": "^0.7.3",
     "istanbul": "^0.3.17",
     "jscs": "^1.13.1",
+    "jsinspect": "^0.6.1",
     "mocha": "^2.2.5",
     "promises-aplus-tests": "^2.1.1",
     "rimraf": "^2.4.1",

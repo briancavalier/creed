@@ -8,8 +8,7 @@ import { PENDING, FULFILLED, REJECTED, NEVER } from './state';
 import { isNever, isSettled } from './inspect';
 
 import then from './then';
-import _map from './map';
-import _chain from './chain';
+import { map, chain } from './map';
 
 import Race from './Race';
 import Merge from './Merge';
@@ -68,7 +67,7 @@ export class Future {
     // map :: Promise e a -> (a -> b) -> Promise e b
     map(f) {
         let n = this.near();
-        return n === this ? _map(f, n, new Future()) : n.map(f);
+        return n === this ? map(f, n, new Future()) : n.map(f);
     }
 
     // ap :: Promise e (a -> b) -> Promise e a -> Promise e b
@@ -81,7 +80,7 @@ export class Future {
     // chain :: Promise e a -> (a -> Promise e b) -> Promise e b
     chain(f) {
         let n = this.near();
-        return n === this ? _chain(f, n, new Future()) : n.chain(f);
+        return n === this ? chain(f, n, new Future()) : n.chain(f);
     }
 
     // concat :: Promise e a -> Promise e a -> Promise e a
@@ -201,7 +200,7 @@ class Fulfilled {
     }
 
     map(f) {
-        return _map(f, this, new Future());
+        return map(f, this, new Future());
     }
 
     ap(p) {
@@ -209,7 +208,7 @@ class Fulfilled {
     }
 
     chain(f) {
-        return _chain(f, this, new Future());
+        return chain(f, this, new Future());
     }
 
     concat() {
