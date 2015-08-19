@@ -431,6 +431,10 @@ timeout(1000, delay(2000, 'hi')); //=> TimeoutError after 1 second
 
 ## Resolve Iterables
 
+Creed's iterable functions accept any ES2015 Iterable.  Most of
+the examples in this section show Arrays, but Sets, generators,
+etc. will work as well.
+
 ### all :: Iterable (Promise e a) &rarr; Promise e [a]
 
 Await all promises from an Iterable.  Returns a promise that fulfills
@@ -449,6 +453,14 @@ promises.add(resolve(456));
 
 all(promises)
     .then(x => console.log(x)); //=> [123, 456]
+
+function *generator() {
+    yield resolve(123);
+    yield resolve(456);
+}
+
+all(generator())
+    .then(x => console.log(x)); //=> [123, 456]
 ```
 
 ### race :: Iterable (Promise e a) &rarr; Promise e a
@@ -460,10 +472,43 @@ iteration order.
 
 **Note:** As per the ES6-spec, racing an empty iterable returns `never()`
 
+```js
+import { race, resolve, reject, delay, isNever } from 'creed';
+
+race([delay(100, 123), resolve(456)])
+    .then(x => console.log(x)); //=> 456
+
+race([resolve(123), reject(456)])
+    .then(x => console.log(x)); //=> 123
+
+race([delay(100, 123), reject(new Error('oops'))])
+    .catch(e => console.log(e)); //=> [Error: oops]
+
+isNever(race([])); //=> true
+```
+
 ### any :: Iterable (Promise e a) &rarr; Promise e a
 
 Returns a promise equivalent to the input promise that *fulfills*
 earliest.  If all input promises reject, the returned promise rejects.
+
+Note the differences from `race()`.
+
+```js
+import { any, resolve, reject, delay, isNever } from 'creed';
+
+any([delay(100, 123), resolve(456)])
+    .then(x => console.log(x)); //=> 123
+
+any([resolve(123), reject(456)])
+    .then(x => console.log(x)); //=> 123
+
+any([reject(new Error('foo')), reject(new Error('bar'))])
+    .catch(e => console.log(e)); //=> [RangeError: No fulfilled promises in input]
+
+any([])
+    .catch(e => console.log(e)); //=> [RangeError: No fulfilled promises in input]
+```
 
 ### settle :: Iterable (Promise e a) &rarr; Promise e [Promise e a]
 
