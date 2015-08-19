@@ -8,8 +8,7 @@ import { PENDING, FULFILLED, REJECTED, NEVER } from './state';
 import { isNever, isSettled } from './inspect';
 
 import then from './then';
-import _map from './map';
-import _chain from './chain';
+import { map, chain } from './map';
 
 import Race from './Race';
 import Merge from './Merge';
@@ -68,7 +67,7 @@ export class Future {
     // map :: Promise e a -> (a -> b) -> Promise e b
     map(f) {
         let n = this.near();
-        return n === this ? _map(f, n, new Future()) : n.map(f);
+        return n === this ? map(f, n, new Future()) : n.map(f);
     }
 
     // ap :: Promise e (a -> b) -> Promise e a -> Promise e b
@@ -81,7 +80,7 @@ export class Future {
     // chain :: Promise e a -> (a -> Promise e b) -> Promise e b
     chain(f) {
         let n = this.near();
-        return n === this ? _chain(f, n, new Future()) : n.chain(f);
+        return n === this ? chain(f, n, new Future()) : n.chain(f);
     }
 
     // concat :: Promise e a -> Promise e a -> Promise e a
@@ -186,7 +185,7 @@ export class Future {
 }
 
 // Fulfilled :: a -> Promise e a
-// A promise that has already acquired its value
+// A promise whose value is already known
 class Fulfilled {
     constructor(x) {
         this.value = x;
@@ -201,7 +200,7 @@ class Fulfilled {
     }
 
     map(f) {
-        return _map(f, this, new Future());
+        return map(f, this, new Future());
     }
 
     ap(p) {
@@ -209,7 +208,7 @@ class Fulfilled {
     }
 
     chain(f) {
-        return _chain(f, this, new Future());
+        return chain(f, this, new Future());
     }
 
     concat() {
@@ -242,7 +241,7 @@ class Fulfilled {
 }
 
 // Rejected :: Error e => e -> Promise e a
-// A promise that is known to have failed to acquire its value
+// A promise whose value cannot be known due to some reason/error
 class Rejected {
     constructor(e) {
         this.value = e;
@@ -302,7 +301,7 @@ class Rejected {
 }
 
 // Never :: Promise e a
-// A promise that will never acquire its value nor fail
+// A promise that waits forever for its value to be known
 class Never {
     then() {
         return this;
@@ -381,6 +380,13 @@ export function fulfill(x) {
     return new Fulfilled(x);
 }
 
+// future :: () -> { resolve: Resolve e a, promise: Promise e a }
+// type Resolve e a = a|Thenable e a -> ()
+export function future() {
+    let promise = new Future();
+    return { resolve: x => promise._resolve(x), promise };
+}
+
 // -------------------------------------------------------------
 // ## Iterables
 // -------------------------------------------------------------
@@ -421,7 +427,6 @@ export function iterablePromise(handler, iterable) {
 
 // isPromise :: * -> boolean
 function isPromise(x) {
-    //return x instanceof Future;
     return x != null && typeof x === 'object' && x.constructor === Future;
 }
 

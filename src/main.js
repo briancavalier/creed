@@ -57,7 +57,7 @@ export function fromNode(f) {
     };
 }
 
-// fromNode :: NodeApi e a -> ...* -> Promise e a
+// runNode :: NodeApi e a -> ...* -> Promise e a
 // Run a Node API, returning a promise for the outcome
 export function runNode(f, ...args) {
     return runNodeResolver(f, this, args, new Future());
@@ -78,9 +78,9 @@ function runNodeResolver(f, thisArg, args, p) {
 // ## Make a promise
 // -------------------------------------------------------------
 
-// type Resolve a = a -> ()
+// type Resolve e a = a|Thenable e a -> ()
 // type Reject e = e -> ()
-// type Producer e a = (...* -> Resolve a -> Reject e -> ())
+// type Producer e a = (...* -> Resolve e a -> Reject e -> ())
 // runPromise :: Producer e a -> ...* -> Promise e a
 export function runPromise(f, ...args) {
     return runResolver(f, this, args, new Future());

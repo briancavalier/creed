@@ -2,7 +2,7 @@
 
 Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, [fantasy-land](https://github.com/fantasyland/fantasy-land).
 
-Creed simplifies async by letting you write coroutines using ES2015 generators and promises, and encourages functional programming via fantasy-land.  It also makes uncaught errors obvious by default, and supports other ES2105 features such as iterables.
+Creed simplifies async by letting you write coroutines using ES2015 generators and promises, and encourages functional programming via fantasy-land.  It also makes uncaught errors obvious by default, and supports other ES2015 features such as iterables.
 
 <a href="http://promises-aplus.github.com/promises-spec"><img width="82" height="82" alt="Promises/A+" src="http://promises-aplus.github.com/promises-spec/assets/logo-small.png"></a>
 <a href="https://github.com/fantasyland/fantasy-land"><img width="82" height="82" alt="Fantasy Land" src="https://raw.github.com/puffnfresh/fantasy-land/master/logo.png"></a>
@@ -160,8 +160,8 @@ runNode(readFile, 'theFile.txt', 'utf8')
 ```
 
 ### runPromise :: Producer e a &rarr; ...* &rarr; Promise e a
-type Producer e a = (...* &rarr; Resolve a &rarr; Reject e &rarr; ())<br/>
-type Resolve a = a &rarr; ()<br/>
+type Producer e a = (...* &rarr; Resolve e a &rarr; Reject e &rarr; ())<br/>
+type Resolve e a = a|Thenable e a &rarr; ()<br/>
 type Reject e = e &rarr; ()
 
 Run a function to produce a promised result.
@@ -181,7 +181,8 @@ let p = runPromise((url, resolve, reject) => {
 p.then(result => console.log(result));
 ```
 
-Parameter threading also makes it easy to create reusable tasksthat don't rely on closures and scope chain capturing.
+Parameter threading also makes it easy to create reusable tasks
+that don't rely on closures and scope chain capturing.
 
 ```js
 import { runPromise } from 'creed';
@@ -212,6 +213,30 @@ merge((x, y) => x + y, resolve(123), resolve(1))
 ```
 
 ## Make promises
+
+### future :: () &rarr; { resolve: Resolve e a, promise: Promise e a }
+type Resolve e a = a|Thenable e a &rarr; ()<br/>
+
+Create a `{ resolve, promise }` pair, where `resolve` is a function that seals the fate of `promise`.
+
+```js
+import { future, reject } from 'creed';
+
+// Fulfill
+let { resolve, promise } = future();
+resolve(123);
+promise.then(x => console.log(x)); //=> 123
+
+// Resolve to another promise
+let anotherPromise = ...;
+let { resolve, promise } = future();
+resolve(anotherPromise); //=> make promise's fate the same as anotherPromise's
+
+// Reject
+let { resolve, promise } = future();
+resolve(reject(new Error('oops')));
+promise.catch(e => console.log(e)); //=> [Error: oops]
+```
 
 ### resolve :: a|Thenable e a &rarr; Promise e a
 
@@ -270,7 +295,8 @@ never()
     .then(x => console.log(x)); // nothing logged, ever
 ```
 
-Note: `never` consumes virtually no resources.  It does not hold references to any functions passed to `then`, `map`, `chain`, etc. 
+Note: `never` consumes virtually no resources.  It does not hold references
+to any functions passed to `then`, `map`, `chain`, etc. 
 
 ## Transform promises
 
@@ -327,7 +353,8 @@ resolve(1)
 ### .ap :: Promise e (a &rarr; b) &rarr; Promise e a &rarr; Promise e b
 
 [Fantasy-land Apply](https://github.com/fantasyland/fantasy-land#apply).
-Apply a promised function to a promised value.  Returns anew promise for the result.
+Apply a promised function to a promised value.  Returns a new promise
+for the result.
 
 ```js
 import { resolve } from 'creed';
@@ -404,6 +431,10 @@ timeout(1000, delay(2000, 'hi')); //=> TimeoutError after 1 second
 
 ## Resolve Iterables
 
+Creed's iterable functions accept any ES2015 Iterable.  Most of
+the examples in this section show Arrays, but Sets, generators,
+etc. will work as well.
+
 ### all :: Iterable (Promise e a) &rarr; Promise e [a]
 
 Await all promises from an Iterable.  Returns a promise that fulfills
@@ -422,6 +453,14 @@ promises.add(resolve(456));
 
 all(promises)
     .then(x => console.log(x)); //=> [123, 456]
+
+function *generator() {
+    yield resolve(123);
+    yield resolve(456);
+}
+
+all(generator())
+    .then(x => console.log(x)); //=> [123, 456]
 ```
 
 ### race :: Iterable (Promise e a) &rarr; Promise e a
@@ -433,10 +472,43 @@ iteration order.
 
 **Note:** As per the ES6-spec, racing an empty iterable returns `never()`
 
+```js
+import { race, resolve, reject, delay, isNever } from 'creed';
+
+race([delay(100, 123), resolve(456)])
+    .then(x => console.log(x)); //=> 456
+
+race([resolve(123), reject(456)])
+    .then(x => console.log(x)); //=> 123
+
+race([delay(100, 123), reject(new Error('oops'))])
+    .catch(e => console.log(e)); //=> [Error: oops]
+
+isNever(race([])); //=> true
+```
+
 ### any :: Iterable (Promise e a) &rarr; Promise e a
 
 Returns a promise equivalent to the input promise that *fulfills*
 earliest.  If all input promises reject, the returned promise rejects.
+
+Note the differences from `race()`.
+
+```js
+import { any, resolve, reject, delay, isNever } from 'creed';
+
+any([delay(100, 123), resolve(456)])
+    .then(x => console.log(x)); //=> 123
+
+any([resolve(123), reject(456)])
+    .then(x => console.log(x)); //=> 123
+
+any([reject(new Error('foo')), reject(new Error('bar'))])
+    .catch(e => console.log(e)); //=> [RangeError: No fulfilled promises in input]
+
+any([])
+    .catch(e => console.log(e)); //=> [RangeError: No fulfilled promises in input]
+```
 
 ### settle :: Iterable (Promise e a) &rarr; Promise e [Promise e a]
 
@@ -530,28 +602,30 @@ isNever(delay(1000, never())); //=> true
 isNever(race([]));             //=> true
 ```
 
-### getValue :: Promise e a &rarr -> a
+### getValue :: Promise e a &rarr; a
 
-Extract the value of a *fulfilled* promise.  Throws if called on a pending or rejected promise, so check first with `isFulfilled`.
+Extract the value of a *fulfilled* promise.  Throws if called on a
+pending or rejected promise, so check first with `isFulfilled`.
 
 ```js
-import { getValue, resolve, reject, delay } from 'creed';
+import { getValue, resolve, reject, never } from 'creed';
 
 getValue(resolve(123)); //=> 123
 getValue(reject());     //=> throws TypeError
-getValue(delay(100));   //=> throws TypeError
+getValue(never());      //=> throws TypeError
 ```
 
-### getReason :: Promise e a &rarr -> e
+### getReason :: Promise e a &rarr; e
 
-Extract the reason of a *rejected* promise.  Throws if called on a pending or fulfilled promise, so check first with `isRejected`.
+Extract the reason of a *rejected* promise.  Throws if called on a
+pending or fulfilled promise, so check first with `isRejected`.
 
 ```js
-import { getReason, isFulfilled, resolve, reject, delay } from 'creed';
+import { getReason, isFulfilled, resolve, reject, never } from 'creed';
 
 getReason(resolve(123));      //=> throws TypeError
 getReason(reject('because')); //=> 'because'
-getReason(delay(100));        //=> throws TypeError
+getReason(never());           //=> throws TypeError
 ```
 
 ## Polyfill

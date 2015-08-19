@@ -1,7 +1,7 @@
 'use strict';
 
-export default function delay(ms, h, promise) {
-    h._runAction(new Delay(ms, promise));
+export default function delay(ms, p, promise) {
+    p._runAction(new Delay(ms, promise));
     return promise;
 }
 

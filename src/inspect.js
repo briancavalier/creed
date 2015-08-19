@@ -26,19 +26,13 @@ export function isHandled(p) {
     return (p.state() & HANDLED) > 0;
 }
 
-export function silenceError(p) {
-    if (!isFulfilled(p)) {
-        p._runAction(silencer);
-    }
-}
-
 export function getValue(p) {
     let n = p.near();
     if (!isFulfilled(n)) {
         throw new TypeError('getValue called on ' + p);
     }
 
-    return p.value;
+    return n.value;
 }
 
 export function getReason(p) {
@@ -47,7 +41,13 @@ export function getReason(p) {
         throw new TypeError('getReason called on ' + p);
     }
 
-    return p.value;
+    return n.value;
+}
+
+export function silenceError(p) {
+    if (!isFulfilled(p)) {
+        p._runAction(silencer);
+    }
 }
 
 const silencer = {
