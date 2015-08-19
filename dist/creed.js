@@ -41,12 +41,6 @@
 	    return (p.state() & HANDLED) > 0;
 	}
 
-	function silenceError(p) {
-	    if (!isFulfilled(p)) {
-	        p._runAction(silencer);
-	    }
-	}
-
 	function getValue(p) {
 	    var n = p.near();
 	    if (!isFulfilled(n)) {
@@ -63,6 +57,12 @@
 	    }
 
 	    return n.value;
+	}
+
+	function silenceError(p) {
+	    if (!isFulfilled(p)) {
+	        p._runAction(silencer);
+	    }
 	}
 
 	var silencer = {
@@ -278,8 +278,8 @@
 
 	function _then___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	function then(f, r, ref, promise) {
-	    ref._when(new Then(f, r, promise));
+	function then(f, r, p, promise) {
+	    p._when(new Then(f, r, promise));
 	    return promise;
 	}
 
@@ -323,27 +323,41 @@
 
 	'use strict';
 
-	var _map = map;
+	function build_map___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	function _map___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+	function build_map__map(f, p, promise) {
+	    return runMap(applyMap, f, p, promise);
+	}
 
-	function map(f, p, promise) {
-	    p._when(new _map__Map(f, promise));
+	function build_map__chain(f, p, promise) {
+	    return runMap(applyChain, f, p, promise);
+	}
+
+	function runMap(apply, f, p, promise) {
+	    p._when(new build_map__Map(apply, f, promise));
 	    return promise;
 	}
 
-	var _map__Map = (function () {
-	    function Map(f, promise) {
-	        _map___classCallCheck(this, Map);
+	function applyMap(f, x, p) {
+	    p._fulfill(f(x));
+	}
 
+	function applyChain(f, x, p) {
+	    p._become(f(x).near());
+	}
+
+	var build_map__Map = (function () {
+	    function Map(apply, f, promise) {
+	        build_map___classCallCheck(this, Map);
+
+	        this.apply = apply;
 	        this.f = f;
 	        this.promise = promise;
 	    }
 
 	    Map.prototype.fulfilled = function fulfilled(p) {
 	        try {
-	            var f = this.f;
-	            this.promise._fulfill(f(p.value));
+	            this.apply(this.f, p.value, this.promise);
 	        } catch (e) {
 	            this.promise._reject(e);
 	        }
@@ -355,42 +369,6 @@
 	    };
 
 	    return Map;
-	})();
-
-	'use strict';
-
-	var _chain = chain;
-
-	function _chain___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
-	function chain(f, p, future) {
-	    p._when(new Chain(f, future));
-	    return future;
-	}
-
-	var Chain = (function () {
-	    function Chain(f, future) {
-	        _chain___classCallCheck(this, Chain);
-
-	        this.f = f;
-	        this.future = future;
-	    }
-
-	    Chain.prototype.fulfilled = function fulfilled(p) {
-	        try {
-	            var f = this.f;
-	            this.future._resolve(f(p.value).near());
-	        } catch (e) {
-	            this.future._reject(e);
-	        }
-	    };
-
-	    Chain.prototype.rejected = function rejected(p) {
-	        this.future._become(p);
-	        return false;
-	    };
-
-	    return Chain;
 	})();
 
 	'use strict';
@@ -630,7 +608,7 @@
 
 	    Future.prototype.map = function map(f) {
 	        var n = this.near();
-	        return n === this ? _map(f, n, new Future()) : n.map(f);
+	        return n === this ? build_map__map(f, n, new Future()) : n.map(f);
 	    };
 
 	    // ap :: Promise e (a -> b) -> Promise e a -> Promise e b
@@ -647,7 +625,7 @@
 
 	    Future.prototype.chain = function chain(f) {
 	        var n = this.near();
-	        return n === this ? _chain(f, n, new Future()) : n.chain(f);
+	        return n === this ? build_map__chain(f, n, new Future()) : n.chain(f);
 	    };
 
 	    // concat :: Promise e a -> Promise e a -> Promise e a
@@ -774,7 +752,7 @@
 	    };
 
 	    Fulfilled.prototype.map = function map(f) {
-	        return _map(f, this, new Future());
+	        return build_map__map(f, this, new Future());
 	    };
 
 	    Fulfilled.prototype.ap = function ap(p) {
@@ -782,7 +760,7 @@
 	    };
 
 	    Fulfilled.prototype.chain = function chain(f) {
-	        return _chain(f, this, new Future());
+	        return build_map__chain(f, this, new Future());
 	    };
 
 	    Fulfilled.prototype.concat = function concat() {
@@ -964,6 +942,16 @@
 	    return new Fulfilled(x);
 	}
 
+	// future :: () -> { resolve: Resolve e a, promise: Promise e a }
+	// type Resolve e a = a|Thenable e a -> ()
+
+	function future() {
+	    var promise = new Future();
+	    return { resolve: function resolve(x) {
+	            return promise._resolve(x);
+	        }, promise: promise };
+	}
+
 	// -------------------------------------------------------------
 	// ## Iterables
 	// -------------------------------------------------------------
@@ -1072,8 +1060,8 @@
 
 	function _delay___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	function _delay__delay(ms, h, promise) {
-	    h._runAction(new Delay(ms, promise));
+	function _delay__delay(ms, p, promise) {
+	    p._runAction(new Delay(ms, promise));
 	    return promise;
 	}
 
@@ -1128,9 +1116,9 @@
 
 	function _timeout___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	var _timeout = function (ms, ref, promise) {
+	var _timeout = function (ms, p, promise) {
 	    var timer = setTimeout(rejectOnTimeout, ms, promise);
-	    ref._runAction(new Timeout(timer, promise));
+	    p._runAction(new Timeout(timer, promise));
 	    return promise;
 	}
 
@@ -1157,9 +1145,7 @@
 	})();
 
 	function rejectOnTimeout(promise) {
-	    if (isPending(promise)) {
-	        promise._reject(new TimeoutError('promise timeout'));
-	    }
+	    promise._reject(new TimeoutError('promise timeout'));
 	}
 
 	'use strict';
@@ -1426,9 +1412,9 @@
 	// ## Make a promise
 	// -------------------------------------------------------------
 
-	// type Resolve a = a -> ()
+	// type Resolve e a = a|Thenable e a -> ()
 	// type Reject e = e -> ()
-	// type Producer e a = (...* -> Resolve a -> Reject e -> ())
+	// type Producer e a = (...* -> Resolve e a -> Reject e -> ())
 	// runPromise :: Producer e a -> ...* -> Promise e a
 
 	function main__runPromise(f) {

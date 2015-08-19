@@ -1,6 +1,6 @@
 {
   "name": "creed",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, fantasy-land",
   "main": "dist/creed.js",
   "files": [
@@ -27,6 +27,7 @@
     "build-lib": "babel --loose es6.classes --blacklist es6.modules -q -d build src",
     "build-dist": "npm run build-lib && esperanto -b -t umd -o dist/creed.js -i build/main.js -s -n creed && uglifyjs -c 'warnings=false' -m -o dist/creed.min.js -- dist/creed.js",
     "prepublish": "npm run build-dist",
+    "preversion": "npm run build-dist",
     "clean": "rimraf build coverage",
     "test-aplus": "promises-aplus-tests test/aplus.js",
     "test-main": "istanbul cover --root src _mocha",
