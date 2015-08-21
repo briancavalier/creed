@@ -155,7 +155,6 @@ import { runNode } from 'creed';
 import { readFile } from 'fs';
 
 runNode(readFile, 'theFile.txt', 'utf8')
-    .map(String) // fs.readFile produces a Buffer, transform to a String
     .then(contents => console.log(contents));
 ```
 
