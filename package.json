@@ -31,7 +31,7 @@
     "clean": "rimraf build coverage",
     "test-aplus": "promises-aplus-tests test/aplus.js",
     "test-main": "istanbul cover --root src _mocha",
-    "check-coverage": "istanbul check-coverage --statements 90 --branches 90 --lines 90 --functions 90 coverage/coverage*.json",
+    "check-coverage": "istanbul check-coverage --statements 97 --branches 92 --lines 96 --functions 96 coverage/coverage*.json",
     "lint": "jscs -x src && jsinspect src && eslint src",
     "test": "npm run lint && npm run build-dist && npm run test-main && npm run check-coverage && npm run test-aplus"
   },
