@@ -24,7 +24,7 @@ describe('concat', function() {
 
     it('should return earlier future', () => {
         let expected = {};
-        var p = delay(2).concat(delay(1, expected));
+        var p = delay(10).concat(delay(1, expected));
         return assertSame(p, fulfill(expected));
     })
 });
