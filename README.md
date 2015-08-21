@@ -141,7 +141,6 @@ import { readFile } from 'fs';
 let readFileP = fromNode(readFile);
 
 readFileP('theFile.txt', 'utf8')
-    .map(String) // fs.readFile produces a Buffer, transform to a String
     .then(contents => console.log(contents));
 ```
 
