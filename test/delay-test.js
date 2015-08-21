@@ -1,10 +1,8 @@
-import { delay, never, reject, fulfill } from '../src/main';
+import { delay } from '../src/main';
+import { Future, never, reject, fulfill } from '../src/Promise';
 import { silenceError, isNever, isRejected, isPending, getValue } from '../src/inspect';
+import { assertSame } from './lib/test-util';
 import assert from 'assert';
-
-function assertSame(ap, bp) {
-    return ap.then(a => bp.then(b => assert(a === b)));
-}
 
 describe('delay', function() {
 
@@ -17,6 +15,18 @@ describe('delay', function() {
         let p = reject();
         silenceError(p);
         assert.strictEqual(p, delay(1, p));
+    });
+
+    it('should not delay rejected', () => {
+        let p = new Future();
+        let d = delay(1, p);
+
+        assert(isPending(d));
+
+        let x = {};
+        p._reject(x);
+
+        return d.then(assert.ifError, e => assert.strictEqual(x, e));
     });
 
     it('should return never for never', () => {

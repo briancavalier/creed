@@ -2,8 +2,6 @@ import { future, reject, fulfill, Future } from '../src/Promise';
 import { silenceError } from '../src/inspect';
 import assert from 'assert';
 
-let fail = x => { throw x; };
-
 describe('future', () => {
 
     it('should return { resolve, promise }', () => {
@@ -31,7 +29,7 @@ describe('future', () => {
             let { resolve, promise } = future();
             let expected = {};
             resolve(reject(expected));
-            return promise.then(fail, x => assert.strictEqual(expected, x));
+            return promise.then(assert.ifError, x => assert.strictEqual(expected, x));
         });
     });
 });
