@@ -7,6 +7,7 @@ Creed simplifies async by letting you write coroutines using ES2015 generators a
 <a href="http://promises-aplus.github.com/promises-spec"><img width="82" height="82" alt="Promises/A+" src="http://promises-aplus.github.com/promises-spec/assets/logo-small.png"></a>
 <a href="https://github.com/fantasyland/fantasy-land"><img width="82" height="82" alt="Fantasy Land" src="https://raw.github.com/puffnfresh/fantasy-land/master/logo.png"></a>
 [![Build Status](https://travis-ci.org/briancavalier/creed.svg?branch=master)](https://travis-ci.org/briancavalier/creed)
+[![Coverage Status](https://coveralls.io/repos/briancavalier/creed/badge.svg?branch=master&service=github)](https://coveralls.io/r/briancavalier/creed)
 
 ## Example
 
