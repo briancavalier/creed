@@ -17,6 +17,7 @@ import { resolveIterable, resultsArray } from './iterable';
 let taskQueue = new TaskQueue();
 export { taskQueue };
 
+/* istanbul ignore next */
 let errorHandler = new ErrorHandler(makeEmitError(), e => {
     throw e.value;
 });

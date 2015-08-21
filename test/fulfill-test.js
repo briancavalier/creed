@@ -24,4 +24,9 @@ describe('fulfill', () => {
         silenceError(x);
         return fulfill(x).then(y => assert(x === y));
     });
+
+    it('catch should be identity', () => {
+        var p = fulfill(true);
+        assert.strictEqual(p, p.catch(assert.ifError));
+    });
 });
