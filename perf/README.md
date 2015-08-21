@@ -7,47 +7,47 @@ Latest results, using latest versions of modules:
     └── when@3.7.3
 
 bench doxbee-sequential
-
-results for 10000 parallel executions, 1 ms per I/O op
-
+    
+    results for 10000 parallel executions, 1 ms per I/O op
+    
     file                                 time(ms)  memory(MB)
-    promises-creed-generator.js               147       32.07
-    callbacks-baseline.js                     157       32.45
-    promises-bluebird-generator.js            206       34.35
-    promises-cujojs-when-generator.js         207       43.96
-    promises-creed.js                         213       52.52
-    promises-bluebird.js                      275       46.13
-    promises-cujojs-when.js                   357       67.27
-    promises-tildeio-rsvp.js                  366       70.92
-    callbacks-caolan-async-waterfall.js       554      102.50
-    promises-ecmascript6-native.js            805      182.83
-    generators-tj-co.js                      1143      157.06
+    promises-creed-generator.js               127       31.57
+    callbacks-baseline.js                     159       32.45
+    promises-bluebird-generator.js            187       34.33
+    promises-creed.js                         207       52.71
+    promises-cujojs-when-generator.js         219       44.17
+    promises-bluebird.js                      238       45.39
+    promises-cujojs-when.js                   329       67.75
+    promises-tildeio-rsvp.js                  369       70.95
+    callbacks-caolan-async-waterfall.js       571      102.54
+    promises-ecmascript6-native.js            754      183.83
+    generators-tj-co.js                      1093      156.84
     
     Platform info:
-    Darwin 14.4.0 x64
-    Node.JS 3.0.0
+    Darwin 14.5.0 x64
+    Node.JS 3.1.0
     V8 4.4.63.26
     Intel(R) Core(TM) i7-4870HQ CPU @ 2.50GHz × 8
 
 bench parallel (`--p 25`)
     
-    results for 10000 parallel executions, 1 ms per I/O op
-    
+results for 10000 parallel executions, 1 ms per I/O op
+
     file                                time(ms)  memory(MB)
-    promises-creed.js                        331      114.59
-    promises-bluebird.js                     363      109.03
-    promises-creed-generator.js              399      115.49
-    promises-bluebird-generator.js           400      113.89
-    callbacks-baseline.js                    475       37.96
-    promises-cujojs-when.js                  564      165.75
-    promises-tildeio-rsvp.js                 577      215.54
-    promises-cujojs-when-generator.js        681      163.87
-    callbacks-caolan-async-parallel.js       799      209.07
-    promises-ecmascript6-native.js          1894      510.07
+    promises-creed.js                        344      113.50
+    promises-bluebird.js                     361      109.25
+    promises-bluebird-generator.js           368      114.15
+    promises-creed-generator.js              371      115.11
+    callbacks-baseline.js                    458       37.98
+    promises-tildeio-rsvp.js                 536      215.46
+    promises-cujojs-when.js                  548      167.74
+    promises-cujojs-when-generator.js        582      165.79
+    callbacks-caolan-async-parallel.js       738      208.47
+    promises-ecmascript6-native.js          1716      525.43
     
     Platform info:
-    Darwin 14.4.0 x64
-    Node.JS 3.0.0
+    Darwin 14.5.0 x64
+    Node.JS 3.1.0
     V8 4.4.63.26
     Intel(R) Core(TM) i7-4870HQ CPU @ 2.50GHz × 8
 
@@ -57,18 +57,18 @@ bench doxbee-errors
     Likelihood of rejection: 0.1
     
     file                                 time(ms)  memory(MB)
-    promises-creed-generator.js               167       29.84
-    callbacks-baseline.js                     175       32.24
-    promises-bluebird-generator.js            216       32.65
-    promises-creed.js                         248       52.44
-    promises-bluebird.js                      308       55.40
-    promises-cujojs-when.js                   362       69.01
-    promises-tildeio-rsvp.js                  404       74.13
-    callbacks-caolan-async-waterfall.js       581      102.48
+    promises-creed-generator.js               153       29.86
+    callbacks-baseline.js                     160       32.38
+    promises-bluebird-generator.js            211       33.54
+    promises-creed.js                         240       52.90
+    promises-bluebird.js                      312       55.35
+    promises-cujojs-when.js                   341       68.70
+    promises-tildeio-rsvp.js                  365       70.51
+    callbacks-caolan-async-waterfall.js       567      102.63
     
     Platform info:
-    Darwin 14.4.0 x64
-    Node.JS 3.0.0
+    Darwin 14.5.0 x64
+    Node.JS 3.1.0
     V8 4.4.63.26
     Intel(R) Core(TM) i7-4870HQ CPU @ 2.50GHz × 8
 
