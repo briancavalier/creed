@@ -13,7 +13,7 @@ describe('coroutine', function() {
 
     it('should continue on fulfilled promises', () => {
         let f = coroutine(function*(a, b) {
-            return (yield fulfill(a)) + (yield fulfill(b));
+            return (yield delay(1, a)) + (yield fulfill(b));
         });
 
         return f('a', 'b').then(x => assert.equal(x, 'ab'));
