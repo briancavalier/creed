@@ -31,6 +31,14 @@ describe('fromNode', function() {
             .then(assert.ifError, e => assert.strictEqual(e, expected));
     });
 
+    it('should reject if function throws synchronously', () => {
+        let expected = new Error();
+        let f = fromNode((a) => { throw a; });
+
+        return f(expected)
+            .then(assert.ifError, e => assert.strictEqual(e, expected));
+    });
+
     it('should accept zero args', () => {
         let f = fromNode((cb) => cb(null, true));
 
