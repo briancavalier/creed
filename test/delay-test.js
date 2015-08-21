@@ -4,6 +4,10 @@ import { silenceError, isNever, isRejected, isPending, getValue } from '../src/i
 import { assertSame } from './lib/test-util';
 import assert from 'assert';
 
+function lte(a, b) {
+    return (a - 1) <= b;
+}
+
 describe('delay', function() {
 
     it('should be identity for 0 ms', () => {
@@ -40,7 +44,7 @@ describe('delay', function() {
 
         let now = Date.now();
         return assertSame(fulfill(x), p)
-            .then(() => assert(Date.now() - now >= t));
+            .then(() => assert(lte(t, Date.now() - now)));
     });
 
     it('should delay fulfilled', () => {
@@ -50,6 +54,6 @@ describe('delay', function() {
 
         let now = Date.now();
         return assertSame(fulfill(x), p)
-            .then(() => assert(Date.now() - now >= t));
+            .then(() => assert(lte(t, Date.now() - now)));
     });
 });
