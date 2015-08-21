@@ -1049,6 +1049,7 @@
 
 	exports.resolve = resolve;
 	exports.reject = reject;
+	exports.future = future;
 	exports.never = never;
 	exports.fulfill = fulfill;
 	exports.all = all;
