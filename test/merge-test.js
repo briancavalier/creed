@@ -32,11 +32,19 @@ describe('merge', () => {
     });
 
     it('should reject if input contains rejection', () => {
-        return merge((x, y) => {
+        return merge(() => {
             assert(false);
         }, 1, reject(2)).catch(x => {
             assert.equal(x, 2);
         });
+    });
+
+    it('should reject if merge function throws', () => {
+        let expected = {};
+        return merge(() => {
+            throw expected;
+        }, resolve(1), resolve(2))
+            .then(assert.ifError, e => assert.strictEqual(expected, e));
     });
 
 });

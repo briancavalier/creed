@@ -207,5 +207,6 @@ export function shim() {
 export { CreedPromise as Promise };
 
 if (typeof Promise !== 'function') {
+    /* istanbul ignore next */
     shim();
 }
