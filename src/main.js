@@ -195,8 +195,10 @@ CreedPromise.race = race;
 export function shim() {
     let orig = typeof Promise === 'function' && Promise;
 
+    /* istanbul ignore if */
     if (typeof self !== 'undefined') {
         self.Promise = CreedPromise;
+        /* istanbul ignore else */
     } else if (typeof global !== 'undefined') {
         global.Promise = CreedPromise;
     }
@@ -206,7 +208,7 @@ export function shim() {
 
 export { CreedPromise as Promise };
 
+/* istanbul ignore if */
 if (typeof Promise !== 'function') {
-    /* istanbul ignore next */
     shim();
 }
