@@ -29,4 +29,9 @@ describe('fulfill', () => {
         var p = fulfill(true);
         assert.strictEqual(p, p.catch(assert.ifError));
     });
+
+    it('then should be identity when typeof f !== function', () => {
+        var p = fulfill(true);
+        assert.strictEqual(p, p.then());
+    });
 });

@@ -26,5 +26,24 @@ describe('concat', function() {
         let expected = {};
         var p = delay(10).concat(delay(1, expected));
         return assertSame(p, fulfill(expected));
-    })
+    });
+
+    it('should behave like fulfilled', () => {
+        let expected = {};
+        var p = fulfill(expected);
+        return assert.strictEqual(delay(10).concat(p), p);
+    });
+
+    it('should behave like rejected', () => {
+        let expected = {};
+        var p = reject(expected);
+        silenceError(p);
+        return assert.strictEqual(delay(10).concat(p), p);
+    });
+
+    it('should behave like never', () => {
+        var p2 = never();
+        var p1 = delay(10);
+        return assert.strictEqual(p1.concat(p2), p1);
+    });
 });

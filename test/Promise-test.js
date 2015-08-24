@@ -31,5 +31,4 @@ describe('Promise', () => {
         return new Promise((_, reject) => reject(expected))
             .then(assert.ifError, x => assert.strictEqual(expected, x));
     });
-
 });
