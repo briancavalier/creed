@@ -14,6 +14,15 @@ describe('future', () => {
         assert(promise instanceof Future);
     });
 
+    describe('then', () => {
+        it('should add handlers', () => {
+            let { resolve, promise } = future();
+            assertSame(promise.then(f), promise.then(fp));
+            setTimeout(resolve, 0, 1);
+            return promise;
+        });
+    });
+
     describe('resolve', () => {
         it('should fulfill promise with value', () => {
             let { resolve, promise } = future();
