@@ -132,9 +132,6 @@ export class Future {
     _runAction(action) {
         if (this.action === void 0) {
             this.action = action;
-            if (this._isResolved()) {
-                taskQueue.add(this);
-            }
         } else {
             this[this.length++] = action;
         }
