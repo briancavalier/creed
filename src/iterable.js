@@ -40,7 +40,9 @@ function handleItem(resolve, itemHandler, x, i, promise) {
         let p = resolve(x);
 
         if (promise._isResolved()) {
-            silenceError(p);
+            if(!isFulfilled(p)) {
+                silenceError(p);
+            }
         } else if (isFulfilled(p)) {
             itemHandler.fulfillAt(p, i, promise);
         } else if (isRejected(p)) {

@@ -45,9 +45,7 @@ export function getReason(p) {
 }
 
 export function silenceError(p) {
-    if (!isFulfilled(p)) {
-        p._runAction(silencer);
-    }
+    p._runAction(silencer);
 }
 
 const silencer = {
