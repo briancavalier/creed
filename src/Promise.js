@@ -163,12 +163,14 @@ export class Future {
 
     __become(ref) {
         this.ref = ref === this ? cycle() : ref;
-        if (this.action !== void 0) {
-            taskQueue.add(this);
-        }
+        taskQueue.add(this);
     }
 
     run() {
+        if (this.action === void 0) {
+            return;
+        }
+
         let ref = this.ref.near();
         ref._runAction(this.action);
         this.action = void 0;
@@ -177,8 +179,6 @@ export class Future {
             ref._runAction(this[i]);
             this[i] = void 0;
         }
-
-        this.length = 0;
     }
 }
 
