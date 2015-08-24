@@ -36,11 +36,12 @@ function runIterable(resolve, itemHandler, promises, promise) {
 }
 
 function handleItem(resolve, itemHandler, x, i, promise) {
+    /*eslint complexity:[1,6]*/
     if (maybeThenable(x)) {
         let p = resolve(x);
 
         if (promise._isResolved()) {
-            if(!isFulfilled(p)) {
+            if (!isFulfilled(p)) {
                 silenceError(p);
             }
         } else if (isFulfilled(p)) {
