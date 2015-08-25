@@ -1,5 +1,5 @@
 import { Future, all, resolve } from '../src/Promise';
-import { fail, throwingIterable, arrayIterable } from './lib/test-util';
+import { throwingIterable, arrayIterable } from './lib/test-util';
 import assert from 'assert';
 
 describe('all', () => {
@@ -7,7 +7,7 @@ describe('all', () => {
     it('should reject if iterator throws', () => {
         let error = new Error();
         return all(throwingIterable(error))
-            .then(fail, e => assert(e === error));
+            .then(assert.ifError, e => assert(e === error));
     });
 
     it('should resolve empty iterable', () => {
