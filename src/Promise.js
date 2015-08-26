@@ -74,7 +74,7 @@ export class Future {
     // ap :: Promise e (a -> b) -> Promise e a -> Promise e b
     ap(p) {
         let n = this.near();
-        let pp = resolveThenable(p);
+        let pp = p.near();
         return n === this ? this.chain(f => pp.map(f)) : n.ap(pp);
     }
 
@@ -87,7 +87,7 @@ export class Future {
     // concat :: Promise e a -> Promise e a -> Promise e a
     concat(b) {
         let n = this.near();
-        let bp = resolveThenable(b);
+        let bp = b.near();
 
         return n !== this ? n.concat(bp)
             : isNever(bp) ? n
@@ -202,7 +202,7 @@ class Fulfilled {
     }
 
     ap(p) {
-        return resolveThenable(p).map(this.value);
+        return p.map(this.value);
     }
 
     chain(f) {
@@ -432,10 +432,6 @@ function resolveMaybeThenable(x) {
     return isPromise(x) ? x.near() : refForMaybeThenable(fulfill, x);
 }
 
-function resolveThenable(x) {
-    return isPromise(x) ? x.near() : refForMaybeThenable(reject, x);
-}
-
 function refForMaybeThenable(otherwise, x) {
     try {
         let then = x.then;
@@ -449,12 +445,14 @@ function refForMaybeThenable(otherwise, x) {
 
 function extractThenable(then, thenable) {
     let p = new Future();
+
     try {
         then.call(thenable, x => p._resolve(x), e => p._reject(e));
     } catch (e) {
         p._reject(e);
     }
-    return p;
+
+    return p.near();
 }
 
 function cycle() {

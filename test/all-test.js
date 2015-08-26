@@ -39,4 +39,20 @@ describe('all', () => {
         });
     });
 
+    describe('when input contains thenables', () => {
+        it('should resolve thenables', () => {
+            let expected = {};
+            let thenable = {
+                then(f) {
+                    f(expected);
+                }
+            };
+
+            return all(arrayIterable([thenable])).then(a => {
+                assert.strictEqual(expected, a[0]);
+                assert.equal(1, a.length);
+            });
+        });
+    });
+
 });

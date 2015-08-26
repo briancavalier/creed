@@ -8,10 +8,11 @@ describe('iterable', () => {
     it('should reject if itemHandler throws synchronously before resolution', () => {
         let error = new Error();
         let itemHandler = {
-            valueAt: () => {
+            valueAt() {
                 throw error;
             }
         };
+
         let iterable = arrayIterable([1, 2, 3]);
         return resolveIterable(resolve, itemHandler, iterable, new Future())
             .then(assert.ifError, e => assert.strictEqual(error, e));
@@ -20,10 +21,11 @@ describe('iterable', () => {
     it('should not reject if itemHandler throws synchronously after resolution', () => {
         let error = new Error();
         let itemHandler = {
-            valueAt: () => {
+            valueAt() {
                 throw error;
             }
         };
+
         let iterable = arrayIterable([1, 2, 3]);
         let expected = {};
         let promise = new Future();

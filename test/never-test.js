@@ -28,4 +28,14 @@ describe('never', () => {
         var p = never();
         assert.strictEqual(p, p.chain(fulfill));
     });
+
+    it('_when should not call action', () => {
+        let fail = () => { throw new Error('never._when called action'); };
+        let action = {
+            fulfilled: fail,
+            rejected: fail
+        };
+
+        assert.strictEqual(void 0, never()._when(action));
+    });
 });
