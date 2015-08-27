@@ -60,9 +60,7 @@
 	}
 
 	function silenceError(p) {
-	    if (!isFulfilled(p)) {
-	        p._runAction(silencer);
-	    }
+	    p._runAction(silencer);
 	}
 
 	var silencer = {
@@ -184,6 +182,7 @@
 
 	    ErrorHandler.prototype.track = function track(e) {
 	        if (!this.emit(ErrorHandler__UNHANDLED_REJECTION, e, e.value)) {
+	            /* istanbul ignore else */
 	            if (this.errors.length === 0) {
 	                setTimeout(reportErrors, 1, this.reportError, this.errors);
 	            }
@@ -212,6 +211,7 @@
 	function reportAll(errors, report) {
 	    for (var i = 0; i < errors.length; ++i) {
 	        var e = errors[i];
+	        /* istanbul ignore else */
 	        if (!isHandled(e)) {
 	            report(e);
 	        }
@@ -505,11 +505,14 @@
 	}
 
 	function handleItem(resolve, itemHandler, x, i, promise) {
+	    /*eslint complexity:[1,6]*/
 	    if (maybeThenable(x)) {
 	        var p = resolve(x);
 
 	        if (promise._isResolved()) {
-	            silenceError(p);
+	            if (!isFulfilled(p)) {
+	                silenceError(p);
+	            }
 	        } else if (isFulfilled(p)) {
 	            itemHandler.fulfillAt(p, i, promise);
 	        } else if (isRejected(p)) {
@@ -615,7 +618,7 @@
 
 	    Future.prototype.ap = function ap(p) {
 	        var n = this.near();
-	        var pp = resolveThenable(p);
+	        var pp = p.near();
 	        return n === this ? this.chain(function (f) {
 	            return pp.map(f);
 	        }) : n.ap(pp);
@@ -632,7 +635,7 @@
 
 	    Future.prototype.concat = function concat(b) {
 	        var n = this.near();
-	        var bp = resolveThenable(b);
+	        var bp = b.near();
 
 	        return n !== this ? n.concat(bp) : isNever(bp) ? n : isSettled(bp) ? bp : race([n, bp]);
 	    };
@@ -678,9 +681,6 @@
 	    Future.prototype._runAction = function _runAction(action) {
 	        if (this.action === void 0) {
 	            this.action = action;
-	            if (this._isResolved()) {
-	                taskQueue.add(this);
-	            }
 	        } else {
 	            this[this.length++] = action;
 	        }
@@ -712,12 +712,14 @@
 
 	    Future.prototype.__become = function __become(ref) {
 	        this.ref = ref === this ? cycle() : ref;
-	        if (this.action !== void 0) {
-	            taskQueue.add(this);
-	        }
+	        taskQueue.add(this);
 	    };
 
 	    Future.prototype.run = function run() {
+	        if (this.action === void 0) {
+	            return;
+	        }
+
 	        var ref = this.ref.near();
 	        ref._runAction(this.action);
 	        this.action = void 0;
@@ -726,8 +728,6 @@
 	            ref._runAction(this[i]);
 	            this[i] = void 0;
 	        }
-
-	        this.length = 0;
 	    };
 
 	    return Future;
@@ -756,7 +756,7 @@
 	    };
 
 	    Fulfilled.prototype.ap = function ap(p) {
-	        return resolveThenable(p).map(this.value);
+	        return p.map(this.value);
 	    };
 
 	    Fulfilled.prototype.chain = function chain(f) {
@@ -1001,10 +1001,6 @@
 	    return isPromise(x) ? x.near() : refForMaybeThenable(fulfill, x);
 	}
 
-	function resolveThenable(x) {
-	    return isPromise(x) ? x.near() : refForMaybeThenable(reject, x);
-	}
-
 	function refForMaybeThenable(otherwise, x) {
 	    try {
 	        var then = x.then;
@@ -1016,6 +1012,7 @@
 
 	function extractThenable(then, thenable) {
 	    var p = new Future();
+
 	    try {
 	        then.call(thenable, function (x) {
 	            return p._resolve(x);
@@ -1025,7 +1022,8 @@
 	    } catch (e) {
 	        p._reject(e);
 	    }
-	    return p;
+
+	    return p.near();
 	}
 
 	function cycle() {
@@ -1105,6 +1103,7 @@
 	        _Error.call(this);
 	        this.message = message;
 	        this.name = TimeoutError.name;
+	        /* istanbul ignore else */
 	        if (typeof Error.captureStackTrace === 'function') {
 	            Error.captureStackTrace(this, TimeoutError);
 	        }
@@ -1555,11 +1554,13 @@
 	function shim() {
 	    var orig = typeof Promise === 'function' && Promise;
 
+	    /* istanbul ignore if */
 	    if (typeof self !== 'undefined') {
 	        self.Promise = CreedPromise;
+	        /* istanbul ignore else */
 	    } else if (typeof global !== 'undefined') {
-	        global.Promise = CreedPromise;
-	    }
+	            global.Promise = CreedPromise;
+	        }
 
 	    return orig;
 	}
