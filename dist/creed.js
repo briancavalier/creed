@@ -1055,41 +1055,6 @@
 
 	'use strict';
 
-	var _delay = _delay__delay;
-
-	function _delay___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
-	function _delay__delay(ms, p, promise) {
-	    p._runAction(new Delay(ms, promise));
-	    return promise;
-	}
-
-	var Delay = (function () {
-	    function Delay(time, promise) {
-	        _delay___classCallCheck(this, Delay);
-
-	        this.time = time;
-	        this.promise = promise;
-	    }
-
-	    Delay.prototype.fulfilled = function fulfilled(p) {
-	        setTimeout(fulfillDelayed, this.time, p, this.promise);
-	    };
-
-	    Delay.prototype.rejected = function rejected(p) {
-	        this.promise._become(p);
-	        return false;
-	    };
-
-	    return Delay;
-	})();
-
-	function fulfillDelayed(p, promise) {
-	    promise._become(p);
-	}
-
-	'use strict';
-
 	function TimeoutError___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 	function TimeoutError___inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
@@ -1442,10 +1407,23 @@
 
 	// delay :: number -> Promise e a -> Promise e a
 
-	function main__delay(ms, x) {
+	function delay(ms, x) {
 	    var p = resolve(x);
-	    return ms <= 0 || isRejected(p) || isNever(p) ? p : _delay(ms, p, new Future());
+	    return ms <= 0 || isRejected(p) || isNever(p) ? p : p.then(function (x) {
+	        return delayValue(ms, x);
+	    });
 	}
+
+	// delayValue :: number -> a -> Promise e a
+	function delayValue(ms, x) {
+	    var p = new Future();
+	    setTimeout(main__fulfillAfterDelay, ms, x, p);
+	    return p;
+	}
+
+	var main__fulfillAfterDelay = function fulfillAfterDelay(x, p) {
+	    return p._fulfill(x);
+	};
 
 	// timeout :: number -> Promise e a -> Promise (e|TimeoutError) a
 
@@ -1573,7 +1551,7 @@
 	exports.fromNode = fromNode;
 	exports.runNode = main__runNode;
 	exports.runPromise = main__runPromise;
-	exports.delay = main__delay;
+	exports.delay = delay;
 	exports.timeout = timeout;
 	exports.any = any;
 	exports.settle = settle;
