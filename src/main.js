@@ -3,7 +3,7 @@
 import { isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason } from './inspect';
 import { Future, resolve, reject, future, never, fulfill, all, race, iterablePromise, taskQueue } from './Promise';
 
-//import _delay from './delay';
+import _delay from './delay';
 import _timeout from './timeout';
 
 import Any from './Any';
@@ -105,17 +105,8 @@ function runResolver(f, thisArg, args, p) {
 export function delay(ms, x) {
     let p = resolve(x);
     return ms <= 0 || isRejected(p) || isNever(p) ? p
-        : p.then(x => delayValue(ms, x));
+        : _delay(ms, p, new Future());
 }
-
-// delayValue :: number -> a -> Promise e a
-function delayValue(ms, x) {
-    let p = new Future();
-    setTimeout(fulfillAfterDelay, ms, x, p);
-    return p;
-}
-
-const fulfillAfterDelay = (x, p) => p._fulfill(x);
 
 // timeout :: number -> Promise e a -> Promise (e|TimeoutError) a
 export function timeout(ms, x) {
