@@ -95,6 +95,48 @@ Promise { fulfilled: done! }
 Promise { fulfilled: winner }
 ```
 
+# Errors
+
+Uncaught promise errors are fatal by default.  They will crash your program.  Consider this small program, which contains a `ReferenceError`.
+
+```js
+import { all, runNode } from 'creed';
+import { readFile } from 'fs';
+
+const readFileP = file => runNode(readFile, file);
+
+const readFilesP = files => all(files.map(readFileP));
+
+const append = (head, tail) => head + fail; // Oops, typo will throw ReferenceError
+
+// Calling append() from nested promise causes
+// a ReferenceError, but it is not being caught
+readFilesP(process.argv.slice(2))
+    .map(contents => contents.reduce(append, ''))
+    .then(s => console.log(s));
+```
+
+Running this program (e.g. using `babel-node`) causes a fatal error, exiting the process with a stack trace:
+ 
+```
+> babel-node experiments/errors.js file1 file2 ...
+/Users/brian/Projects/creed/dist/creed.js:583
+		throw e.value;
+		^
+
+ReferenceError: fail is not defined
+    at append (/Users/brian/Projects/creed/experiments/errors.js:8:39)
+    at Array.reduce (native)
+    at /Users/brian/Projects/creed/experiments/errors.js:11:31
+    at Map.applyMap [as apply] (/Users/brian/Projects/creed/dist/creed.js:342:17)
+    at Map.fulfilled (/Users/brian/Projects/creed/dist/creed.js:360:19)
+    at Future._runAction (/Users/brian/Projects/creed/dist/creed.js:791:17)
+    at Future.run (/Users/brian/Projects/creed/dist/creed.js:724:14)
+    at TaskQueue._drain (/Users/brian/Projects/creed/dist/creed.js:158:10)
+    at /Users/brian/Projects/creed/dist/creed.js:143:18
+    at doNTCallback0 (node.js:407:9)
+```
+
 # API
 
 ## Run async tasks
