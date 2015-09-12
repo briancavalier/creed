@@ -1,9 +1,6 @@
 import { fulfill } from '../src/main';
+import { assertSame } from './lib/test-util';
 import assert from 'assert';
-
-function assertSame(ap, bp) {
-    return ap.then(a => bp.then(b => assert(a === b)));
-}
 
 describe('chain', function() {
 

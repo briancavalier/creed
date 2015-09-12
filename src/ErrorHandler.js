@@ -13,6 +13,7 @@ export default class ErrorHandler {
 
     track(e) {
         if (!this.emit(UNHANDLED_REJECTION, e, e.value)) {
+            /* istanbul ignore else */
             if (this.errors.length === 0) {
                 setTimeout(reportErrors, 1, this.reportError, this.errors);
             }
@@ -37,6 +38,7 @@ function reportErrors(report, errors) {
 function reportAll(errors, report) {
     for (let i = 0; i < errors.length; ++i) {
         let e = errors[i];
+        /* istanbul ignore else */
         if (!isHandled(e)) {
             report(e);
         }

@@ -1,7 +1,9 @@
 'use strict';
 
-export function fail(e) {
-    throw e;
+import assert from 'assert';
+
+export function assertSame(ap, bp) {
+    return ap.then(a => bp.then(b => assert(a === b)));
 }
 
 export function throwingIterable(e) {

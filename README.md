@@ -7,6 +7,7 @@ Creed simplifies async by letting you write coroutines using ES2015 generators a
 <a href="http://promises-aplus.github.com/promises-spec"><img width="82" height="82" alt="Promises/A+" src="http://promises-aplus.github.com/promises-spec/assets/logo-small.png"></a>
 <a href="https://github.com/fantasyland/fantasy-land"><img width="82" height="82" alt="Fantasy Land" src="https://raw.github.com/puffnfresh/fantasy-land/master/logo.png"></a>
 [![Build Status](https://travis-ci.org/briancavalier/creed.svg?branch=master)](https://travis-ci.org/briancavalier/creed)
+[![Coverage Status](https://coveralls.io/repos/briancavalier/creed/badge.svg?branch=master&service=github)](https://coveralls.io/github/briancavalier/creed?branch=master)
 
 ## Example
 
@@ -94,6 +95,115 @@ Promise { fulfilled: done! }
 Promise { fulfilled: winner }
 ```
 
+# Errors & debugging
+
+By default, uncaught promise errors are fatal.  They will crash your program.  You can override this behavior by [registering your own error event listener](#debug-events).
+  
+Consider this small program, which contains a `ReferenceError`.
+
+```js
+import { all, runNode } from 'creed';
+import { readFile } from 'fs';
+
+const readFileP = file => runNode(readFile, file);
+
+const readFilesP = files => all(files.map(readFileP));
+
+const append = (head, tail) => head + fail; // Oops, typo will throw ReferenceError
+
+// Calling append() from nested promise causes
+// a ReferenceError, but it is not being caught
+readFilesP(process.argv.slice(2))
+    .map(contents => contents.reduce(append, ''))
+    .then(s => console.log(s));
+```
+
+Running this program (e.g. using `babel-node`) causes a fatal error, exiting the process with a stack trace:
+ 
+```
+> babel-node experiments/errors.js file1 file2 ...
+/Users/brian/Projects/creed/dist/creed.js:583
+		throw e.value;
+		^
+
+ReferenceError: fail is not defined
+    at append (/Users/brian/Projects/creed/experiments/errors.js:8:39)
+    at Array.reduce (native)
+    at /Users/brian/Projects/creed/experiments/errors.js:11:31
+    at Map.applyMap [as apply] (/Users/brian/Projects/creed/dist/creed.js:342:17)
+    at Map.fulfilled (/Users/brian/Projects/creed/dist/creed.js:360:19)
+    at Future._runAction (/Users/brian/Projects/creed/dist/creed.js:791:17)
+    at Future.run (/Users/brian/Projects/creed/dist/creed.js:724:14)
+    at TaskQueue._drain (/Users/brian/Projects/creed/dist/creed.js:158:10)
+    at /Users/brian/Projects/creed/dist/creed.js:143:18
+    at doNTCallback0 (node.js:407:9)
+```
+
+## Debug events
+
+Creed supports global `window` events in browsers, and `process` events in Node, similar to Node's `'uncaughtException'` event. This allows applications to register a handler to receive events from all promise implementations that support these global events.
+
+The events are:
+
+* `'unhandledRejection'`: fired when an unhandled rejection is detected
+* `'rejectionHandled'`: fired when rejection previously reported via an '`unhandledRejection'` event becomes handled
+
+## Node global process events
+
+The following example shows how to use global `process` events in Node.js to implement simple debug output.  The parameters passed to the `process` event handlers:
+
+* `reason` - the rejection reason, typically an `Error` instance.
+* `promise` - the promise that was rejected.  This can be used to correlate corresponding `unhandledRejection` and `rejectionHandled` events for the same promise.
+
+
+```js
+process.on('unhandledRejection', reportRejection);
+process.on('rejectionHandled', reportHandled);
+
+function reportRejection(error, promise) {
+	// Implement whatever logic your application requires
+	// Log or record error state, etc.
+}
+
+function reportHandled(promise) {
+	// Implement whatever logic your application requires
+	// Log that error has been handled, etc.
+}
+```
+
+## Browser window events
+
+The following example shows how to use global `window` events in browsers to implement simple debug output.  The `event` object has the following extra properties:
+
+* `event.detail.reason` - the rejection reason (typically an `Error` instance)
+* `event.detail.promise` - the promise that was rejected.  This can be used to correlate corresponding `unhandledRejection` and `rejectionHandled` events for the same promise.
+
+```js
+window.addEventListener('unhandledRejection', event => {
+	// Calling preventDefault() suppresses default rejection logging
+	// in favor of your own.
+	event.preventDefault();
+	reportRejection(event.detail.reason, event.detail.promise);
+}, false);
+
+window.addEventListener('rejectionHandled', event => {
+	// Calling preventDefault() suppresses default rejection logging
+	// in favor of your own.
+	event.preventDefault();
+	reportHandled(event.detail.promise);
+}, false);
+
+function reportRejection(error, promise) {
+	// Implement whatever logic your application requires
+	// Log or record error state, etc.
+}
+
+function reportHandled(promise) {
+	// Implement whatever logic your application requires
+	// Log that error has been handled, etc.
+}
+```
+
 # API
 
 ## Run async tasks
@@ -140,7 +250,6 @@ import { readFile } from 'fs';
 let readFileP = fromNode(readFile);
 
 readFileP('theFile.txt', 'utf8')
-    .map(String) // fs.readFile produces a Buffer, transform to a String
     .then(contents => console.log(contents));
 ```
 
@@ -155,7 +264,6 @@ import { runNode } from 'creed';
 import { readFile } from 'fs';
 
 runNode(readFile, 'theFile.txt', 'utf8')
-    .map(String) // fs.readFile produces a Buffer, transform to a String
     .then(contents => console.log(contents));
 ```
 

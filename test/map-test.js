@@ -1,9 +1,6 @@
-import { fulfill } from '../src/main';
+import { fulfill, delay, reject } from '../src/main';
+import { assertSame } from './lib/test-util';
 import assert from 'assert';
-
-function assertSame(ap, bp) {
-    return ap.then(a => bp.then(b => assert(a === b)));
-}
 
 describe('map', function() {
 
@@ -20,4 +17,15 @@ describe('map', function() {
         return assertSame(u.map(x => f(g(x))), u.map(g).map(f));
     });
 
+    it('should reject if f throws', () => {
+        let expected = {};
+        return delay(1).map(() => { throw expected; })
+            .then(assert.ifError, x => assert.strictEqual(x, expected));
+    });
+
+    it('should not map rejection', () => {
+        let expected = {};
+        return delay(1, expected).then(reject).map(() => null)
+            .then(assert.ifError, x => assert.strictEqual(x, expected));
+    });
 });

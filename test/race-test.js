@@ -1,6 +1,6 @@
 import { race, resolve, reject, never } from '../src/main';
 import { isNever } from '../src/inspect';
-import { fail, throwingIterable } from './lib/test-util';
+import { throwingIterable } from './lib/test-util';
 import assert from 'assert';
 
 describe('race', () => {
@@ -8,7 +8,7 @@ describe('race', () => {
     it('should reject if iterator throws', () => {
         let error = new Error();
         return race(throwingIterable(error))
-            .then(fail, e => assert(e === error));
+            .then(assert.ifError, e => assert(e === error));
     });
 
     it('should return never when input is empty', () => {
@@ -16,7 +16,7 @@ describe('race', () => {
     });
 
     it('should reject with a TypeError when passed non-iterable', () => {
-        return race(123).then(fail, e => assert(e instanceof TypeError));
+        return race(123).then(assert.ifError, e => assert(e instanceof TypeError));
     });
 
     it('should be identity for 1 element when value', () => {
@@ -39,7 +39,7 @@ describe('race', () => {
     });
 
     it('should reject when winner rejects', () => {
-        return race([reject(1), never()]).then(fail, x => {
+        return race([reject(1), never()]).then(assert.ifError, x => {
             assert.equal(x, 1);
         });
     });

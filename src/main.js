@@ -1,7 +1,7 @@
 'use strict';
 
 import { isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason } from './inspect';
-import { Future, resolve, reject, never, fulfill, all, race, iterablePromise, taskQueue } from './Promise';
+import { Future, resolve, reject, future, never, fulfill, all, race, iterablePromise, taskQueue } from './Promise';
 
 import _delay from './delay';
 import _timeout from './timeout';
@@ -20,7 +20,7 @@ import _runCoroutine from './coroutine.js';
 // -------------------------------------------------------------
 
 export {
-    resolve, reject, never, fulfill, all, race,
+    resolve, reject, future, never, fulfill, all, race,
     isFulfilled, isRejected, isSettled, isPending, isNever,
     getValue, getReason
 };
@@ -104,7 +104,8 @@ function runResolver(f, thisArg, args, p) {
 // delay :: number -> Promise e a -> Promise e a
 export function delay(ms, x) {
     let p = resolve(x);
-    return ms <= 0 || isRejected(p) || isNever(p) ? p : _delay(ms, p, new Future());
+    return ms <= 0 || isRejected(p) || isNever(p) ? p
+        : _delay(ms, p, new Future());
 }
 
 // timeout :: number -> Promise e a -> Promise (e|TimeoutError) a
@@ -195,8 +196,10 @@ CreedPromise.race = race;
 export function shim() {
     let orig = typeof Promise === 'function' && Promise;
 
+    /* istanbul ignore if */
     if (typeof self !== 'undefined') {
         self.Promise = CreedPromise;
+        /* istanbul ignore else */
     } else if (typeof global !== 'undefined') {
         global.Promise = CreedPromise;
     }
@@ -206,6 +209,7 @@ export function shim() {
 
 export { CreedPromise as Promise };
 
+/* istanbul ignore if */
 if (typeof Promise !== 'function') {
     shim();
 }

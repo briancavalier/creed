@@ -1,5 +1,5 @@
 import { any, resolve, reject } from '../src/main';
-import { fail, throwingIterable, arrayIterable } from './lib/test-util';
+import { throwingIterable, arrayIterable } from './lib/test-util';
 import assert from 'assert';
 
 describe('any', () => {
@@ -7,7 +7,7 @@ describe('any', () => {
     it('should reject if iterator throws', () => {
         let error = new Error();
         return any(throwingIterable(error))
-            .then(fail, e => assert(e === error));
+            .then(assert.ifError, e => assert(e === error));
     });
 
     it('should reject with RangeError for empty iterable', () => {

@@ -1,5 +1,5 @@
 import { Future, all, resolve } from '../src/Promise';
-import { fail, throwingIterable, arrayIterable } from './lib/test-util';
+import { throwingIterable, arrayIterable } from './lib/test-util';
 import assert from 'assert';
 
 describe('all', () => {
@@ -7,7 +7,7 @@ describe('all', () => {
     it('should reject if iterator throws', () => {
         let error = new Error();
         return all(throwingIterable(error))
-            .then(fail, e => assert(e === error));
+            .then(assert.ifError, e => assert(e === error));
     });
 
     it('should resolve empty iterable', () => {
@@ -36,6 +36,22 @@ describe('all', () => {
         setTimeout(p => p._reject(2), 0, p);
         return all(arrayIterable([1, p, 3])).catch(x => {
             assert.equal(x, 2);
+        });
+    });
+
+    describe('when input contains thenables', () => {
+        it('should resolve thenables', () => {
+            let expected = {};
+            let thenable = {
+                then(f) {
+                    f(expected);
+                }
+            };
+
+            return all(arrayIterable([thenable])).then(a => {
+                assert.strictEqual(expected, a[0]);
+                assert.equal(1, a.length);
+            });
         });
     });
 

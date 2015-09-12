@@ -1,6 +1,6 @@
 'use strict';
 
-export default function delay(ms, p, promise) {
+export default function (ms, p, promise) {
     p._runAction(new Delay(ms, promise));
     return promise;
 }
@@ -12,15 +12,15 @@ class Delay {
     }
 
     fulfilled(p) {
-        setTimeout(fulfillDelayed, this.time, p, this.promise);
+        /*global setTimeout*/
+        setTimeout(become, this.time, p, this.promise);
     }
 
     rejected(p) {
         this.promise._become(p);
-        return false;
     }
 }
 
-function fulfillDelayed(p, promise) {
+function become(p, promise) {
     promise._become(p);
 }

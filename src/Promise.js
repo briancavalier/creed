@@ -17,6 +17,7 @@ import { resolveIterable, resultsArray } from './iterable';
 let taskQueue = new TaskQueue();
 export { taskQueue };
 
+/* istanbul ignore next */
 let errorHandler = new ErrorHandler(makeEmitError(), e => {
     throw e.value;
 });
@@ -73,7 +74,7 @@ export class Future {
     // ap :: Promise e (a -> b) -> Promise e a -> Promise e b
     ap(p) {
         let n = this.near();
-        let pp = resolveThenable(p);
+        let pp = p.near();
         return n === this ? this.chain(f => pp.map(f)) : n.ap(pp);
     }
 
@@ -86,7 +87,7 @@ export class Future {
     // concat :: Promise e a -> Promise e a -> Promise e a
     concat(b) {
         let n = this.near();
-        let bp = resolveThenable(b);
+        let bp = b.near();
 
         return n !== this ? n.concat(bp)
             : isNever(bp) ? n
@@ -131,9 +132,6 @@ export class Future {
     _runAction(action) {
         if (this.action === void 0) {
             this.action = action;
-            if (this._isResolved()) {
-                taskQueue.add(this);
-            }
         } else {
             this[this.length++] = action;
         }
@@ -165,12 +163,14 @@ export class Future {
 
     __become(ref) {
         this.ref = ref === this ? cycle() : ref;
-        if (this.action !== void 0) {
-            taskQueue.add(this);
-        }
+        taskQueue.add(this);
     }
 
     run() {
+        if (this.action === void 0) {
+            return;
+        }
+
         let ref = this.ref.near();
         ref._runAction(this.action);
         this.action = void 0;
@@ -179,8 +179,6 @@ export class Future {
             ref._runAction(this[i]);
             this[i] = void 0;
         }
-
-        this.length = 0;
     }
 }
 
@@ -204,7 +202,7 @@ class Fulfilled {
     }
 
     ap(p) {
-        return resolveThenable(p).map(this.value);
+        return p.map(this.value);
     }
 
     chain(f) {
@@ -383,7 +381,7 @@ export function fulfill(x) {
 // future :: () -> { resolve: Resolve e a, promise: Promise e a }
 // type Resolve e a = a|Thenable e a -> ()
 export function future() {
-    let promise = new Future();
+    const promise = new Future();
     return { resolve: x => promise._resolve(x), promise };
 }
 
@@ -434,10 +432,6 @@ function resolveMaybeThenable(x) {
     return isPromise(x) ? x.near() : refForMaybeThenable(fulfill, x);
 }
 
-function resolveThenable(x) {
-    return isPromise(x) ? x.near() : refForMaybeThenable(reject, x);
-}
-
 function refForMaybeThenable(otherwise, x) {
     try {
         let then = x.then;
@@ -451,12 +445,14 @@ function refForMaybeThenable(otherwise, x) {
 
 function extractThenable(then, thenable) {
     let p = new Future();
+
     try {
         then.call(thenable, x => p._resolve(x), e => p._reject(e));
     } catch (e) {
         p._reject(e);
     }
-    return p;
+
+    return p.near();
 }
 
 function cycle() {

@@ -41,12 +41,6 @@
 	    return (p.state() & HANDLED) > 0;
 	}
 
-	function silenceError(p) {
-	    if (!isFulfilled(p)) {
-	        p._runAction(silencer);
-	    }
-	}
-
 	function getValue(p) {
 	    var n = p.near();
 	    if (!isFulfilled(n)) {
@@ -63,6 +57,10 @@
 	    }
 
 	    return n.value;
+	}
+
+	function silenceError(p) {
+	    p._runAction(silencer);
 	}
 
 	var silencer = {
@@ -184,6 +182,7 @@
 
 	    ErrorHandler.prototype.track = function track(e) {
 	        if (!this.emit(ErrorHandler__UNHANDLED_REJECTION, e, e.value)) {
+	            /* istanbul ignore else */
 	            if (this.errors.length === 0) {
 	                setTimeout(reportErrors, 1, this.reportError, this.errors);
 	            }
@@ -212,6 +211,7 @@
 	function reportAll(errors, report) {
 	    for (var i = 0; i < errors.length; ++i) {
 	        var e = errors[i];
+	        /* istanbul ignore else */
 	        if (!isHandled(e)) {
 	            report(e);
 	        }
@@ -278,8 +278,8 @@
 
 	function _then___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	function then(f, r, ref, promise) {
-	    ref._when(new Then(f, r, promise));
+	function then(f, r, p, promise) {
+	    p._when(new Then(f, r, promise));
 	    return promise;
 	}
 
@@ -323,27 +323,41 @@
 
 	'use strict';
 
-	var _map = map;
+	function build_map___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	function _map___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+	function build_map__map(f, p, promise) {
+	    return runMap(applyMap, f, p, promise);
+	}
 
-	function map(f, p, promise) {
-	    p._when(new _map__Map(f, promise));
+	function build_map__chain(f, p, promise) {
+	    return runMap(applyChain, f, p, promise);
+	}
+
+	function runMap(apply, f, p, promise) {
+	    p._when(new build_map__Map(apply, f, promise));
 	    return promise;
 	}
 
-	var _map__Map = (function () {
-	    function Map(f, promise) {
-	        _map___classCallCheck(this, Map);
+	function applyMap(f, x, p) {
+	    p._fulfill(f(x));
+	}
 
+	function applyChain(f, x, p) {
+	    p._become(f(x).near());
+	}
+
+	var build_map__Map = (function () {
+	    function Map(apply, f, promise) {
+	        build_map___classCallCheck(this, Map);
+
+	        this.apply = apply;
 	        this.f = f;
 	        this.promise = promise;
 	    }
 
 	    Map.prototype.fulfilled = function fulfilled(p) {
 	        try {
-	            var f = this.f;
-	            this.promise._fulfill(f(p.value));
+	            this.apply(this.f, p.value, this.promise);
 	        } catch (e) {
 	            this.promise._reject(e);
 	        }
@@ -355,42 +369,6 @@
 	    };
 
 	    return Map;
-	})();
-
-	'use strict';
-
-	var _chain = chain;
-
-	function _chain___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
-	function chain(f, p, future) {
-	    p._when(new Chain(f, future));
-	    return future;
-	}
-
-	var Chain = (function () {
-	    function Chain(f, future) {
-	        _chain___classCallCheck(this, Chain);
-
-	        this.f = f;
-	        this.future = future;
-	    }
-
-	    Chain.prototype.fulfilled = function fulfilled(p) {
-	        try {
-	            var f = this.f;
-	            this.future._resolve(f(p.value).near());
-	        } catch (e) {
-	            this.future._reject(e);
-	        }
-	    };
-
-	    Chain.prototype.rejected = function rejected(p) {
-	        this.future._become(p);
-	        return false;
-	    };
-
-	    return Chain;
 	})();
 
 	'use strict';
@@ -527,11 +505,14 @@
 	}
 
 	function handleItem(resolve, itemHandler, x, i, promise) {
+	    /*eslint complexity:[1,6]*/
 	    if (maybeThenable(x)) {
 	        var p = resolve(x);
 
 	        if (promise._isResolved()) {
-	            silenceError(p);
+	            if (!isFulfilled(p)) {
+	                silenceError(p);
+	            }
 	        } else if (isFulfilled(p)) {
 	            itemHandler.fulfillAt(p, i, promise);
 	        } else if (isRejected(p)) {
@@ -630,14 +611,14 @@
 
 	    Future.prototype.map = function map(f) {
 	        var n = this.near();
-	        return n === this ? _map(f, n, new Future()) : n.map(f);
+	        return n === this ? build_map__map(f, n, new Future()) : n.map(f);
 	    };
 
 	    // ap :: Promise e (a -> b) -> Promise e a -> Promise e b
 
 	    Future.prototype.ap = function ap(p) {
 	        var n = this.near();
-	        var pp = resolveThenable(p);
+	        var pp = p.near();
 	        return n === this ? this.chain(function (f) {
 	            return pp.map(f);
 	        }) : n.ap(pp);
@@ -647,14 +628,14 @@
 
 	    Future.prototype.chain = function chain(f) {
 	        var n = this.near();
-	        return n === this ? _chain(f, n, new Future()) : n.chain(f);
+	        return n === this ? build_map__chain(f, n, new Future()) : n.chain(f);
 	    };
 
 	    // concat :: Promise e a -> Promise e a -> Promise e a
 
 	    Future.prototype.concat = function concat(b) {
 	        var n = this.near();
-	        var bp = resolveThenable(b);
+	        var bp = b.near();
 
 	        return n !== this ? n.concat(bp) : isNever(bp) ? n : isSettled(bp) ? bp : race([n, bp]);
 	    };
@@ -700,9 +681,6 @@
 	    Future.prototype._runAction = function _runAction(action) {
 	        if (this.action === void 0) {
 	            this.action = action;
-	            if (this._isResolved()) {
-	                taskQueue.add(this);
-	            }
 	        } else {
 	            this[this.length++] = action;
 	        }
@@ -734,12 +712,14 @@
 
 	    Future.prototype.__become = function __become(ref) {
 	        this.ref = ref === this ? cycle() : ref;
-	        if (this.action !== void 0) {
-	            taskQueue.add(this);
-	        }
+	        taskQueue.add(this);
 	    };
 
 	    Future.prototype.run = function run() {
+	        if (this.action === void 0) {
+	            return;
+	        }
+
 	        var ref = this.ref.near();
 	        ref._runAction(this.action);
 	        this.action = void 0;
@@ -748,8 +728,6 @@
 	            ref._runAction(this[i]);
 	            this[i] = void 0;
 	        }
-
-	        this.length = 0;
 	    };
 
 	    return Future;
@@ -774,15 +752,15 @@
 	    };
 
 	    Fulfilled.prototype.map = function map(f) {
-	        return _map(f, this, new Future());
+	        return build_map__map(f, this, new Future());
 	    };
 
 	    Fulfilled.prototype.ap = function ap(p) {
-	        return resolveThenable(p).map(this.value);
+	        return p.map(this.value);
 	    };
 
 	    Fulfilled.prototype.chain = function chain(f) {
-	        return _chain(f, this, new Future());
+	        return build_map__chain(f, this, new Future());
 	    };
 
 	    Fulfilled.prototype.concat = function concat() {
@@ -964,6 +942,16 @@
 	    return new Fulfilled(x);
 	}
 
+	// future :: () -> { resolve: Resolve e a, promise: Promise e a }
+	// type Resolve e a = a|Thenable e a -> ()
+
+	function future() {
+	    var promise = new Future();
+	    return { resolve: function resolve(x) {
+	            return promise._resolve(x);
+	        }, promise: promise };
+	}
+
 	// -------------------------------------------------------------
 	// ## Iterables
 	// -------------------------------------------------------------
@@ -1013,10 +1001,6 @@
 	    return isPromise(x) ? x.near() : refForMaybeThenable(fulfill, x);
 	}
 
-	function resolveThenable(x) {
-	    return isPromise(x) ? x.near() : refForMaybeThenable(reject, x);
-	}
-
 	function refForMaybeThenable(otherwise, x) {
 	    try {
 	        var then = x.then;
@@ -1028,6 +1012,7 @@
 
 	function extractThenable(then, thenable) {
 	    var p = new Future();
+
 	    try {
 	        then.call(thenable, function (x) {
 	            return p._resolve(x);
@@ -1037,7 +1022,8 @@
 	    } catch (e) {
 	        p._reject(e);
 	    }
-	    return p;
+
+	    return p.near();
 	}
 
 	function cycle() {
@@ -1061,45 +1047,11 @@
 
 	exports.resolve = resolve;
 	exports.reject = reject;
+	exports.future = future;
 	exports.never = never;
 	exports.fulfill = fulfill;
 	exports.all = all;
 	exports.race = race;
-
-	'use strict';
-
-	var _delay = _delay__delay;
-
-	function _delay___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
-	function _delay__delay(ms, h, promise) {
-	    h._runAction(new Delay(ms, promise));
-	    return promise;
-	}
-
-	var Delay = (function () {
-	    function Delay(time, promise) {
-	        _delay___classCallCheck(this, Delay);
-
-	        this.time = time;
-	        this.promise = promise;
-	    }
-
-	    Delay.prototype.fulfilled = function fulfilled(p) {
-	        setTimeout(fulfillDelayed, this.time, p, this.promise);
-	    };
-
-	    Delay.prototype.rejected = function rejected(p) {
-	        this.promise._become(p);
-	        return false;
-	    };
-
-	    return Delay;
-	})();
-
-	function fulfillDelayed(p, promise) {
-	    promise._become(p);
-	}
 
 	'use strict';
 
@@ -1116,6 +1068,7 @@
 	        _Error.call(this);
 	        this.message = message;
 	        this.name = TimeoutError.name;
+	        /* istanbul ignore else */
 	        if (typeof Error.captureStackTrace === 'function') {
 	            Error.captureStackTrace(this, TimeoutError);
 	        }
@@ -1128,9 +1081,9 @@
 
 	function _timeout___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-	var _timeout = function (ms, ref, promise) {
+	var _timeout = function (ms, p, promise) {
 	    var timer = setTimeout(rejectOnTimeout, ms, promise);
-	    ref._runAction(new Timeout(timer, promise));
+	    p._runAction(new Timeout(timer, promise));
 	    return promise;
 	}
 
@@ -1157,9 +1110,7 @@
 	})();
 
 	function rejectOnTimeout(promise) {
-	    if (isPending(promise)) {
-	        promise._reject(new TimeoutError('promise timeout'));
-	    }
+	    promise._reject(new TimeoutError('promise timeout'));
 	}
 
 	'use strict';
@@ -1426,9 +1377,9 @@
 	// ## Make a promise
 	// -------------------------------------------------------------
 
-	// type Resolve a = a -> ()
+	// type Resolve e a = a|Thenable e a -> ()
 	// type Reject e = e -> ()
-	// type Producer e a = (...* -> Resolve a -> Reject e -> ())
+	// type Producer e a = (...* -> Resolve e a -> Reject e -> ())
 	// runPromise :: Producer e a -> ...* -> Promise e a
 
 	function main__runPromise(f) {
@@ -1456,10 +1407,23 @@
 
 	// delay :: number -> Promise e a -> Promise e a
 
-	function main__delay(ms, x) {
+	function delay(ms, x) {
 	    var p = resolve(x);
-	    return ms <= 0 || isRejected(p) || isNever(p) ? p : _delay(ms, p, new Future());
+	    return ms <= 0 || isRejected(p) || isNever(p) ? p : p.then(function (x) {
+	        return delayValue(ms, x);
+	    });
 	}
+
+	// delayValue :: number -> a -> Promise e a
+	function delayValue(ms, x) {
+	    var p = new Future();
+	    setTimeout(main__fulfillAfterDelay, ms, x, p);
+	    return p;
+	}
+
+	var main__fulfillAfterDelay = function fulfillAfterDelay(x, p) {
+	    return p._fulfill(x);
+	};
 
 	// timeout :: number -> Promise e a -> Promise (e|TimeoutError) a
 
@@ -1568,11 +1532,13 @@
 	function shim() {
 	    var orig = typeof Promise === 'function' && Promise;
 
+	    /* istanbul ignore if */
 	    if (typeof self !== 'undefined') {
 	        self.Promise = CreedPromise;
+	        /* istanbul ignore else */
 	    } else if (typeof global !== 'undefined') {
-	        global.Promise = CreedPromise;
-	    }
+	            global.Promise = CreedPromise;
+	        }
 
 	    return orig;
 	}
@@ -1585,7 +1551,7 @@
 	exports.fromNode = fromNode;
 	exports.runNode = main__runNode;
 	exports.runPromise = main__runPromise;
-	exports.delay = main__delay;
+	exports.delay = delay;
 	exports.timeout = timeout;
 	exports.any = any;
 	exports.settle = settle;
