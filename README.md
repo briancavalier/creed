@@ -95,9 +95,11 @@ Promise { fulfilled: done! }
 Promise { fulfilled: winner }
 ```
 
-# Errors
+# Errors & debugging
 
-Uncaught promise errors are fatal by default.  They will crash your program.  Consider this small program, which contains a `ReferenceError`.
+By default, uncaught promise errors are fatal.  They will crash your program.  You can override this behavior by [registering your own error event listener](#debug-events).
+  
+Consider this small program, which contains a `ReferenceError`.
 
 ```js
 import { all, runNode } from 'creed';
@@ -135,6 +137,71 @@ ReferenceError: fail is not defined
     at TaskQueue._drain (/Users/brian/Projects/creed/dist/creed.js:158:10)
     at /Users/brian/Projects/creed/dist/creed.js:143:18
     at doNTCallback0 (node.js:407:9)
+```
+
+## Debug events
+
+Creed supports global `window` events in browsers, and `process` events in Node, similar to Node's `'uncaughtException'` event. This allows applications to register a handler to receive events from all promise implementations that support these global events.
+
+The events are:
+
+* `'unhandledRejection'`: fired when an unhandled rejection is detected
+* `'rejectionHandled'`: fired when rejection previously reported via an '`unhandledRejection'` event becomes handled
+
+## Node global process events
+
+The following example shows how to use global `process` events in Node.js to implement simple debug output.  The parameters passed to the `process` event handlers:
+
+* `reason` - the rejection reason, typically an `Error` instance.
+* `promise` - the promise that was rejected.  This can be used to correlate corresponding `unhandledRejection` and `rejectionHandled` events for the same promise.
+
+
+```js
+process.on('unhandledRejection', reportRejection);
+process.on('rejectionHandled', reportHandled);
+
+function reportRejection(error, promise) {
+	// Implement whatever logic your application requires
+	// Log or record error state, etc.
+}
+
+function reportHandled(promise) {
+	// Implement whatever logic your application requires
+	// Log that error has been handled, etc.
+}
+```
+
+## Browser window events
+
+The following example shows how to use global `window` events in browsers to implement simple debug output.  The `event` object has the following extra properties:
+
+* `event.detail.reason` - the rejection reason (typically an `Error` instance)
+* `event.detail.promise` - the promise that was rejected.  This can be used to correlate corresponding `unhandledRejection` and `rejectionHandled` events for the same promise.
+
+```js
+window.addEventListener('unhandledRejection', event => {
+	// Calling preventDefault() suppresses default rejection logging
+	// in favor of your own.
+	event.preventDefault();
+	reportRejection(event.detail.reason, event.detail.promise);
+}, false);
+
+window.addEventListener('rejectionHandled', event => {
+	// Calling preventDefault() suppresses default rejection logging
+	// in favor of your own.
+	event.preventDefault();
+	reportHandled(event.detail.promise);
+}, false);
+
+function reportRejection(error, promise) {
+	// Implement whatever logic your application requires
+	// Log or record error state, etc.
+}
+
+function reportHandled(promise) {
+	// Implement whatever logic your application requires
+	// Log that error has been handled, etc.
+}
 ```
 
 # API
