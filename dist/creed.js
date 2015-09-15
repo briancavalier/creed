@@ -1300,47 +1300,49 @@
 	function _runCoroutine___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 	var _runCoroutine = function (refFor, iterator, promise) {
-	    coStep(refFor, iterator.next, void 0, iterator, promise);
+	    new Coroutine(refFor, iterator, promise).run();
 	    return promise;
 	}
 
-	function coStep(refFor, continuation, x, iterator, promise) {
-	    try {
-	        handle(refFor, continuation.call(iterator, x), iterator, promise);
-	    } catch (e) {
-	        promise._reject(e);
-	    }
-	}
+	var Coroutine = (function () {
+	    function Coroutine(resolve, iterator, promise) {
+	        _runCoroutine___classCallCheck(this, Coroutine);
 
-	function handle(refFor, result, iterator, promise) {
-	    if (result.done) {
-	        return promise._resolve(result.value);
-	    }
-
-	    refFor(result.value)._runAction(new Next(refFor, iterator, promise));
-	}
-
-	var Next = (function () {
-	    function Next(refFor, iterator, promise) {
-	        _runCoroutine___classCallCheck(this, Next);
-
-	        this.refFor = refFor;
+	        this.resolve = resolve;
 	        this.iterator = iterator;
 	        this.promise = promise;
 	    }
 
-	    Next.prototype.fulfilled = function fulfilled(ref) {
-	        var iterator = this.iterator;
-	        coStep(this.refFor, iterator.next, ref.value, iterator, this.promise);
+	    Coroutine.prototype.run = function run() {
+	        this.step(this.iterator.next, void 0);
 	    };
 
-	    Next.prototype.rejected = function rejected(ref) {
-	        var iterator = this.iterator;
-	        coStep(this.refFor, iterator['throw'], ref.value, iterator, this.promise);
+	    Coroutine.prototype.step = function step(continuation, x) {
+	        try {
+	            this.handle(continuation.call(this.iterator, x));
+	        } catch (e) {
+	            this.promise._reject(e);
+	        }
+	    };
+
+	    Coroutine.prototype.handle = function handle(result) {
+	        if (result.done) {
+	            return this.promise._resolve(result.value);
+	        }
+
+	        this.resolve(result.value)._runAction(this);
+	    };
+
+	    Coroutine.prototype.fulfilled = function fulfilled(ref) {
+	        this.step(this.iterator.next, ref.value);
+	    };
+
+	    Coroutine.prototype.rejected = function rejected(ref) {
+	        this.step(this.iterator['throw'], ref.value);
 	        return true;
 	    };
 
-	    return Next;
+	    return Coroutine;
 	})();
 
 	'use strict';
