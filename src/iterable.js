@@ -5,37 +5,37 @@ export function resultsArray(iterable) {
     return Array.isArray(iterable) ? new Array(iterable.length) : [];
 }
 
-export function resolveIterable(resolve, itemHandler, promises, promise) {
+export function resolveIterable(resolve, handler, promises, promise) {
     let run = Array.isArray(promises) ? runArray : runIterable;
     try {
-        run(resolve, itemHandler, promises, promise);
+        run(resolve, handler, promises, promise);
     } catch (e) {
         promise._reject(e);
     }
     return promise.near();
 }
 
-function runArray(resolve, itemHandler, promises, promise) {
+function runArray(resolve, handler, promises, promise) {
     let i = 0;
 
     for (; i < promises.length; ++i) {
-        handleItem(resolve, itemHandler, promises[i], i, promise);
+        handleItem(resolve, handler, promises[i], i, promise);
     }
 
-    itemHandler.complete(i, promise);
+    handler.complete(i, promise);
 }
 
-function runIterable(resolve, itemHandler, promises, promise) {
+function runIterable(resolve, handler, promises, promise) {
     let i = 0;
 
     for (let x of promises) {
-        handleItem(resolve, itemHandler, x, i++, promise);
+        handleItem(resolve, handler, x, i++, promise);
     }
 
-    itemHandler.complete(i, promise);
+    handler.complete(i, promise);
 }
 
-function handleItem(resolve, itemHandler, x, i, promise) {
+function handleItem(resolve, handler, x, i, promise) {
     /*eslint complexity:[1,6]*/
     if (maybeThenable(x)) {
         let p = resolve(x);
@@ -45,29 +45,21 @@ function handleItem(resolve, itemHandler, x, i, promise) {
                 silenceError(p);
             }
         } else if (isFulfilled(p)) {
-            itemHandler.fulfillAt(p, i, promise);
+            handler.fulfillAt(p, i, promise);
         } else if (isRejected(p)) {
-            itemHandler.rejectAt(p, i, promise);
+            handler.rejectAt(p, i, promise);
         } else {
-            p._runAction(new SettleAt(itemHandler, i, promise));
+            p._runAction({ handler, i, promise, fulfilled, rejected });
         }
     } else {
-        itemHandler.valueAt(x, i, promise);
+        handler.valueAt(x, i, promise);
     }
 }
 
-class SettleAt {
-    constructor(handler, index, promise) {
-        this.handler = handler;
-        this.index = index;
-        this.promise = promise;
-    }
+function fulfilled(p) {
+    this.handler.fulfillAt(p, this.i, this.promise);
+}
 
-    fulfilled(p) {
-        this.handler.fulfillAt(p, this.index, this.promise);
-    }
-
-    rejected(p) {
-        return this.handler.rejectAt(p, this.index, this.promise);
-    }
+function rejected(p) {
+    return this.handler.rejectAt(p, this.i, this.promise);
 }
