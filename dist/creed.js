@@ -411,7 +411,6 @@
 	    function Merge(mergeHandler, results) {
 	        Merge___classCallCheck(this, Merge);
 
-	        this.done = false;
 	        this.pending = 0;
 	        this.results = results;
 	        this.mergeHandler = mergeHandler;
@@ -431,13 +430,12 @@
 	    };
 
 	    Merge.prototype.complete = function complete(total, promise) {
-	        this.done = true;
 	        this.check(this.pending + total, promise);
 	    };
 
 	    Merge.prototype.check = function check(pending, promise) {
 	        this.pending = pending;
-	        if (this.done && pending === 0) {
+	        if (pending === 0) {
 	            this.mergeHandler.merge(promise, this.results);
 	        }
 	    };
@@ -447,33 +445,31 @@
 
 	'use strict';
 
-	function build_iterable___classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
 	function resultsArray(iterable) {
 	    return Array.isArray(iterable) ? new Array(iterable.length) : [];
 	}
 
-	function resolveIterable(resolve, itemHandler, promises, promise) {
+	function resolveIterable(resolve, handler, promises, promise) {
 	    var run = Array.isArray(promises) ? runArray : runIterable;
 	    try {
-	        run(resolve, itemHandler, promises, promise);
+	        run(resolve, handler, promises, promise);
 	    } catch (e) {
 	        promise._reject(e);
 	    }
 	    return promise.near();
 	}
 
-	function runArray(resolve, itemHandler, promises, promise) {
+	function runArray(resolve, handler, promises, promise) {
 	    var i = 0;
 
 	    for (; i < promises.length; ++i) {
-	        handleItem(resolve, itemHandler, promises[i], i, promise);
+	        handleItem(resolve, handler, promises[i], i, promise);
 	    }
 
-	    itemHandler.complete(i, promise);
+	    handler.complete(i, promise);
 	}
 
-	function runIterable(resolve, itemHandler, promises, promise) {
+	function runIterable(resolve, handler, promises, promise) {
 	    var i = 0;
 
 	    var _iteratorNormalCompletion = true;
@@ -484,7 +480,7 @@
 	        for (var _iterator = promises[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
 	            var x = _step.value;
 
-	            handleItem(resolve, itemHandler, x, i++, promise);
+	            handleItem(resolve, handler, x, i++, promise);
 	        }
 	    } catch (err) {
 	        _didIteratorError = true;
@@ -501,10 +497,10 @@
 	        }
 	    }
 
-	    itemHandler.complete(i, promise);
+	    handler.complete(i, promise);
 	}
 
-	function handleItem(resolve, itemHandler, x, i, promise) {
+	function handleItem(resolve, handler, x, i, promise) {
 	    /*eslint complexity:[1,6]*/
 	    if (maybeThenable(x)) {
 	        var p = resolve(x);
@@ -514,36 +510,24 @@
 	                silenceError(p);
 	            }
 	        } else if (isFulfilled(p)) {
-	            itemHandler.fulfillAt(p, i, promise);
+	            handler.fulfillAt(p, i, promise);
 	        } else if (isRejected(p)) {
-	            itemHandler.rejectAt(p, i, promise);
+	            handler.rejectAt(p, i, promise);
 	        } else {
-	            p._runAction(new SettleAt(itemHandler, i, promise));
+	            p._runAction({ handler: handler, i: i, promise: promise, fulfilled: build_iterable__fulfilled, rejected: build_iterable__rejected });
 	        }
 	    } else {
-	        itemHandler.valueAt(x, i, promise);
+	        handler.valueAt(x, i, promise);
 	    }
 	}
 
-	var SettleAt = (function () {
-	    function SettleAt(handler, index, promise) {
-	        build_iterable___classCallCheck(this, SettleAt);
+	function build_iterable__fulfilled(p) {
+	    this.handler.fulfillAt(p, this.i, this.promise);
+	}
 
-	        this.handler = handler;
-	        this.index = index;
-	        this.promise = promise;
-	    }
-
-	    SettleAt.prototype.fulfilled = function fulfilled(p) {
-	        this.handler.fulfillAt(p, this.index, this.promise);
-	    };
-
-	    SettleAt.prototype.rejected = function rejected(p) {
-	        return this.handler.rejectAt(p, this.index, this.promise);
-	    };
-
-	    return SettleAt;
-	})();
+	function build_iterable__rejected(p) {
+	    return this.handler.rejectAt(p, this.i, this.promise);
+	}
 
 	'use strict';
 
@@ -784,7 +768,7 @@
 	    };
 
 	    Fulfilled.prototype._when = function _when(action) {
-	        taskQueue.add(new Continuation(action, this));
+	        taskQueue.add({ promise: this, action: action, run: run });
 	    };
 
 	    Fulfilled.prototype._runAction = function _runAction(action) {
@@ -847,7 +831,7 @@
 	    };
 
 	    Rejected.prototype._when = function _when(action) {
-	        taskQueue.add(new Continuation(action, this));
+	        taskQueue.add({ promise: this, action: action, run: run });
 	    };
 
 	    Rejected.prototype._runAction = function _runAction(action) {
@@ -1030,20 +1014,9 @@
 	    return new Rejected(new TypeError('resolution cycle'));
 	}
 
-	var Continuation = (function () {
-	    function Continuation(action, ref) {
-	        build_Promise___classCallCheck(this, Continuation);
-
-	        this.action = action;
-	        this.ref = ref;
-	    }
-
-	    Continuation.prototype.run = function run() {
-	        this.ref._runAction(this.action);
-	    };
-
-	    return Continuation;
-	})();
+	function run() {
+	    this.promise._runAction(this.action);
+	}
 
 	exports.resolve = resolve;
 	exports.reject = reject;
@@ -1154,7 +1127,6 @@
 	    function Any() {
 	        Any___classCallCheck(this, Any);
 
-	        this.done = false;
 	        this.pending = 0;
 	    }
 
@@ -1172,13 +1144,12 @@
 	    };
 
 	    Any.prototype.complete = function complete(total, promise) {
-	        this.done = true;
 	        this.check(this.pending + total, promise);
 	    };
 
 	    Any.prototype.check = function check(pending, promise) {
 	        this.pending = pending;
-	        if (this.done && pending === 0) {
+	        if (pending === 0) {
 	            promise._reject(new RangeError('No fulfilled promises in input'));
 	        }
 	    };
@@ -1194,7 +1165,6 @@
 	    function Settle(resolve, results) {
 	        Settle___classCallCheck(this, Settle);
 
-	        this.done = false;
 	        this.pending = 0;
 	        this.results = results;
 	        this.resolve = resolve;
@@ -1219,13 +1189,12 @@
 	    };
 
 	    Settle.prototype.complete = function complete(total, promise) {
-	        this.done = true;
 	        this.check(this.pending + total, promise);
 	    };
 
 	    Settle.prototype.check = function check(pending, promise) {
 	        this.pending = pending;
-	        if (this.done && pending === 0) {
+	        if (pending === 0) {
 	            promise._fulfill(this.results);
 	        }
 	    };
