@@ -2,7 +2,6 @@
 
 export default class Merge {
     constructor(mergeHandler, results) {
-        this.done = false;
         this.pending = 0;
         this.results = results;
         this.mergeHandler = mergeHandler;
@@ -22,13 +21,12 @@ export default class Merge {
     }
 
     complete(total, promise) {
-        this.done = true;
         this.check(this.pending + total, promise);
     }
 
     check(pending, promise) {
         this.pending = pending;
-        if (this.done && pending === 0) {
+        if (pending === 0) {
             this.mergeHandler.merge(promise, this.results);
         }
     }

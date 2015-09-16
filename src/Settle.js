@@ -4,7 +4,6 @@ import { silenceError }from './inspect';
 
 export default class Settle {
     constructor(resolve, results) {
-        this.done = false;
         this.pending = 0;
         this.results = results;
         this.resolve = resolve;
@@ -29,13 +28,12 @@ export default class Settle {
     }
 
     complete(total, promise) {
-        this.done = true;
         this.check(this.pending + total, promise);
     }
 
     check(pending, promise) {
         this.pending = pending;
-        if (this.done && pending === 0) {
+        if (pending === 0) {
             promise._fulfill(this.results);
         }
     }

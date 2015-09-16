@@ -4,7 +4,6 @@ import { silenceError } from './inspect.js';
 
 export default class Any {
     constructor() {
-        this.done = false;
         this.pending = 0;
     }
 
@@ -22,13 +21,12 @@ export default class Any {
     }
 
     complete(total, promise) {
-        this.done = true;
         this.check(this.pending + total, promise);
     }
 
     check(pending, promise) {
         this.pending = pending;
-        if (this.done && pending === 0) {
+        if (pending === 0) {
             promise._reject(new RangeError('No fulfilled promises in input'));
         }
     }
