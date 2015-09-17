@@ -7,8 +7,8 @@ Latest results, using latest versions of modules:
     └── when@3.7.3
 
 bench doxbee-sequential
-    
-results for 10000 parallel executions, 1 ms per I/O op
+
+    results for 10000 parallel executions, 1 ms per I/O op
 
     file                                 time(ms)  memory(MB)
     promises-creed-generator.js               133       27.81
