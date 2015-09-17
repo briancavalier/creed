@@ -230,7 +230,7 @@ class Fulfilled {
     }
 
     _when(action) {
-        taskQueue.add({ promise: this, action, run });
+        taskQueue.add(new Continuation(action, this));
     }
 
     _runAction(action) {
@@ -288,7 +288,7 @@ class Rejected {
     }
 
     _when(action) {
-        taskQueue.add({ promise: this, action, run });
+        taskQueue.add(new Continuation(action, this));
     }
 
     _runAction(action) {
@@ -459,6 +459,14 @@ function cycle() {
     return new Rejected(new TypeError('resolution cycle'));
 }
 
-function run() {
-    this.promise._runAction(this.action);
+class Continuation {
+    constructor(action, promise) {
+        this.action = action;
+        this.promise = promise;
+    }
+
+    run() {
+        this.promise._runAction(this.action);
+    }
 }
+
