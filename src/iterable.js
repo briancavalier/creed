@@ -37,23 +37,28 @@ function runIterable(resolve, handler, promises, promise) {
 
 function handleItem(resolve, handler, x, i, promise) {
     /*eslint complexity:[1,6]*/
-    if (maybeThenable(x)) {
-        let p = resolve(x);
-
-        if (promise._isResolved()) {
-            if (!isFulfilled(p)) {
-                silenceError(p);
-            }
-        } else if (isFulfilled(p)) {
-            handler.fulfillAt(p, i, promise);
-        } else if (isRejected(p)) {
-            handler.rejectAt(p, i, promise);
-        } else {
-            p._runAction({ handler, i, promise, fulfilled, rejected });
-        }
-    } else {
+    if (!maybeThenable(x)) {
         handler.valueAt(x, i, promise);
+        return;
     }
+
+    let p = resolve(x);
+
+    if (promise._isResolved()) {
+        if (!isFulfilled(p)) {
+            silenceError(p);
+        }
+    } else if (isFulfilled(p)) {
+        handler.fulfillAt(p, i, promise);
+    } else if (isRejected(p)) {
+        handler.rejectAt(p, i, promise);
+    } else {
+        settleAt(p, handler, i, promise);
+    }
+}
+
+function settleAt(p, handler, i, promise) {
+    p._runAction({handler, i, promise, fulfilled, rejected});
 }
 
 function fulfilled(p) {

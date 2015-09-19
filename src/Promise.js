@@ -425,7 +425,7 @@ export function iterablePromise(handler, iterable) {
 
 // isPromise :: * -> boolean
 function isPromise(x) {
-    return x != null && typeof x === 'object' && x.constructor === Future;
+    return typeof x === 'object' && x != null && x.constructor === Future;
 }
 
 function resolveMaybeThenable(x) {
@@ -469,4 +469,3 @@ class Continuation {
         this.promise._runAction(this.action);
     }
 }
-
