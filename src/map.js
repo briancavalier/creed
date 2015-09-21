@@ -38,6 +38,5 @@ class Map {
 
     rejected(p) {
         this.promise._become(p);
-        return false;
     }
 }
