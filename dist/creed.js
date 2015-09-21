@@ -266,6 +266,7 @@
 
 	'use strict';
 
+	// maybeThenable :: * -> boolean
 
 
 	function maybeThenable(x) {
@@ -365,7 +366,6 @@
 
 	    Map.prototype.rejected = function rejected(p) {
 	        this.promise._become(p);
-	        return false;
 	    };
 
 	    return Map;
@@ -502,23 +502,28 @@
 
 	function handleItem(resolve, handler, x, i, promise) {
 	    /*eslint complexity:[1,6]*/
-	    if (maybeThenable(x)) {
-	        var p = resolve(x);
-
-	        if (promise._isResolved()) {
-	            if (!isFulfilled(p)) {
-	                silenceError(p);
-	            }
-	        } else if (isFulfilled(p)) {
-	            handler.fulfillAt(p, i, promise);
-	        } else if (isRejected(p)) {
-	            handler.rejectAt(p, i, promise);
-	        } else {
-	            p._runAction({ handler: handler, i: i, promise: promise, fulfilled: build_iterable__fulfilled, rejected: build_iterable__rejected });
-	        }
-	    } else {
+	    if (!maybeThenable(x)) {
 	        handler.valueAt(x, i, promise);
+	        return;
 	    }
+
+	    var p = resolve(x);
+
+	    if (promise._isResolved()) {
+	        if (!isFulfilled(p)) {
+	            silenceError(p);
+	        }
+	    } else if (isFulfilled(p)) {
+	        handler.fulfillAt(p, i, promise);
+	    } else if (isRejected(p)) {
+	        handler.rejectAt(p, i, promise);
+	    } else {
+	        settleAt(p, handler, i, promise);
+	    }
+	}
+
+	function settleAt(p, handler, i, promise) {
+	    p._runAction({ handler: handler, i: i, promise: promise, fulfilled: build_iterable__fulfilled, rejected: build_iterable__rejected });
 	}
 
 	function build_iterable__fulfilled(p) {
@@ -768,7 +773,7 @@
 	    };
 
 	    Fulfilled.prototype._when = function _when(action) {
-	        taskQueue.add({ promise: this, action: action, run: run });
+	        taskQueue.add(new Continuation(action, this));
 	    };
 
 	    Fulfilled.prototype._runAction = function _runAction(action) {
@@ -831,7 +836,7 @@
 	    };
 
 	    Rejected.prototype._when = function _when(action) {
-	        taskQueue.add({ promise: this, action: action, run: run });
+	        taskQueue.add(new Continuation(action, this));
 	    };
 
 	    Rejected.prototype._runAction = function _runAction(action) {
@@ -978,7 +983,7 @@
 
 	// isPromise :: * -> boolean
 	function isPromise(x) {
-	    return x != null && typeof x === 'object' && x.constructor === Future;
+	    return typeof x === 'object' && x != null && x.constructor === Future;
 	}
 
 	function resolveMaybeThenable(x) {
@@ -1014,9 +1019,20 @@
 	    return new Rejected(new TypeError('resolution cycle'));
 	}
 
-	function run() {
-	    this.promise._runAction(this.action);
-	}
+	var Continuation = (function () {
+	    function Continuation(action, promise) {
+	        build_Promise___classCallCheck(this, Continuation);
+
+	        this.action = action;
+	        this.promise = promise;
+	    }
+
+	    Continuation.prototype.run = function run() {
+	        this.promise._runAction(this.action);
+	    };
+
+	    return Continuation;
+	})();
 
 	exports.resolve = resolve;
 	exports.reject = reject;
