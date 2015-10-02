@@ -1,7 +1,7 @@
 'use strict';
 
-export default function (refFor, iterator, promise) {
-    new Coroutine(refFor, iterator, promise).run();
+export default function (resolve, iterator, promise) {
+    new Coroutine(resolve, iterator, promise).run();
     return promise;
 }
 
