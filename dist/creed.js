@@ -246,6 +246,11 @@
         }
     }
 
+    // maybeThenable :: * -> boolean
+    function maybeThenable(x) {
+        return (typeof x === 'object' || typeof x === 'function') && x !== null;
+    }
+
     function _map(f, p, promise) {
         return runMap(applyMap, f, p, promise);
     }
@@ -264,7 +269,12 @@
     }
 
     function applyChain(f, x, p) {
-        p._become(f(x).near());
+        var y = f(x);
+        if (maybeThenable(y) && typeof y.then === 'function') {
+            p._resolve(y);
+        } else {
+            p._reject(new TypeError('f must return a promise'));
+        }
     }
 
     var Map = (function () {
@@ -332,11 +342,6 @@
         } catch (e) {
             promise._reject(e);
         }
-    }
-
-    // maybeThenable :: * -> boolean
-    function maybeThenable(x) {
-        return (typeof x === 'object' || typeof x === 'function') && x !== null;
     }
 
     function resultsArray(iterable) {
@@ -502,6 +507,10 @@
     // ## Types
     // -------------------------------------------------------------
 
+    var Core = function Core() {
+        _classCallCheck(this, Core);
+    }
+
     // data Promise e a where
     //   Future    :: Promise e a
     //   Fulfilled :: a -> Promise e a
@@ -510,11 +519,15 @@
 
     // Future :: Promise e a
     // A promise whose value cannot be known until some future time
+    ;
 
-    var Future = (function () {
+    var Future = (function (_Core) {
+        _inherits(Future, _Core);
+
         function Future() {
             _classCallCheck(this, Future);
 
+            _Core.call(this);
             this.ref = void 0;
             this.action = void 0;
             this.length = 0;
@@ -685,12 +698,15 @@
         };
 
         return Future;
-    })();
+    })(Core);
 
-    var Fulfilled = (function () {
+    var Fulfilled = (function (_Core2) {
+        _inherits(Fulfilled, _Core2);
+
         function Fulfilled(x) {
             _classCallCheck(this, Fulfilled);
 
+            _Core2.call(this);
             this.value = x;
         }
 
@@ -746,12 +762,15 @@
         };
 
         return Fulfilled;
-    })();
+    })(Core);
 
-    var Rejected = (function () {
+    var Rejected = (function (_Core3) {
+        _inherits(Rejected, _Core3);
+
         function Rejected(e) {
             _classCallCheck(this, Rejected);
 
+            _Core3.call(this);
             this.value = e;
             this._state = REJECTED;
             errorHandler.track(this);
@@ -811,12 +830,23 @@
         };
 
         return Rejected;
-    })();
+    })(Core);
 
-    var Never = (function () {
+    var Never = (function (_Core4) {
+        _inherits(Never, _Core4);
+
         function Never() {
             _classCallCheck(this, Never);
+
+            _Core4.apply(this, arguments);
         }
+
+        // -------------------------------------------------------------
+        // ## Creating promises
+        // -------------------------------------------------------------
+
+        // resolve :: Thenable e a -> Promise e a
+        // resolve :: a -> Promise e a
 
         Never.prototype.then = function then() {
             return this;
@@ -863,16 +893,8 @@
         Never.prototype._runAction = function _runAction() {};
 
         return Never;
-    })();
+    })(Core);
 
-    Future.prototype.constructor = Fulfilled.prototype.constructor = Rejected.prototype.constructor = Never.prototype.constructor = Future;
-
-    // -------------------------------------------------------------
-    // ## Creating promises
-    // -------------------------------------------------------------
-
-    // resolve :: Thenable e a -> Promise e a
-    // resolve :: a -> Promise e a
     function _resolve(x) {
         return isPromise(x) ? x.near() : maybeThenable(x) ? refForMaybeThenable(fulfill, x) : new Fulfilled(x);
     }
@@ -941,7 +963,7 @@
 
     // isPromise :: * -> boolean
     function isPromise(x) {
-        return typeof x === 'object' && x != null && x.constructor === Future;
+        return x instanceof Core;
     }
 
     function resolveMaybeThenable(x) {
@@ -992,8 +1014,8 @@
         return Continuation;
     })();
 
-    function coroutine(refFor, iterator, promise) {
-        new Coroutine(refFor, iterator, promise).run();
+    function coroutine(resolve, iterator, promise) {
+        new Coroutine(resolve, iterator, promise).run();
         return promise;
     }
 
@@ -1284,7 +1306,7 @@
                 args[_key2] = arguments[_key2];
             }
 
-            return runNodeResolver(f, this, args, new Future());
+            return runResolver(runNode, f, this, args, new Future());
         };
     }
 
@@ -1295,18 +1317,7 @@
             args[_key3 - 1] = arguments[_key3];
         }
 
-        return runNodeResolver(f, this, args, new Future());
-    }
-
-    function runNodeResolver(f, thisArg, args, p) {
-        checkFunction(f);
-
-        try {
-            runNode(f, thisArg, args, p);
-        } catch (e) {
-            p._reject(e);
-        }
-        return p;
+        return runResolver(runNode, f, this, args, new Future());
     }
 
     // -------------------------------------------------------------
@@ -1322,17 +1333,18 @@
             args[_key4 - 1] = arguments[_key4];
         }
 
-        return runResolver(f, this, args, new Future());
+        return runResolver(runPromise, f, this, args, new Future());
     }
 
-    function runResolver(f, thisArg, args, p) {
+    function runResolver(run, f, thisArg, args, p) {
         checkFunction(f);
 
         try {
-            runPromise(f, thisArg, args, p);
+            run(f, thisArg, args, p);
         } catch (e) {
             p._reject(e);
         }
+
         return p;
     }
 
@@ -1435,7 +1447,7 @@
             _classCallCheck(this, CreedPromise);
 
             _Future.call(this);
-            runResolver(f, void 0, NOARGS, this);
+            runResolver(runPromise, f, void 0, NOARGS, this);
         }
 
         return CreedPromise;
