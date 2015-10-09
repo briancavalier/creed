@@ -8,6 +8,12 @@ describe('Promise', () => {
         assert(called);
     });
 
+    it('should reject if resolver throws synchronously', () => {
+        let expected = new Error();
+        return new Promise(() => { throw expected; })
+            .then(assert.ifError, x => assert.strictEqual(expected, x));
+    });
+
     it('should fulfill with value', () => {
         let expected = {};
         return new Promise(resolve => resolve(expected))

@@ -1,5 +1,7 @@
 'use strict';
 
+import maybeThenable from './maybeThenable';
+
 export function map(f, p, promise) {
     return runMap(applyMap, f, p, promise);
 }
@@ -18,7 +20,12 @@ function applyMap(f, x, p) {
 }
 
 function applyChain(f, x, p) {
-    p._become(f(x).near());
+    let y = f(x);
+    if (maybeThenable(y) && typeof y.then === 'function') {
+        p._resolve(y);
+    } else {
+        p._reject(new TypeError('f must return a promise'));
+    }
 }
 
 class Map {
@@ -40,3 +47,4 @@ class Map {
         this.promise._become(p);
     }
 }
+

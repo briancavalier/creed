@@ -26,6 +26,8 @@ let errorHandler = new ErrorHandler(makeEmitError(), e => {
 // ## Types
 // -------------------------------------------------------------
 
+class Core {}
+
 // data Promise e a where
 //   Future    :: Promise e a
 //   Fulfilled :: a -> Promise e a
@@ -34,8 +36,9 @@ let errorHandler = new ErrorHandler(makeEmitError(), e => {
 
 // Future :: Promise e a
 // A promise whose value cannot be known until some future time
-export class Future {
+export class Future extends Core {
     constructor() {
+        super();
         this.ref = void 0;
         this.action = void 0;
         this.length = 0;
@@ -184,8 +187,9 @@ export class Future {
 
 // Fulfilled :: a -> Promise e a
 // A promise whose value is already known
-class Fulfilled {
+class Fulfilled extends Core {
     constructor(x) {
+        super();
         this.value = x;
     }
 
@@ -240,8 +244,9 @@ class Fulfilled {
 
 // Rejected :: Error e => e -> Promise e a
 // A promise whose value cannot be known due to some reason/error
-class Rejected {
+class Rejected extends Core {
     constructor(e) {
+        super();
         this.value = e;
         this._state = REJECTED;
         errorHandler.track(this);
@@ -300,7 +305,7 @@ class Rejected {
 
 // Never :: Promise e a
 // A promise that waits forever for its value to be known
-class Never {
+class Never extends Core {
     then() {
         return this;
     }
@@ -345,11 +350,6 @@ class Never {
 
     _runAction() {}
 }
-
-Future.prototype.constructor =
-Fulfilled.prototype.constructor =
-Rejected.prototype.constructor =
-Never.prototype.constructor = Future;
 
 // -------------------------------------------------------------
 // ## Creating promises
@@ -425,7 +425,7 @@ export function iterablePromise(handler, iterable) {
 
 // isPromise :: * -> boolean
 function isPromise(x) {
-    return typeof x === 'object' && x != null && x.constructor === Future;
+    return x instanceof Core;
 }
 
 function resolveMaybeThenable(x) {

@@ -53,25 +53,14 @@ function runGenerator(generator, thisArg, args) {
 // Turn a Node API into a promise API
 export function fromNode(f) {
     return function (...args) {
-        return runNodeResolver(f, this, args, new Future());
+        return runResolver(_runNode, f, this, args, new Future());
     };
 }
 
 // runNode :: NodeApi e a -> ...* -> Promise e a
 // Run a Node API, returning a promise for the outcome
 export function runNode(f, ...args) {
-    return runNodeResolver(f, this, args, new Future());
-}
-
-function runNodeResolver(f, thisArg, args, p) {
-    checkFunction(f);
-
-    try {
-        _runNode(f, thisArg, args, p);
-    } catch (e) {
-        p._reject(e);
-    }
-    return p;
+    return runResolver(_runNode, f, this, args, new Future());
 }
 
 // -------------------------------------------------------------
@@ -83,17 +72,18 @@ function runNodeResolver(f, thisArg, args, p) {
 // type Producer e a = (...* -> Resolve e a -> Reject e -> ())
 // runPromise :: Producer e a -> ...* -> Promise e a
 export function runPromise(f, ...args) {
-    return runResolver(f, this, args, new Future());
+    return runResolver(_runPromise, f, this, args, new Future());
 }
 
-function runResolver(f, thisArg, args, p) {
+function runResolver(run, f, thisArg, args, p) {
     checkFunction(f);
 
     try {
-        _runPromise(f, thisArg, args, p);
+        run(f, thisArg, args, p);
     } catch (e) {
         p._reject(e);
     }
+
     return p;
 }
 
@@ -184,7 +174,7 @@ const NOARGS = [];
 class CreedPromise extends Future {
     constructor(f) {
         super();
-        runResolver(f, void 0, NOARGS, this);
+        runResolver(_runPromise, f, void 0, NOARGS, this);
     }
 }
 

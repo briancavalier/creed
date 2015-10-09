@@ -16,4 +16,12 @@ describe('chain', function() {
         );
     });
 
+    it('should reject if f returns a non-promise', () => {
+        return fulfill(1).chain(x => x)
+            .then(
+                () => { throw new Error('should not fulfill'); },
+                e => assert(e instanceof TypeError)
+            );
+    })
+
 });
