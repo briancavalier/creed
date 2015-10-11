@@ -507,19 +507,36 @@
     // ## Types
     // -------------------------------------------------------------
 
-    var Core = function Core() {
-        _classCallCheck(this, Core);
-    }
+    // Internal base type to hold fantasy-land static constructors
 
-    // data Promise e a where
-    //   Future    :: Promise e a
-    //   Fulfilled :: a -> Promise e a
-    //   Rejected  :: Error e => e -> Promise e a
-    //   Never     :: Promise e a
+    var Core = (function () {
+        function Core() {
+            _classCallCheck(this, Core);
+        }
 
-    // Future :: Promise e a
-    // A promise whose value cannot be known until some future time
-    ;
+        // data Promise e a where
+        //   Future    :: Promise e a
+        //   Fulfilled :: a -> Promise e a
+        //   Rejected  :: Error e => e -> Promise e a
+        //   Never     :: Promise e a
+
+        // Future :: Promise e a
+        // A promise whose value cannot be known until some future time
+
+        // empty :: Promise e a
+
+        Core.empty = function empty() {
+            return _never();
+        };
+
+        // of :: a -> Promise e a
+
+        Core.of = function of(x) {
+            return fulfill(x);
+        };
+
+        return Core;
+    })();
 
     var Future = (function (_Core) {
         _inherits(Future, _Core);
@@ -535,18 +552,6 @@
 
         // Fulfilled :: a -> Promise e a
         // A promise whose value is already known
-
-        // empty :: Promise e a
-
-        Future.empty = function empty() {
-            return _never();
-        };
-
-        // of :: a -> Promise e a
-
-        Future.of = function of(x) {
-            return fulfill(x);
-        };
 
         // then :: Promise e a -> (a -> b) -> Promise e b
         // then :: Promise e a -> () -> (e -> b) -> Promise e b
