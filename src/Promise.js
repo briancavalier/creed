@@ -26,7 +26,18 @@ let errorHandler = new ErrorHandler(makeEmitError(), e => {
 // ## Types
 // -------------------------------------------------------------
 
-class Core {}
+// Internal base type to hold fantasy-land static constructors
+class Core {
+    // empty :: Promise e a
+    static empty() {
+        return never();
+    }
+
+    // of :: a -> Promise e a
+    static of(x) {
+        return fulfill(x);
+    }
+}
 
 // data Promise e a where
 //   Future    :: Promise e a
@@ -42,16 +53,6 @@ export class Future extends Core {
         this.ref = void 0;
         this.action = void 0;
         this.length = 0;
-    }
-
-    // empty :: Promise e a
-    static empty() {
-        return never();
-    }
-
-    // of :: a -> Promise e a
-    static of(x) {
-        return fulfill(x);
     }
 
     // then :: Promise e a -> (a -> b) -> Promise e b
