@@ -627,10 +627,8 @@ import { settle, resolve, reject, isFulfilled, getValue } from 'creed';
 
 // Find all the fulfilled promises in an iterable
 settle([resolve(123), reject(new Error('oops')), resolve(456)])
-    .map(settled => {
-        return settled.filter(isFulfilled).map(getValue);
-    })
-    .then(fulfilled => console.log(fulfilled.join(','))); //=> 123,456
+    .map(settled => settled.filter(isFulfilled).map(getValue))
+    .then(fulfilled => console.log(fulfilled)); //=> [ 123, 456 ]
 ```
 
 ## Inspect
