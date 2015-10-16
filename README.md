@@ -97,7 +97,7 @@ Promise { fulfilled: winner }
 
 # Errors & debugging
 
-By default, uncaught promise errors are fatal.  They will crash your program.  You can override this behavior by [registering your own error event listener](#debug-events).
+By design, uncaught creed promise errors are fatal.  They will crash your program, forcing you to fix or [`.catch`](#catch--promise-e-a--e--bpromise-e-b--promise-e-b) them.  You can override this behavior by [registering your own error event listener](#debug-events).
   
 Consider this small program, which contains a `ReferenceError`.
 
