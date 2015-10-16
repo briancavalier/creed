@@ -727,7 +727,7 @@ Extract the reason of a *rejected* promise.  Throws if called on a
 pending or fulfilled promise, so check first with `isRejected`.
 
 ```js
-import { getReason, isFulfilled, resolve, reject, never } from 'creed';
+import { getReason, resolve, reject, never } from 'creed';
 
 getReason(resolve(123));      //=> throws TypeError
 getReason(reject('because')); //=> 'because'
