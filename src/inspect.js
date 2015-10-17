@@ -41,6 +41,7 @@ export function getReason(p) {
         throw new TypeError('getReason called on ' + p);
     }
 
+    setHandled(n);
     return n.value;
 }
 
@@ -50,7 +51,9 @@ export function silenceError(p) {
 
 const silencer = {
     fulfilled() {},
-    rejected(p) {
-        p._state |= HANDLED;
-    }
+    rejected: setHandled
 };
+
+function setHandled(rejected) {
+    rejected._state |= HANDLED;
+}

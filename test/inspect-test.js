@@ -162,13 +162,21 @@ describe('inspect', () => {
 
     describe('getReason', () => {
 
+        it('should handle rejected promise', () => {
+            let p = reject();
+            assert(!isHandled(p));
+
+            getReason(p);
+            assert(isHandled(p));
+        });
+
         it('should get reason from rejected promise', () => {
             let x = {};
             assert.strictEqual(x, getReason(reject(x)));
         });
 
-        it('should throw for rejected promise', () => {
-            assert.throws(() => getReason(resolve()));
+        it('should throw for fulfilled promise', () => {
+            assert.throws(() => getReason(fulfill()));
         });
 
         it('should throw for pending promise', () => {
