@@ -69,6 +69,7 @@
             throw new TypeError('getReason called on ' + p);
         }
 
+        setHandled(n);
         return n.value;
     }
 
@@ -78,10 +79,12 @@
 
     var silencer = {
         fulfilled: function fulfilled() {},
-        rejected: function rejected(p) {
-            p._state |= HANDLED;
-        }
+        rejected: setHandled
     };
+
+    function setHandled(rejected) {
+        rejected._state |= HANDLED;
+    }
 
     /*global process,MutationObserver,WebKitMutationObserver */
 
@@ -422,14 +425,14 @@
     }
 
     function settleAt(p, handler, i, promise) {
-        p._runAction({ handler: handler, i: i, promise: promise, fulfilled: fulfilled, rejected: rejected });
+        p._runAction({ handler: handler, i: i, promise: promise, fulfilled: fulfilled, rejected: _rejected });
     }
 
     function fulfilled(p) {
         this.handler.fulfillAt(p, this.i, this.promise);
     }
 
-    function rejected(p) {
+    function _rejected(p) {
         return this.handler.rejectAt(p, this.i, this.promise);
     }
 
