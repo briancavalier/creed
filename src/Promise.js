@@ -93,9 +93,8 @@ export class Future extends Core {
         let n = this.near();
         let bp = b.near();
 
-        return n !== this ? n.concat(bp)
-            : isNever(bp) ? n
-            : isSettled(bp) ? bp
+        return isSettled(n) || isNever(bp) ? n
+            : isSettled(bp) || isNever(n) ? bp
             : race([n, bp]);
     }
 

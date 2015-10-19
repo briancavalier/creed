@@ -493,13 +493,16 @@ profileText.then(text => console.log(text)); //=> <user profile text>
 ### .concat :: Promise e a &rarr; Promise e a &rarr; Promise e a
 
 [Fantasy-land Semigroup](https://github.com/fantasyland/fantasy-land#semigroup).
-Returns a promise equivalent to the *earlier* of two promises
+Returns a promise equivalent to the *earlier* of two promises. Preference is given to the callee promise in the case that both promises have already settled.
 
 ```js
-import { delay } from 'creed';
+import { delay, fulfill } from 'creed';
 
 delay(200, 'bar').concat(delay(100, 'foo'))
     .then(x => console.log(x)); //=> 'foo'
+
+fulfill(123).concat(fulfill(456))
+    .then(x => console.log(x)); //=> 123
 ```
 
 ## Control time
