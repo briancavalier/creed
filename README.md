@@ -307,7 +307,7 @@ runPromise(xhrGet, 'http://...')
     .then(result => console.log(result));
 ```
 
-### merge :: (...* -> b) -> ...Promise e a -> Promise e b
+### merge :: (...* &rarr; b) &rarr; ...Promise e a &rarr; Promise e b
 
 Merge promises by passing their fulfillment values to a merge
 function.  Returns a promise for the result of the merge function.
