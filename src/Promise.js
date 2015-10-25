@@ -166,14 +166,15 @@ export class Future extends Core {
 
     __become(p) {
         this.ref = p === this ? cycle() : p;
-        taskQueue.add(this);
-    }
 
-    run() {
         if (this.action === void 0) {
             return;
         }
 
+        taskQueue.add(this);
+    }
+
+    run() {
         let p = this.ref.near();
         p._runAction(this.action);
         this.action = void 0;
@@ -443,11 +444,12 @@ function refForMaybeThenable(otherwise, x) {
     }
 }
 
-function extractThenable(then, thenable) {
+// WARNING: Naming the first arg "then" triggers babel compilation bug
+function extractThenable(thn, thenable) {
     let p = new Future();
 
     try {
-        then.call(thenable, x => p._resolve(x), e => p._reject(e));
+        thn.call(thenable, x => p._resolve(x), e => p._reject(e));
     } catch (e) {
         p._reject(e);
     }
