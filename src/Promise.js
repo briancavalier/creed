@@ -166,15 +166,14 @@ export class Future extends Core {
 
     __become(p) {
         this.ref = p === this ? cycle() : p;
-
-        if (this.action === void 0) {
-            return;
-        }
-
         taskQueue.add(this);
     }
 
     run() {
+        if (this.action === void 0) {
+            return;
+        }
+
         let p = this.ref.near();
         p._runAction(this.action);
         this.action = void 0;
