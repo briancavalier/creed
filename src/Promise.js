@@ -156,30 +156,31 @@ export class Future extends Core {
         this.__become(new Rejected(e));
     }
 
-    _become(ref) {
+    _become(p) {
         if (this._isResolved()) {
             return;
         }
 
-        this.__become(ref);
+        this.__become(p);
     }
 
-    __become(ref) {
-        this.ref = ref === this ? cycle() : ref;
-        taskQueue.add(this);
-    }
+    __become(p) {
+        this.ref = p === this ? cycle() : p;
 
-    run() {
         if (this.action === void 0) {
             return;
         }
 
-        let ref = this.ref.near();
-        ref._runAction(this.action);
+        taskQueue.add(this);
+    }
+
+    run() {
+        let p = this.ref.near();
+        p._runAction(this.action);
         this.action = void 0;
 
         for (let i = 0; i < this.length; ++i) {
-            ref._runAction(this[i]);
+            p._runAction(this[i]);
             this[i] = void 0;
         }
     }
@@ -396,8 +397,8 @@ export function all(promises) {
 }
 
 const allHandler = {
-    merge(ref, args) {
-        ref._fulfill(args);
+    merge(promise, args) {
+        promise._fulfill(args);
     }
 };
 
