@@ -3,5 +3,6 @@
   "esnext": true,
   "disallowDanglingUnderscores": null,
   "requireMultipleVarDecl": null,
-  "requireSemicolons": true
+  "requireSemicolons": true,
+  "requireSpacesInAnonymousFunctionExpression": false
 }
