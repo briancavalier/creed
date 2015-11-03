@@ -72,6 +72,8 @@ As `window.creed`:
 
 ## Try it
 
+Creed will work anywhere ES5 works. Here's how to try it.
+
 Creed is REPL friendly, with instant and obvious feedback. [Try it out in JSBin](https://jsbin.com/muzoba/edit?js,console) or [using ES2015 with babel](https://jsbin.com/faxene/edit?js,console), or try it in a REPL:
 
 Note that although babel supports ES2015 `import` statements, [the `babel-node` REPL doesn't](https://github.com/babel/babel/issues/1264).  Use `let` + `require` in the REPL instead.
