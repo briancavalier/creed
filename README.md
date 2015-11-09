@@ -4,6 +4,8 @@ Sophisticated and functionally-minded async with advanced features: coroutines, 
 
 Creed simplifies async by letting you write coroutines using ES2015 generators and promises, and encourages functional programming via fantasy-land.  It also makes uncaught errors obvious by default, and supports other ES2015 features such as iterables.
 
+You can also use [babel](https://babeljs.io) and the [babel-creed-async](https://github.com/briancavalier/babel-creed-async) plugin to write ES7 `async` functions backed by creed coroutines.
+
 <a href="http://promises-aplus.github.com/promises-spec"><img width="82" height="82" alt="Promises/A+" src="http://promises-aplus.github.com/promises-spec/assets/logo-small.png"></a>
 <a href="https://github.com/fantasyland/fantasy-land"><img width="82" height="82" alt="Fantasy Land" src="https://raw.github.com/puffnfresh/fantasy-land/master/logo.png"></a>
 [![Build Status](https://travis-ci.org/briancavalier/creed.svg?branch=master)](https://travis-ci.org/briancavalier/creed)
