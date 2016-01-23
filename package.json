@@ -27,7 +27,6 @@
   "scripts": {
     "build-dist": "mkdir -p dist && rollup src/main.js | babel -m umd --module-id creed -o dist/creed.js --loose es6.classes",
     "build": "npm run build-dist && uglifyjs -c 'warnings=false' -m -o dist/creed.min.js -- dist/creed.js",
-    "prepublish": "npm run build",
     "preversion": "npm run build",
     "clean": "rimraf build coverage",
     "test-aplus": "promises-aplus-tests test/aplus.js",
@@ -41,14 +40,14 @@
     "babel": "^5.8.29",
     "babel-eslint": "^4.1.0",
     "coveralls": "^2.11.4",
-    "eslint": "^1.7.0",
+    "eslint": "^1.10.0",
     "istanbul": "^0.4.0",
     "jscs": "^2.4.0",
     "jsinspect": "^0.7.0",
     "mocha": "^2.3.0",
     "promises-aplus-tests": "^2.1.1",
     "rimraf": "^2.4.1",
-    "rollup": "^0.19.2",
-    "uglify-js": "^2.4.23"
+    "rollup": "^0.25.0",
+    "uglify-js": "^2.6.0"
   }
 }
