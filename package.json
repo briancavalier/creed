@@ -28,11 +28,21 @@
     "build-dist": "mkdir -p dist && rollup src/main.js | babel -m umd --module-id creed -o dist/creed.js --loose es6.classes",
     "build": "npm run build-dist && uglifyjs -c 'warnings=false' -m -o dist/creed.min.js -- dist/creed.js",
     "preversion": "npm run build",
-    "test-aplus": "promises-aplus-tests test/aplus.js",
-    "test-main": "istanbul cover --root src _mocha",
-    "check-coverage": "istanbul check-coverage --statements 100 --branches 100 --lines 100 --functions 100 coverage/coverage*.json",
+    "test-aplus": "promises-aplus-tests test/aplus.js --reporter progress",
+    "test-main": "nyc --reporter=text-summary npm run test-mocha",
+    "test-mocha": "mocha --reporter progress",
+    "check-coverage": "nyc check-coverage --statements 100 --branches 100 --lines 100 --functions 100",
+    "updated-coverage": "nyc report --reporter=text=lcov | coveralls",
     "lint": "jscs -x src && jsinspect src && eslint src",
-    "test": "npm run lint && npm run build && npm run test-main && npm run check-coverage && npm run test-aplus"
+    "test": "npm run lint && npm run test-main && npm run check-coverage && npm run test-aplus"
+  },
+  "nyc": {
+    "include": [
+      "src/**/*.js"
+    ],
+    "require": [
+      "babel/register"
+    ]
   },
   "devDependencies": {
     "assert": "^1.3.0",
@@ -44,6 +54,7 @@
     "jscs": "^2.4.0",
     "jsinspect": "^0.7.0",
     "mocha": "^2.3.0",
+    "nyc": "^5.6.0",
     "promises-aplus-tests": "^2.1.1",
     "rollup": "^0.25.0",
     "uglify-js": "^2.6.0"
