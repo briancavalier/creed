@@ -28,7 +28,6 @@
     "build-dist": "mkdir -p dist && rollup src/main.js | babel -m umd --module-id creed -o dist/creed.js --loose es6.classes",
     "build": "npm run build-dist && uglifyjs -c 'warnings=false' -m -o dist/creed.min.js -- dist/creed.js",
     "preversion": "npm run build",
-    "clean": "rimraf build coverage",
     "test-aplus": "promises-aplus-tests test/aplus.js",
     "test-main": "istanbul cover --root src _mocha",
     "check-coverage": "istanbul check-coverage --statements 100 --branches 100 --lines 100 --functions 100 coverage/coverage*.json",
@@ -46,7 +45,6 @@
     "jsinspect": "^0.7.0",
     "mocha": "^2.3.0",
     "promises-aplus-tests": "^2.1.1",
-    "rimraf": "^2.4.1",
     "rollup": "^0.25.0",
     "uglify-js": "^2.6.0"
   }
