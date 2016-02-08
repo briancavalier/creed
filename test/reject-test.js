@@ -4,6 +4,12 @@ import assert from 'assert';
 
 describe('reject', () => {
 
+    it('then should be identity without f', () => {
+        const p = reject(true);
+        silenceError(p);
+        assert.strictEqual(p, p.then(assert.ifError));
+    });
+
     it('map should be identity', () => {
         var p = reject(true);
         silenceError(p);
