@@ -1,30 +1,27 @@
 import { fulfill, reject } from '../src/main';
 import { silenceError, getValue } from '../src/inspect';
-import assert from 'assert';
+import test from 'ava';
 
-describe('reject', () => {
+test('then should be identity without f', t => {
+    const p = reject(true);
+    silenceError(p);
+    t.is(p, p.then(assert.ifError));
+});
 
-    it('then should be identity without f', () => {
-        const p = reject(true);
-        silenceError(p);
-        assert.strictEqual(p, p.then(assert.ifError));
-    });
+test('map should be identity', t => {
+    const p = reject(new Error());
+    silenceError(p);
+    t.is(p, p.map(x => t.fail()));
+});
 
-    it('map should be identity', () => {
-        var p = reject(true);
-        silenceError(p);
-        assert.strictEqual(p, p.map(assert.ifError));
-    });
+test('ap should be identity', t => {
+    const p = reject(x => t.fail());
+    silenceError(p);
+    t.is(p, p.ap(fulfill()));
+});
 
-    it('ap should be identity', () => {
-        var p = reject(assert.ifError);
-        silenceError(p);
-        assert.strictEqual(p, p.ap(fulfill(true)));
-    });
-
-    it('chain should be identity', () => {
-        var p = reject();
-        silenceError(p);
-        assert.strictEqual(p, p.chain(fulfill));
-    });
+test('chain should be identity', t => {
+    const p = reject(new Error());
+    silenceError(p);
+    t.is(p, p.chain(fulfill));
 });

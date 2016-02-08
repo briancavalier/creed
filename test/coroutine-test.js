@@ -1,46 +1,41 @@
 import { fulfill, reject, delay, coroutine } from '../src/main';
-import assert from 'assert';
+import test from 'ava';
 
-describe('coroutine', function() {
-    it('should allow parameters', () => {
-        let f = coroutine(function*(a, b) {
-            assert.equal(a, 'a');
-            assert.equal(b, 'b');
-        });
-
-        return f('a', 'b');
+test('should allow parameters', t => {
+    const f = coroutine(function*(a, b) {
+        t.is(a, 'a');
+        t.is(b, 'b');
     });
 
-    it('should continue on fulfilled promises', () => {
-        let f = coroutine(function*(a, b) {
-            return (yield delay(1, a)) + (yield fulfill(b));
-        });
+    return f('a', 'b');
+});
 
-        return f('a', 'b').then(x => assert.equal(x, 'ab'));
+test('should continue on fulfilled promises', t => {
+    const f = coroutine(function*(a, b) {
+        return (yield delay(1, a)) + (yield fulfill(b));
     });
 
-    it('should throw on rejected promises', () => {
-        let expected = new Error();
-        let f = coroutine(function*(a) {
-            try {
-                yield reject(a);
-            } catch(e) {
-                return e;
-            }
-        });
+    return f('a', 'b').then(x => t.is(x, 'ab'));
+});
 
-        return f(expected)
-            .then(x => assert.strictEqual(x, expected));
-    });
-
-    it('should reject on uncaught exception', () => {
-        let expected = new Error();
-        let f = coroutine(function*(a) {
+test('should throw on rejected promises', t => {
+    const expected = new Error();
+    const f = coroutine(function*(a) {
+        try {
             yield reject(a);
-        });
-
-        return f(expected)
-            .then(assert.ifError, e => assert.strictEqual(e, expected));
+        } catch(e) {
+            return e;
+        }
     });
 
+    return f(expected).then(x => t.is(x, expected));
+});
+
+test('should reject on uncaught exception', t => {
+    const expected = new Error();
+    const f = coroutine(function*(a) {
+        yield reject(a);
+    });
+
+    return f(expected).catch(e => t.is(e, expected));
 });

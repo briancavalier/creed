@@ -1,41 +1,40 @@
 import { never, fulfill } from '../src/main';
 import { silenceError, getValue } from '../src/inspect';
-import assert from 'assert';
+import test from 'ava';
 
-describe('never', () => {
+const fail = t => x => t.fail(x);
 
-    it('then should be identity', () => {
-        var p = never();
-        assert.strictEqual(p, p.then(assert.ifError, assert.ifError));
-    });
+test('then should be identity', t => {
+    const p = never();
+    t.is(p, p.then(fail(t), fail(t)));
+});
 
-    it('catch should be identity', () => {
-        var p = never();
-        assert.strictEqual(p, p.catch(assert.ifError));
-    });
+test('catch should be identity', t => {
+    const p = never();
+    t.is(p, p.catch(fail(t)));
+});
 
-    it('map should be identity', () => {
-        var p = never();
-        assert.strictEqual(p, p.map(assert.ifError));
-    });
+test('map should be identity', t => {
+    const p = never();
+    t.is(p, p.map(fail(t)));
+});
 
-    it('ap should be identity', () => {
-        var p = never();
-        assert.strictEqual(p, p.ap(fulfill()));
-    });
+test('ap should be identity', t => {
+    const p = never();
+    t.is(p, p.ap(fulfill()));
+});
 
-    it('chain should be identity', () => {
-        var p = never();
-        assert.strictEqual(p, p.chain(fulfill));
-    });
+test('chain should be identity', t => {
+    const p = never();
+    t.is(p, p.chain(fulfill));
+});
 
-    it('_when should not call action', () => {
-        let fail = () => { throw new Error('never._when called action'); };
-        let action = {
-            fulfilled: fail,
-            rejected: fail
-        };
+test('_when should not call action', t => {
+    const fail = () => { throw new Error('never._when called action'); };
+    const action = {
+        fulfilled: fail,
+        rejected: fail
+    };
 
-        assert.strictEqual(void 0, never()._when(action));
-    });
+    t.is(undefined, never()._when(action));
 });

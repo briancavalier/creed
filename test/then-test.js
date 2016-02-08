@@ -1,31 +1,30 @@
-import { delay, reject } from '../src/main';
+import { fulfill, reject } from '../src/main';
 import { assertSame } from './lib/test-util';
-import assert from 'assert';
+import test from 'ava';
 
-describe('map', function() {
+test('should not change value when f is not a function', t => {
+    const expected = {};
+    return fulfill(expected).then()
+        .then(x => t.is(x, expected));
+});
 
-    it('should not change value when f is not a function', () => {
-        let expected = {};
-        return delay(1, expected).then()
-            .then(x => assert.strictEqual(x, expected));
-    });
+test('should not change reason when r is not a function', t => {
+    t.plan(1);
+    const expected = {};
+    return fulfill(expected).then(reject).then(x => null)
+        .catch(x => t.is(x, expected));
+});
 
-    it('should not change reason when r is not a function', () => {
-        let expected = {};
-        return delay(1, expected).then(reject).then(x => null)
-            .then(assert.ifError, x => assert.strictEqual(x, expected));
-    });
+test('should reject if f throws', t => {
+    t.plan(1);
+    const expected = new Error();
+    return fulfill().then(() => { throw expected; })
+        .catch(x => t.is(x, expected));
+});
 
-    it('should reject if f throws', () => {
-        let expected = {};
-        return delay(1).then(() => { throw expected; })
-            .then(assert.ifError, x => assert.strictEqual(x, expected));
-    });
-
-    it('should reject if r throws', () => {
-        let expected = {};
-        return delay(1).then(reject).then(null, () => { throw expected; })
-            .then(assert.ifError, x => assert.strictEqual(x, expected));
-    });
-
+test('should reject if r throws', t => {
+    t.plan(1);
+    const expected = new Error();
+    return fulfill().then(reject).catch(() => { throw expected; })
+        .then(x => t.is(x, expected));
 });

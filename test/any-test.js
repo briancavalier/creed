@@ -1,49 +1,40 @@
 import { any, resolve, reject } from '../src/main';
 import { throwingIterable, arrayIterable } from './lib/test-util';
-import assert from 'assert';
+import test from 'ava';
 
-describe('any', () => {
+test('should reject if iterator throws', t => {
+    t.plan(1);
+    const error = new Error();
+    return any(throwingIterable(error))
+        .catch(e => t.is(e, error));
+});
 
-    it('should reject if iterator throws', () => {
-        let error = new Error();
-        return any(throwingIterable(error))
-            .then(assert.ifError, e => assert(e === error));
+test('should reject with RangeError for empty iterable', t => {
+    t.plan(1);
+    return any(new Set()).catch(e => {
+        t.ok(e instanceof RangeError);
     });
+});
 
-    it('should reject with RangeError for empty iterable', () => {
-        return any(new Set()).catch(e => {
-            assert(e instanceof RangeError);
-        });
-    });
+test('should resolve a value', t => {
+    const a = [1, 2, 3];
+    const s = arrayIterable(a);
+    return any(s).then(x => t.ok(a.includes(x)));
+});
 
-    it('should resolve a value', () => {
-        var a = [1, 2, 3];
-        var s = arrayIterable(a);
-        return any(s).then(x => {
-            assert(a.includes(x));
-        });
-    });
+test('should resolve a promise', t => {
+    const a = [1, 2, 3];
+    const s = arrayIterable(a.map(resolve));
+    return any(s).then(x => t.ok(a.includes(x)));
+});
 
-    it('should resolve a promise', () => {
-        var a = [1, 2, 3];
-        var s = arrayIterable(a.map(resolve));
-        return any(s).then(x => {
-            assert(a.includes(x));
-        });
-    });
+test('should resolve if at least one input resolves', t => {
+    const s = arrayIterable([reject(new Error()), reject(new Error()), resolve(3)]);
+    return any(s).then(x => t.is(x, 3));
+});
 
-    it('should resolve if at least one input resolves', () => {
-        var s = arrayIterable([reject(1), reject(2), resolve(3)]);
-        return any(s).then(x => {
-            assert.equal(x, 3);
-        });
-    });
-
-    it('should reject if all inputs reject', () => {
-        var s = arrayIterable([1, 2, 3].map(reject));
-        return any(s).catch(() => {
-            assert(true);
-        });
-    });
-
+test('should reject if all inputs reject', t => {
+    t.plan(1);
+    const s = arrayIterable([1, 2, 3].map(reject));
+    return any(s).catch(() => t.pass());
 });
