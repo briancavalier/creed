@@ -222,7 +222,6 @@ test('concat should behave like never', t => {
 
     const p1 = never();
     const p2 = fulfill(2);
->>>>>>> WIP convert tests to ava
 
     resolve(p1);
     assertSame(t, p1.concat(p2), promise.concat(p2));

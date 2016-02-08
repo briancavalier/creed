@@ -5,7 +5,7 @@ import test from 'ava';
 test('then should be identity without f', t => {
     const p = reject(true);
     silenceError(p);
-    t.is(p, p.then(assert.ifError));
+    t.is(p, p.then(() => t.fail()));
 });
 
 test('map should be identity', t => {
