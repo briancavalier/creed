@@ -41,7 +41,7 @@ export function getReason(p) {
         throw new TypeError('getReason called on ' + p);
     }
 
-    setHandled(n);
+    silenceError(n);
     return n.value;
 }
 
