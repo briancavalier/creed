@@ -4,11 +4,11 @@
   "description": "Compare the performance and code of multiple async patterns",
   "main": "perf.js",
   "dependencies": {
-    "async": "^1.4.2",
-    "bluebird": "^3.1.0",
+    "async": "^1.5.2",
+    "bluebird": "^3.2.0",
     "co": "^4.6.0",
     "optimist": "~0.6.0",
-    "rsvp": "^3.1.0",
+    "rsvp": "^3.2.0",
     "text-table": "~0.2.0",
     "when": "^3.7.3"
   },
