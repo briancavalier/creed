@@ -56,4 +56,5 @@ const silencer = {
 
 function setHandled(rejected) {
     rejected._state |= HANDLED;
+    return true;
 }

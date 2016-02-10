@@ -22,7 +22,9 @@ export default class ErrorHandler {
     }
 
     untrack(e) {
-        silenceError(e);
+        if (!isHandled(e)) {
+            silenceError(e);
+        }
         this.emit(HANDLED_REJECTION, e);
     }
 }

@@ -1,30 +1,25 @@
 import { settle, resolve, reject } from '../src/main';
 import { isFulfilled, isRejected } from '../src/inspect';
 import { throwingIterable } from './lib/test-util';
-import assert from 'assert';
+import test from 'ava';
 
-describe('settle', () => {
+test('should reject if iterator throws', t => {
+    t.plan(1);
+    const error = new Error();
+    return settle(throwingIterable(error))
+        .catch(e => t.is(e, error));
+});
 
-    it('should reject if iterator throws', () => {
-        let error = new Error();
-        return settle(throwingIterable(error))
-            .then(assert.ifError, e => assert(e === error));
+test('should settle empty iterable', t => {
+    return settle(new Set()).then(a => t.is(a.length, 0));
+});
+
+test('should settle promises', t => {
+    const s = new Set([1, resolve(2), reject(3)]);
+    return settle(s).then(a => {
+        t.is(a.length, s.size);
+        t.ok(isFulfilled(a[0]));
+        t.ok(isFulfilled(a[1]));
+        t.ok(isRejected(a[2]));
     });
-
-    it('should settle empty iterable', () => {
-        return settle(new Set()).then(a => {
-            assert.equal(a.length, 0);
-        });
-    });
-
-    it('should settle promises', () => {
-        let s = new Set([1, resolve(2), reject(3)]);
-        return settle(s).then(a => {
-            assert.equal(a.length, s.size);
-            assert(isFulfilled(a[0]));
-            assert(isFulfilled(a[1]));
-            assert(isRejected(a[2]));
-        });
-    });
-
 });

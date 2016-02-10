@@ -1,5 +1,5 @@
 import ErrorHandler from '../src/ErrorHandler';
-import assert from 'assert';
+import test from 'ava';
 import { isHandled } from '../src/inspect';
 import { HANDLED } from '../src/state';
 
@@ -11,70 +11,63 @@ function fakeError(value) {
         _runAction() { this._state |= HANDLED } };
 }
 
-describe('ErrorHandler', () => {
+test('track should emit event immediately', t => {
+    const value = {};
+    const expected = fakeError(value);
+    function fail() {
+        t.fail('should not call reportError');
+    }
 
-    describe('track', () => {
-        it('should emit event immediately', () => {
-            let value = {};
-            let expected = fakeError(value);
-            function fail(e) {
-                assert.fail(e, expected, 'should not call reportError');
-            }
+    function verify(event, e, error) {
+        t.is(e, expected);
+        t.is(error, value);
+        return true;
+    }
 
-            function verify(event, e, error) {
-                assert.strictEqual(e, expected);
-                assert.strictEqual(error, value);
-                return true;
-            }
+    const eh = new ErrorHandler(verify, fail);
+    eh.track(expected);
+});
 
-            let eh = new ErrorHandler(verify, fail);
-            eh.track(expected);
-        });
+test.cb('track should report error later', t => {
+    t.plan(2);
+    const value = {};
+    const expected = fakeError(value);
+    function verify(e) {
+        t.is(e, expected);
+        t.is(e.value, value);
+        t.end();
+    }
 
-        it('should report error later', done => {
-            let value = {};
-            let expected = fakeError(value);
-            function verify(e) {
-                assert.strictEqual(e, expected);
-                assert.strictEqual(e.value, value);
-                done();
-            }
+    const eh = new ErrorHandler(() => false, verify);
+    eh.track(expected);
+});
 
-            let eh = new ErrorHandler(() => false, verify);
-            eh.track(expected);
-        });
-    });
+test('untrack should emit event immediately', t => {
+    const value = {};
+    const expected = fakeError(value);
+    function fail() {
+        t.fail('should not call reportError');
+    }
 
-    describe('untrack', () => {
-        it('should emit event immediately', () => {
-            let value = {};
-            let expected = fakeError(value);
-            function fail(e) {
-                assert.fail(e, expected, 'should not call reportError');
-            }
+    function verify(event, e) {
+        t.is(e, expected);
+        t.is(e.value, value);
+        return true;
+    }
 
-            function verify(event, e) {
-                assert.strictEqual(e, expected);
-                assert.strictEqual(e.value, value);
-                return true;
-            }
+    const eh = new ErrorHandler(verify, fail);
+    eh.untrack(expected);
+});
 
-            let eh = new ErrorHandler(verify, fail);
-            eh.untrack(expected);
-        });
+test('untrack should silence error', t => {
+    const value = {};
+    const expected = fakeError(value);
+    function fail() {
+        t.fail('should not call reportError');
+    }
 
-        it('should silence error', () => {
-            let value = {};
-            let expected = fakeError(value);
-            function fail(e) {
-                assert.fail(e, expected, 'should not call reportError');
-            }
+    const eh = new ErrorHandler(() => true, fail);
+    eh.untrack(expected);
 
-            let eh = new ErrorHandler(() => true, fail);
-            eh.untrack(expected);
-
-            assert.equal(expected.state(), HANDLED);
-        });
-    });
-
+    t.is(expected.state(), HANDLED);
 });

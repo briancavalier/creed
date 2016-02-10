@@ -1,29 +1,26 @@
 import { fulfill, reject, Future, never } from '../src/Promise';
 import { silenceError, getValue, getReason } from '../src/inspect';
-import assert from 'assert';
+import test from 'ava';
 
-describe('toString', () => {
+test('should indicate fulfilled promise', t => {
+    const p = fulfill('a');
+    t.is(`[object Promise { fulfilled: ${getValue(p)} }]`,
+        p.toString());
+});
 
-    it('should indicate fulfilled promise', () => {
-        let p = fulfill('a');
-        assert.equal(`[object Promise { fulfilled: ${getValue(p)} }]`,
-            p.toString());
-    });
+test('should indicate rejected promise', t => {
+    const p = reject(new Error('a'));
+    silenceError(p);
+    t.is(`[object Promise { rejected: ${getReason(p)} }]`,
+        p.toString());
+});
 
-    it('should indicate rejected promise', () => {
-        let p = reject(new Error('a'));
-        assert.equal(`[object Promise { rejected: ${getReason(p)} }]`,
-            p.toString());
-    });
+test('should indicate pending promise', t => {
+    const p = new Future();
+    t.is('[object Promise { pending }]', p.toString());
+});
 
-    it('should indicate pending promise', () => {
-        let p = new Future();
-        assert.equal('[object Promise { pending }]', p.toString());
-    });
-
-    it('should indicate never', () => {
-        let p = never();
-        assert.equal('[object Promise { never }]', p.toString());
-    });
-
+test('should indicate never', t => {
+    const p = never();
+    t.is('[object Promise { never }]', p.toString());
 });

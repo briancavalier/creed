@@ -1,37 +1,33 @@
 import { fulfill } from '../src/main';
 import { assertSame } from './lib/test-util';
-import assert from 'assert';
+import test from 'ava';
 
-describe('ap', () => {
+test('should satisfy identity', t => {
+    const v = fulfill({});
+    return assertSame(t, fulfill(x => x).ap(v), v);
+});
 
-    it('should satisfy identity', () => {
-        let v = fulfill({});
-        return assertSame(fulfill(x => x).ap(v), v);
-    });
+test('should satisfy composition', t => {
+    const u = fulfill(x => 'u' + x);
+    const v = fulfill(x => 'v' + x);
+    const w = fulfill('w');
 
-    it('should satisfy composition', () => {
-        let u = fulfill(x => 'u' + x);
-        let v = fulfill(x => 'v' + x);
-        let w = fulfill('w');
+    return assertSame(t,
+        fulfill(f => g => x => f(g(x))).ap(u).ap(v).ap(w),
+        u.ap(v.ap(w))
+    );
+});
 
-        return assertSame(
-            fulfill(f => g => x => f(g(x))).ap(u).ap(v).ap(w),
-            u.ap(v.ap(w))
-        );
-    });
+test('should satisfy homomorphism', t => {
+    const f = x => x + 'f';
+    const x = 'x';
+    return assertSame(t, fulfill(f).ap(fulfill(x)), fulfill(f(x)));
+});
 
-    it('should satisfy homomorphism', () => {
-        let f = x => x + 'f';
-        let x = 'x';
-        return assertSame(fulfill(f).ap(fulfill(x)), fulfill(f(x)));
-    });
+test('should satisfy interchange', t => {
+    const f = x => x + 'f';
+    const u = fulfill(f);
+    const y = 'y';
 
-    it('should satisfy interchange', () => {
-        let f = x => x + 'f';
-        let u = fulfill(f);
-        let y = 'y';
-
-        return assertSame(u.ap(fulfill(y)), fulfill(f => f(y)).ap(u));
-    });
-
+    return assertSame(t, u.ap(fulfill(y)), fulfill(f => f(y)).ap(u));
 });

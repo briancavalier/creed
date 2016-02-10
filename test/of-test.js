@@ -1,27 +1,24 @@
 import { Future, reject } from '../src/Promise';
 import { silenceError, getValue } from '../src/inspect';
-import assert from 'assert';
+import test from 'ava';
 
-describe('fulfill', () => {
+test('should wrap value', t => {
+    const x = {};
+    return Future.of(x).then(y => t.is(x, y));
+});
 
-    it('should wrap value', () => {
-        const x = {};
-        return Future.of(x).then(y => assert(x === y));
-    });
+test('should be immediately fulfilled', t => {
+    const x = {};
+    t.is(x, getValue(Future.of(x)));
+});
 
-    it('should be immediately fulfilled', () => {
-        let x = {};
-        assert.strictEqual(x, getValue(Future.of(x)));
-    });
+test('should wrap promise', t => {
+    const x = Future.of({});
+    return Future.of(x).then(y => t.is(x, y));
+});
 
-    it('should wrap promise', () => {
-        const x = Future.of({});
-        return Future.of(x).then(y => assert(x === y));
-    });
-
-    it('should wrap rejected promise', () => {
-        const x = reject({});
-        silenceError(x);
-        return Future.of(x).then(y => assert(x === y));
-    });
+test('should wrap rejected promise', t => {
+    const x = reject(new Error());
+    silenceError(x);
+    return Future.of(x).then(y => t.is(x, y));
 });

@@ -1,209 +1,189 @@
 import { isFulfilled, isRejected, isSettled, isPending, isHandled, isNever, silenceError, getValue, getReason } from '../src/inspect';
 import { resolve, reject, never, Future } from '../src/Promise';
-import assert from 'assert';
+import test from 'ava';
 
-describe('inspect', () => {
+test('isFulfilled should be true for fulfilled promise', t => {
+    t.ok(isFulfilled(resolve()));
+});
 
-    describe('isFulfilled', () => {
+test('isFulfilled should be false for rejected promise', t => {
+    const p = reject(new Error());
+    silenceError(p);
+    t.ok(!isFulfilled(p));
+});
 
-        it('should be true for fulfilled promise', () => {
-            assert(isFulfilled(resolve()));
-        });
+test('isFulfilled should be false for pending promise', t => {
+    t.ok(!isFulfilled(new Future()));
+});
 
-        it('should be false for rejected promise', () => {
-            assert(!isFulfilled(reject()));
-        });
+test('isFulfilled should be false for never', t => {
+    t.ok(!isFulfilled(never()));
+});
 
-        it('should be false for pending promise', () => {
-            assert(!isFulfilled(new Future()));
-        });
+test('isRejected should be true for rejected promise', t => {
+    const p = reject(new Error);
+    silenceError(p);
+    t.ok(isRejected(p));
+});
 
-        it('should be false for never', () => {
-            assert(!isFulfilled(never()));
-        });
+test('isRejected should be false for fulfilled promise', t => {
+    t.ok(!isRejected(resolve()));
+});
 
+test('isRejected should be false for pending promise', t => {
+    t.ok(!isRejected(new Future()));
+});
+
+test('isRejected should be false for never', t => {
+    t.ok(!isRejected(never()));
+});
+
+test('isSettled should be true for fulfilled promise', t => {
+    t.ok(isSettled(resolve()));
+});
+
+test('isSettled should be true for rejected promise', t => {
+    const p = reject(new Error);
+    silenceError(p);
+    t.ok(isSettled(p));
+});
+
+test('isSettled should be false for pending promise', t => {
+    t.ok(!isSettled(new Future()));
+});
+
+test('isSettled should be false for never', t => {
+    t.ok(!isSettled(never()));
+});
+
+test('isPending should be false for fulfilled promise', t => {
+    t.ok(!isPending(resolve()));
+});
+
+test('isPending should be false for rejected promise', t => {
+    const p = reject(new Error);
+    silenceError(p);
+    t.ok(!isPending(p));
+});
+
+test('isPending should be true for pending promise', t => {
+    t.ok(isPending(new Future()));
+});
+
+test('isPending should be true for never', t => {
+    t.ok(isPending(never()));
+});
+
+test('isNever should be false for fulfilled promise', t => {
+    t.ok(!isNever(resolve()));
+});
+
+test('isNever should be false for rejected promise', t => {
+    const p = reject(new Error);
+    silenceError(p);
+    t.ok(!isNever(p));
+});
+
+test('isNever should be false for pending promise', t => {
+    t.ok(!isNever(new Future()));
+});
+
+test('isNever should be true for never', t => {
+    t.ok(isNever(never()));
+});
+
+test('isHandled should be false for fulfilled promise', t => {
+    t.ok(!isHandled(resolve()));
+});
+
+test('isHandled should be false for rejected promise', t => {
+    const p = reject(new Error);
+    t.ok(!isHandled(p));
+    silenceError(p);
+});
+
+test.cb('isHandled should be true for handled rejected promise', t => {
+    t.plan(1);
+    const p = reject();
+    p.catch(() => {
+        setTimeout((t, p) => {
+            t.ok(isHandled(p));
+            t.end();
+        }, 0, t, p);
     });
+});
 
-    describe('isRejected', () => {
+test('isHandled should be true for silenced rejected promise', t => {
+    const p = reject(new Error());
+    silenceError(p);
+    t.ok(isHandled(p));
+});
 
-        it('should be true for rejected promise', () => {
-            assert(isRejected(reject()));
-        });
+test('isHandled should be false for pending promise', t => {
+    t.ok(!isHandled(new Future()));
+});
 
-        it('should be false for fulfilled promise', () => {
-            assert(!isRejected(resolve()));
-        });
+test('isHandled should be false for never', t => {
+    t.ok(!isHandled(never()));
+});
 
-        it('should be false for pending promise', () => {
-            assert(!isRejected(new Future()));
-        });
+test('getValue should get value from fulfilled promise', t => {
+    const x = {};
+    t.is(x, getValue(resolve(x)));
+});
 
-        it('should be false for never', () => {
-            assert(!isRejected(never()));
-        });
+test('getValue should throw for rejected promise', t => {
+    const p = reject(new Error);
+    silenceError(p);
+    t.throws(() => getValue(p));
+});
 
-    });
+test('getValue should throw for pending promise', t => {
+    t.throws(() => getValue(new Future()));
+});
 
-    describe('isSettled', () => {
+test('getValue should throw for never', t => {
+    t.throws(() => getValue(never()));
+});
 
-        it('should be true for fulfilled promise', () => {
-            assert(isSettled(resolve()));
-        });
+test('getReason should handle rejected promise', t => {
+    const p = reject(new Error());
+    t.ok(!isHandled(p));
 
-        it('should be true for rejected promise', () => {
-            assert(isSettled(reject()));
-        });
+    getReason(p);
+    t.ok(isHandled(p));
+});
 
-        it('should be false for pending promise', () => {
-            assert(!isSettled(new Future()));
-        });
+test('getReason should get reason from rejected promise', t => {
+    const x = new Error();
+    const p = reject(x);
+    t.is(x, getReason(p));
+});
 
-        it('should be false for never', () => {
-            assert(!isSettled(never()));
-        });
+test('getReason should throw for fulfilled promise', t => {
+    t.throws(() => getReason(fulfill()));
+});
 
-    });
+test('getReason should throw for pending promise', t => {
+    t.throws(() => getReason(new Future()));
+});
 
-    describe('isPending', () => {
+test('getReason should throw for never', t => {
+    t.throws(() => getReason(never()));
+});
 
-        it('should be false for fulfilled promise', () => {
-            assert(!isPending(resolve()));
-        });
+test('silenceError should handle rejected promise', t => {
+    const p = reject(new Error());
+    t.ok(!isHandled(p));
 
-        it('should be false for rejected promise', () => {
-            assert(!isPending(reject()));
-        });
+    silenceError(p);
+    t.ok(isHandled(p));
+});
 
-        it('should be true for pending promise', () => {
-            assert(isPending(new Future()));
-        });
+test('silenceError should be a noop for fulfilled promise', t => {
+    const p = resolve();
+    t.ok(!isHandled(p));
 
-        it('should be true for never', () => {
-            assert(isPending(never()));
-        });
-
-    });
-
-    describe('isNever', () => {
-
-        it('should be false for fulfilled promise', () => {
-            assert(!isNever(resolve()));
-        });
-
-        it('should be false for rejected promise', () => {
-            assert(!isNever(reject()));
-        });
-
-        it('should be false for pending promise', () => {
-            assert(!isNever(new Future()));
-        });
-
-        it('should be true for never', () => {
-            assert(isNever(never()));
-        });
-
-    });
-
-    describe('isHandled', () => {
-
-        it('should be false for fulfilled promise', () => {
-            assert(!isHandled(resolve()));
-        });
-
-        it('should be false for rejected promise', () => {
-            assert(!isHandled(reject()));
-        });
-
-        it('should be true for handled rejected promise', done => {
-            let p = reject();
-            p.catch(() => {
-                setTimeout((done, p) => {
-                    assert(isHandled(p));
-                    done();
-                }, 0, done, p);
-            });
-        });
-
-        it('should be true for silenced rejected promise', () => {
-            var p = reject();
-            silenceError(p);
-            assert(isHandled(p));
-        });
-
-        it('should be false for pending promise', () => {
-            assert(!isHandled(new Future()));
-        });
-
-        it('should be false for never', () => {
-            assert(!isHandled(never()));
-        });
-
-    });
-
-    describe('getValue', () => {
-
-        it('should get value from fulfilled promise', () => {
-            let x = {};
-            assert.strictEqual(x, getValue(resolve(x)));
-        });
-
-        it('should throw for rejected promise', () => {
-            assert.throws(() => getValue(reject()));
-        });
-
-        it('should throw for pending promise', () => {
-            assert.throws(() => getValue(new Future()));
-        });
-
-        it('should throw for never', () => {
-            assert.throws(() => getValue(never()));
-        });
-    });
-
-    describe('getReason', () => {
-
-        it('should handle rejected promise', () => {
-            let p = reject();
-            assert(!isHandled(p));
-
-            getReason(p);
-            assert(isHandled(p));
-        });
-
-        it('should get reason from rejected promise', () => {
-            let x = {};
-            assert.strictEqual(x, getReason(reject(x)));
-        });
-
-        it('should throw for fulfilled promise', () => {
-            assert.throws(() => getReason(fulfill()));
-        });
-
-        it('should throw for pending promise', () => {
-            assert.throws(() => getReason(new Future()));
-        });
-
-        it('should throw for never', () => {
-            assert.throws(() => getReason(never()));
-        });
-    });
-
-    describe('silenceError', () => {
-
-        it('should handle rejected promise', () => {
-            let p = reject();
-            assert(!isHandled(p));
-
-            silenceError(p);
-            assert(isHandled(p));
-        });
-
-        it('should be a noop for fulfilled promise', () => {
-            let p = resolve();
-            assert(!isHandled(p));
-
-            silenceError(p);
-            assert(!isHandled(p));
-        });
-    });
+    silenceError(p);
+    t.ok(!isHandled(p));
 });

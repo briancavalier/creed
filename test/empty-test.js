@@ -1,11 +1,7 @@
 import { Future } from '../src/Promise';
 import { isNever } from '../src/inspect';
-import assert from 'assert';
+import test from 'ava';
 
-describe('empty', function() {
-
-    it('should return never', () => {
-        assert(isNever(Future.empty()));
-    });
-
+test('should return never', t => {
+    t.ok(isNever(Future.empty()));
 });

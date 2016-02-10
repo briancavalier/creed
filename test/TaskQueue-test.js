@@ -1,26 +1,21 @@
 import TaskQueue from '../src/TaskQueue';
-import assert from 'assert';
+import test from 'ava';
 
-describe('TaskQueue', () => {
+test.cb('should add task to execute later', t => {
+    let i = 0;
+    function inc() {
+        i++;
+    }
 
-    describe('add', () => {
-        it('should add task to execute later', done => {
-            let i = 0;
-            function inc() {
-                i++;
-            }
+    function verify() {
+        t.is(i, 2);
+        t.end();
+    }
 
-            function verify() {
-                assert.equal(i, 2);
-                done();
-            }
+    const q = new TaskQueue();
 
-            let t = new TaskQueue();
-
-            t.add({ run: inc });
-            t.add({ run: inc });
-            t.add({ run: verify });
-        });
-    });
-
+    q.add({ run: inc });
+    q.add({ run: inc });
+    q.add({ run: verify });
 });
+

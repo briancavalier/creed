@@ -1,31 +1,30 @@
 import { fulfill, delay, reject } from '../src/main';
 import { assertSame } from './lib/test-util';
-import assert from 'assert';
+import test from 'ava';
 
-describe('map', function() {
+test('should satisfy identity', t => {
+    const u = fulfill({});
+    return assertSame(t, u.map(x => x), u);
+});
 
-    it('should satisfy identity', () => {
-        var u = fulfill({});
-        return assertSame(u.map(x => x), u);
-    });
+test('should satisfy composition', t => {
+    const f = x => x + 'f';
+    const g = x => x + 'g';
+    const u = fulfill('e');
 
-    it('should satisfy composition', () => {
-        let f = x => x + 'f';
-        let g = x => x + 'g';
-        let u = fulfill('e');
+    return assertSame(t, u.map(x => f(g(x))), u.map(g).map(f));
+});
 
-        return assertSame(u.map(x => f(g(x))), u.map(g).map(f));
-    });
+test('should reject if f throws', t => {
+    t.plan(1);
+    const expected = new Error();
+    return delay(1).map(() => { throw expected; })
+        .catch(x => t.is(x, expected));
+});
 
-    it('should reject if f throws', () => {
-        let expected = {};
-        return delay(1).map(() => { throw expected; })
-            .then(assert.ifError, x => assert.strictEqual(x, expected));
-    });
-
-    it('should not map rejection', () => {
-        let expected = {};
-        return delay(1, expected).then(reject).map(() => null)
-            .then(assert.ifError, x => assert.strictEqual(x, expected));
-    });
+test('should not map rejection', t => {
+    t.plan(1);
+    const expected = new Error();
+    return delay(1, expected).then(reject).map(() => null)
+        .catch(x => t.is(x, expected));
 });

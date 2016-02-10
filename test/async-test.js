@@ -1,9 +1,11 @@
 import makeAsync from '../src/async';
-import assert from 'assert';
+import test from 'ava';
 
-describe('makeAsync', () => {
-    it('should make a function that invokes later', done => {
-        let async = makeAsync(done);
-        async();
+test.cb('should make a function that invokes later', t => {
+    t.plan(1);
+    const async = makeAsync(() => {
+        t.pass();
+        t.end();
     });
+    async();
 });

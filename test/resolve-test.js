@@ -1,41 +1,38 @@
 import { resolve, reject, Future } from '../src/Promise';
-import assert from 'assert';
+import test from 'ava';
 
-describe('resolve', () => {
+test('should reject promise cycle', t => {
+    t.plan(1);
+    const p = new Future();
+    p._resolve(p);
+    return p.catch(e => t.ok(e instanceof TypeError));
+});
 
-    it('should reject promise cycle', () => {
-        let p = new Future();
-        p._resolve(p);
-        return p.then(assert.ifError, e => assert(e instanceof TypeError));
-    });
+test('should resolve fulfilled thenable', t => {
+    const expected = {};
+    return resolve({ then: f => f(expected) })
+        .then(x => t.is(expected, x));
+});
 
-    describe('thenables', () => {
-        it('should resolve fulfilled thenable', () => {
-            let expected = {};
-            return resolve({ then: f => f(expected) })
-                .then(x => assert.strictEqual(expected, x));
-        });
+test('should resolve rejected thenable', t => {
+    t.plan(1);
+    const expected = new Error();
+    return resolve({ then: (f, r) => r(expected) })
+        .catch(e => t.is(expected, e));
+});
 
-        it('should resolve rejected thenable', () => {
-            let expected = {};
-            return resolve({ then: (f, r) => r(expected) })
-                .then(assert.ifError, e => assert.strictEqual(expected, e));
-        });
+test('should reject if thenable.then throws', t => {
+    const expected = new Error();
+    return resolve({ then: () => { throw expected } })
+        .catch(e => t.is(expected, e));
+});
 
-        it('should reject if thenable.then throws', () => {
-            let expected = {};
-            return resolve({ then: () => { throw expected } })
-                .then(assert.ifError, e => assert.strictEqual(expected, e));
-        });
+test('should reject if accessing thenable.then throws', t => {
+    const expected = new Error();
+    const thenable = {
+        get then() { throw expected; }
+    };
 
-        it('should reject if accessing thenable.then throws', () => {
-            let expected = {};
-            let thenable = {
-                get then() { throw expected; }
-            };
-
-            return resolve(thenable)
-                .then(assert.ifError, e => assert.strictEqual(expected, e));
-        });
-    });
+    return resolve(thenable)
+        .catch(e => t.is(expected, e));
 });

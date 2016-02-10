@@ -1,9 +1,7 @@
 'use strict';
 
-import assert from 'assert';
-
-export function assertSame(ap, bp) {
-    return ap.then(a => bp.then(b => assert(a === b)));
+export function assertSame(t, ap, bp) {
+    return ap.then(a => bp.then(b => t.is(a, b)));
 }
 
 export function throwingIterable(e) {

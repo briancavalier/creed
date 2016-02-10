@@ -1,10 +1,6 @@
 import { isNode } from '../src/env';
-import assert from 'assert';
+import test from 'ava';
 
-describe('env', () => {
-    describe('isNode', () => {
-        it('should be boolean', () => {
-            assert(typeof isNode === 'boolean');
-        });
-    });
+test('isNode should be boolean', t => {
+    t.ok(typeof isNode === 'boolean');
 });

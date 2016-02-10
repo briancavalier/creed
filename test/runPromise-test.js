@@ -1,150 +1,119 @@
 import { runPromise, resolve, reject } from '../src/main';
-import assert from 'assert';
+import test from 'ava';
 
-let fail = x => { throw x; };
+const fail = x => { throw x; };
 
-describe('runPromise', () => {
+test('should throw synchronously when function not provided', t => {
+    t.throws(runPromise, TypeError);
+});
 
-    it('should throw synchronously when function not provided', () => {
-        assert.throws(runPromise, TypeError);
-    });
+test('should reject if resolver throws', t => {
+    t.plan(1);
+    const x = {};
+    return runPromise(fail, x).catch(e => t.is(x, e));
+});
 
-    it('should reject if resolver throws', () => {
-        let x = {};
-        return runPromise(fail, x).then(fail, e => {
-            assert(x === e);
-        });
-    });
+test('should reject', t => {
+    const x = new Error();
+    return runPromise((_, reject) => reject(x))
+        .catch(e => t.is(x, e));
+});
 
-    it('should reject', () => {
-        let x = {};
-        return runPromise((_, reject) => {
-            reject(x);
-        }).then(fail, e => {
-            assert(x === e);
-        });
-    });
+test('should resolve', t => {
+    const x = {};
+    return runPromise(resolve => resolve(x))
+        .catch(a => t.is(x, a));
+});
 
-    it('should resolve', () => {
-        let x = {};
-        return runPromise(resolve => {
-            resolve(x);
-        }).then(a => {
-            assert(x === a);
-        });
-    });
+test('when rejected should ignore subsequent throw', t => {
+    const x = new Error();
+    return runPromise((_, reject) => {
+        reject(x);
+        throw new Error();
+    }).catch(e => t.is(x, e));
+});
 
-    describe('when rejected explicitly', () => {
+test('when rejected should ignore subsequent reject', t => {
+    const x = new Error();
+    const y = new Error();
+    return runPromise((_, reject) => {
+        reject(x);
+        reject(y);
+    }).catch(e => t.is(x, e));
+});
 
-        it('should ignore subsequent throw', () => {
-            let x = {};
-            return runPromise((_, reject) => {
-                reject(x);
-                throw {};
-            }).then(fail, e => {
-                assert(x === e);
-            });
-        });
+test('when rejected should ignore subsequent resolve', t => {
+    const x = new Error();
+    return runPromise((resolve, reject) => {
+        reject(x);
+        resolve();
+    }).then(e => t.is(x, e));
+});
 
-        it('should ignore subsequent reject', () => {
-            let x = {};
-            let y = {};
-            return runPromise((_, reject) => {
-                reject(x);
-                reject(y);
-            }).then(fail, e => {
-                assert(x === e);
-            });
-        });
+test('when resolved should ignore subsequent throw', t => {
+    const x = {};
+    return runPromise(resolve => {
+        resolve(x);
+        throw new Error();
+    }).then(a => t.is(x, a));
+});
 
-        it('should ignore subsequent resolve', () => {
-            let x = {};
-            return runPromise((_, reject) => {
-                reject(x);
-                resolve();
-            }).then(fail, e => {
-                assert(x === e);
-            });
-        });
-    });
+test('when resolved should ignore subsequent reject', t => {
+    const x = {};
+    return runPromise((resolve, reject) => {
+        resolve(x);
+        reject(new Error());
+    }).then(a => t.is(x, a));
+});
 
-    describe('when resolved explicitly', () => {
+test('when resolved should ignore subsequent resolve', t => {
+    const x = {};
+    return runPromise(resolve => {
+        resolve(x);
+        resolve();
+    }).then(a => t.is(x, a));
+});
 
-        it('should ignore subsequent throw', () => {
-            let x = {};
-            return runPromise(resolve => {
-                resolve(x);
-                throw {};
-            }).then(a => {
-                assert(x === a);
-            });
-        });
+test('should pass 1 argument', t => {
+    const a = {};
+    return runPromise((w, resolve) => {
+        t.is(w, a);
+        resolve();
+    }, a);
+});
 
-        it('should ignore subsequent reject', () => {
-            let x = {};
-            let y = {};
-            return runPromise((resolve, reject) => {
-                resolve(x);
-                reject(y);
-            }).then(a => {
-                assert(x === a);
-            });
-        });
+test('should pass 2 arguments', t => {
+    const a = {};
+    const b = {};
+    return runPromise((x, y, resolve) => {
+        t.is(x, a);
+        t.is(y, b);
+        resolve();
+    }, a, b);
+});
 
-        it('should ignore subsequent resolve', () => {
-            let x = {};
-            return runPromise(resolve => {
-                resolve(x);
-                resolve();
-            }).then(a => {
-                assert(x === a);
-            });
-        });
-    });
+test('should pass 3 arguments', t => {
+    const a = {};
+    const b = {};
+    const c = {};
+    return runPromise((x, y, z, resolve) => {
+        t.is(x, a);
+        t.is(y, b);
+        t.is(z, c);
+        resolve();
+    }, a, b, c);
+});
 
-    describe('should pass arguments to resolver', () => {
-        it('for 1 argument', () => {
-            let a = {};
-            return runPromise((w, resolve) => {
-                assert(w === a);
-                resolve();
-            }, a);
-        });
-
-        it('for 2 arguments', () => {
-            let a = {};
-            let b = {};
-            return runPromise((w, x, resolve) => {
-                assert(w === a);
-                assert(x === b);
-                resolve();
-            }, a, b);
-        });
-
-        it('for 3 arguments', () => {
-            let a = {};
-            let b = {};
-            let c = {};
-            return runPromise((w, x, y, resolve) => {
-                assert(w === a);
-                assert(x === b);
-                assert(y === c);
-                resolve();
-            }, a, b, c);
-        });
-
-        it('for 4 or more arguments', () => {
-            let a = {};
-            let b = {};
-            let c = {};
-            let d = {};
-            return runPromise((w, x, y, z, resolve) => {
-                assert(w === a);
-                assert(x === b);
-                assert(y === c);
-                assert(z === d);
-                resolve();
-            }, a, b, c, d);
-        });
-    });
+test('should pass 4 or more arguments', t => {
+    const a = {};
+    const b = {};
+    const c = {};
+    const d = {};
+    return runPromise((w, x, y, z, resolve) => {
+        t.is(w, a);
+        t.is(x, b);
+        t.is(y, c);
+        t.is(z, d);
+        resolve();
+    }, a, b, c, d);
 });

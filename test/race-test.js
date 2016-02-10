@@ -1,47 +1,46 @@
 import { race, resolve, reject, never } from '../src/main';
 import { isNever } from '../src/inspect';
 import { throwingIterable } from './lib/test-util';
-import assert from 'assert';
+import test from 'ava';
 
-describe('race', () => {
+test('should reject if iterator throws', t => {
+    t.plan(1);
+    const error = new Error();
+    return race(throwingIterable(error))
+        .catch(e => t.is(e, error));
+});
 
-    it('should reject if iterator throws', () => {
-        let error = new Error();
-        return race(throwingIterable(error))
-            .then(assert.ifError, e => assert(e === error));
-    });
+test('should return never when input is empty', t => {
+    t.ok(isNever(race([])));
+});
 
-    it('should return never when input is empty', () => {
-        assert(isNever(race([])));
-    });
+test('should reject with a TypeError when passed non-iterable', t => {
+    t.plan(1);
+    return race(123).catch(e => t.ok(e instanceof TypeError));
+});
 
-    it('should reject with a TypeError when passed non-iterable', () => {
-        return race(123).then(assert.ifError, e => assert(e instanceof TypeError));
-    });
+test('should be identity for 1 element when value', t => {
+    return race(new Set([1])).then(x => t.is(x, 1));
+});
 
-    it('should be identity for 1 element when value', () => {
-        return race(new Set([1]))
-            .then(x => assert.equal(x, 1));
-    });
+test('should be identity for 1 element when fulfilled', t => {
+    return race(new Set([resolve(1)])).then(x => t.is(x, 1));
+});
 
-    it('should be identity for 1 element when fulfilled', () => {
-        return race(new Set([resolve(1)]))
-            .then(x => assert.equal(x, 1));
-    });
+test('should be identity for 1 element when rejected', t => {
+    t.plan(1);
+    const expected = new Error();
+    return race(new Set([reject(expected)]))
+        .catch(e => t.is(expected, e));
+});
 
-    it('should be identity for 1 element when rejected', () => {
-        return race(new Set([reject(1)]))
-            .catch(x => assert.equal(x, 1));
-    });
+test('should fulfill when winner fulfills', t => {
+    return race([resolve(), never()])
+});
 
-    it('should fulfill when winner fulfills', () => {
-        return race([resolve(), never()])
-    });
-
-    it('should reject when winner rejects', () => {
-        return race([reject(1), never()]).then(assert.ifError, x => {
-            assert.equal(x, 1);
-        });
-    });
-
+test('should reject when winner rejects', t => {
+    t.plan(1);
+    const expected = new Error();
+    return race([reject(expected), never()])
+        .catch(e => t.is(expected, e));
 });

@@ -3,46 +3,45 @@ import TimeoutError from '../src/TimeoutError';
 import { Future, reject, fulfill } from '../src/Promise';
 import { silenceError, isNever, isRejected, isPending, getValue } from '../src/inspect';
 import { assertSame } from './lib/test-util';
-import assert from 'assert';
+import test from 'ava';
 
 function delayReject(ms, e) {
-    let p = new Future();
+    const p = new Future();
     setTimeout(e => p._reject(e), ms, e);
     return p;
 }
 
-describe('timeout', function() {
+test('should be identity for fulfilled', t => {
+    const p = fulfill();
+    t.is(p, timeout(0, p));
+});
 
-    it('should be identity for fulfilled', () => {
-        let p = fulfill();
-        assert.strictEqual(p, timeout(0, p));
-    });
+test('should be identity for rejected', t => {
+    const p = reject();
+    silenceError(p);
+    t.is(p, timeout(0, p));
+});
 
-    it('should be identity for rejected', () => {
-        let p = reject();
-        silenceError(p);
-        assert.strictEqual(p, timeout(0, p));
-    });
+test('should reject if timeout is earlier than fulfill', t => {
+    t.plan(1);
+    return timeout(1, delay(100, true)).catch(e => t.pass());
+});
 
-    it('should reject if timeout is earlier than fulfill', () => {
-        return timeout(1, delay(10, true))
-            .then(assert.ifError, assert);
-    });
+test('should fulfill if timeout is later than fulfill', t => {
+    const x = {};
+    return timeout(100, delay(1, x)).then(a => t.is(x, a));
+});
 
-    it('should fulfill if timeout is later than fulfill', () => {
-        let x = {};
-        return timeout(10, delay(1, x))
-            .then(a => assert.strictEqual(x, a));
-    });
+test('should reject if timeout is earlier than reject', t => {
+    t.plan(1);
+    const p = delayReject(10, new Error());
+    silenceError(p);
+    return timeout(1, p)
+        .catch(e => t.ok(e instanceof TimeoutError));
+});
 
-    it('should reject if timeout is earlier than reject', () => {
-        return timeout(1, delayReject(10, {}))
-            .then(assert.ifError, e => assert(e instanceof TimeoutError));
-    });
-
-    it('should reject if timeout is later than reject', () => {
-        let x = {};
-        return timeout(10, delayReject(1, x))
-            .then(assert.ifError, e => assert.strictEqual(x, e));
-    });
+test('should reject if timeout is later than reject', t => {
+    const x = new Error;
+    return timeout(10, delayReject(1, x))
+        .catch(e => t.is(x, e));
 });

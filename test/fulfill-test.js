@@ -1,37 +1,34 @@
 import { fulfill, reject } from '../src/main';
 import { silenceError, getValue } from '../src/inspect';
-import assert from 'assert';
+import test from 'ava';
 
-describe('fulfill', () => {
+test('should wrap value', t => {
+    const x = {};
+    return fulfill(x).then(y => t.is(x, y));
+});
 
-    it('should wrap value', () => {
-        const x = {};
-        return fulfill(x).then(y => assert(x === y));
-    });
+test('should be immediately fulfilled', t => {
+    const x = {};
+    t.is(x, getValue(fulfill(x)));
+});
 
-    it('should be immediately fulfilled', () => {
-        let x = {};
-        assert.strictEqual(x, getValue(fulfill(x)));
-    });
+test('should wrap promise', t => {
+    const x = fulfill({});
+    return fulfill(x).then(y => t.is(x, y));
+});
 
-    it('should wrap promise', () => {
-        const x = fulfill({});
-        return fulfill(x).then(y => assert(x === y));
-    });
+test('should wrap rejected promise', t => {
+    const x = reject(new Error());
+    silenceError(x);
+    return fulfill(x).then(y => t.is(x, y));
+});
 
-    it('should wrap rejected promise', () => {
-        const x = reject({});
-        silenceError(x);
-        return fulfill(x).then(y => assert(x === y));
-    });
+test('catch should be identity', t => {
+    const p = fulfill(true);
+    t.is(p, p.catch(e => t.fail(e)));
+});
 
-    it('catch should be identity', () => {
-        var p = fulfill(true);
-        assert.strictEqual(p, p.catch(assert.ifError));
-    });
-
-    it('then should be identity when typeof f !== function', () => {
-        var p = fulfill(true);
-        assert.strictEqual(p, p.then());
-    });
+test('then should be identity when typeof f !== function', t => {
+    const p = fulfill();
+    t.is(p, p.then());
 });
