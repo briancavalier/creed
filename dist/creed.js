@@ -96,7 +96,6 @@
 	/*global process,document */
 
 	function makeAsync(f) {
-		//jscs:disable validateIndentation
 		return isNode ? createNodeScheduler(f) /* istanbul ignore next */
 		: MutationObs ? createBrowserScheduler(f) : createFallbackScheduler(f);
 	}
@@ -121,7 +120,7 @@
 
 		var i = 0;
 		return function () {
-			return node.data = i ^= 1;
+			node.data = i ^= 1;
 		};
 	}
 
@@ -1185,7 +1184,6 @@
 	})();
 
 	function runPromise$1(f, thisArg, args, promise) {
-
 		function resolve(x) {
 			promise._resolve(x);
 		}
@@ -1212,7 +1210,6 @@
 	}
 
 	function runNode$1(f, thisArg, args, promise) {
-
 		function settleNode(e, x) {
 			if (e) {
 				promise._reject(e);
@@ -1474,6 +1471,7 @@
 	CreedPromise.race = race;
 
 	function shim() {
+		/* global self */
 		var orig = typeof Promise === 'function' && Promise;
 
 		/* istanbul ignore if */
