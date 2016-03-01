@@ -93,7 +93,7 @@
 	/* istanbul ignore next */
 	var MutationObs = typeof MutationObserver === 'function' && MutationObserver || typeof WebKitMutationObserver === 'function' && WebKitMutationObserver;
 
-	/*global process,document */
+	/* global process,document */
 
 	function makeAsync(f) {
 		return isNode ? createNodeScheduler(f) /* istanbul ignore next */

@@ -4,7 +4,7 @@
 
 import { isNode, MutationObs } from './env'
 
-/*global process,document */
+/* global process,document */
 
 export default function (f) {
 	return isNode ? createNodeScheduler(f) /* istanbul ignore next */
@@ -23,8 +23,8 @@ function createNodeScheduler (f) {
 
 /* istanbul ignore next */
 function createBrowserScheduler (f) {
-	let node = document.createTextNode('');
-	(new MutationObs(f)).observe(node, { characterData: true })
+	const node = document.createTextNode('')
+	new MutationObs(f).observe(node, { characterData: true })
 
 	let i = 0
 	return () => { node.data = (i ^= 1) }
