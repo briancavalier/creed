@@ -1,36 +1,36 @@
-'use strict';
+'use strict'
 
-import maybeThenable from './maybeThenable';
+import maybeThenable from './maybeThenable'
 
 export default function (f, p, promise) {
-	p._when(new Chain(f, promise));
-	return promise;
+	p._when(new Chain(f, promise))
+	return promise
 }
 
 class Chain {
-	constructor(f, promise) {
-		this.f = f;
-		this.promise = promise;
+	constructor (f, promise) {
+		this.f = f
+		this.promise = promise
 	}
 
-	fulfilled(p) {
+	fulfilled (p) {
 		try {
-			runChain(this.f, p.value, this.promise);
+			runChain(this.f, p.value, this.promise)
 		} catch (e) {
-			this.promise._reject(e);
+			this.promise._reject(e)
 		}
 	}
 
-	rejected(p) {
-		this.promise._become(p);
+	rejected (p) {
+		this.promise._become(p)
 	}
 }
 
-function runChain(f, x, p) {
-	const y = f(x);
+function runChain (f, x, p) {
+	const y = f(x)
 	if (!(maybeThenable(y) && typeof y.then === 'function')) {
-		throw new TypeError('f must return a promise');
+		throw new TypeError('f must return a promise')
 	}
 
-	p._resolve(y);
+	p._resolve(y)
 }

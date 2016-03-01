@@ -1,46 +1,46 @@
-'use strict';
-import { silenceError, isHandled } from './inspect';
+'use strict'
+import { silenceError, isHandled } from './inspect'
 
-const UNHANDLED_REJECTION = 'unhandledRejection';
-const HANDLED_REJECTION = 'rejectionHandled';
+const UNHANDLED_REJECTION = 'unhandledRejection'
+const HANDLED_REJECTION = 'rejectionHandled'
 
 export default class ErrorHandler {
-	constructor(emitEvent, reportError) {
-		this.errors = [];
-		this.emit = emitEvent;
-		this.reportError = reportError;
+	constructor (emitEvent, reportError) {
+		this.errors = []
+		this.emit = emitEvent
+		this.reportError = reportError
 	}
 
-	track(e) {
+	track (e) {
 		if (!this.emit(UNHANDLED_REJECTION, e, e.value)) {
 			/* istanbul ignore else */
 			if (this.errors.length === 0) {
-				setTimeout(reportErrors, 1, this.reportError, this.errors);
+				setTimeout(reportErrors, 1, this.reportError, this.errors)
 			}
-			this.errors.push(e);
+			this.errors.push(e)
 		}
 	}
 
-	untrack(e) {
-		silenceError(e);
-		this.emit(HANDLED_REJECTION, e);
+	untrack (e) {
+		silenceError(e)
+		this.emit(HANDLED_REJECTION, e)
 	}
 }
 
-function reportErrors(report, errors) {
+function reportErrors (report, errors) {
 	try {
-		reportAll(errors, report);
+		reportAll(errors, report)
 	} finally {
-		errors.length = 0;
+		errors.length = 0
 	}
 }
 
-function reportAll(errors, report) {
+function reportAll (errors, report) {
 	for (let i = 0; i < errors.length; ++i) {
-		let e = errors[i];
+		let e = errors[i]
 		/* istanbul ignore else */
 		if (!isHandled(e)) {
-			report(e);
+			report(e)
 		}
 	}
 }

@@ -1,6 +1,6 @@
-import { isNode } from './env';
+import { isNode } from './env'
 
-const UNHANDLED_REJECTION = 'unhandledRejection';
+const UNHANDLED_REJECTION = 'unhandledRejection'
 
 export default function () {
 	/*global process, self, CustomEvent*/
@@ -13,15 +13,15 @@ export default function () {
 		return function (type, error) {
 			return type === UNHANDLED_REJECTION
 				? process.emit(type, error.value, error)
-				: process.emit(type, error);
-		};
+				: process.emit(type, error)
+		}
 	} else if (typeof self !== 'undefined' && typeof CustomEvent === 'function') {
 		return (function (noop, self, CustomEvent) {
-			var hasCustomEvent;
+			var hasCustomEvent
 			try {
-				hasCustomEvent = new CustomEvent(UNHANDLED_REJECTION) instanceof CustomEvent;
+				hasCustomEvent = new CustomEvent(UNHANDLED_REJECTION) instanceof CustomEvent
 			} catch (e) {
-				hasCustomEvent = false;
+				hasCustomEvent = false
 			}
 
 			return !hasCustomEvent ? noop : function (type, error) {
@@ -32,16 +32,16 @@ export default function () {
 					},
 					bubbles: false,
 					cancelable: true
-				});
+				})
 
-				return !self.dispatchEvent(ev);
-			};
-		}(noop, self, CustomEvent));
+				return !self.dispatchEvent(ev)
+			}
+		}(noop, self, CustomEvent))
 	}
 
 	// istanbul ignore next */
-	return noop;
+	return noop
 }
 
 // istanbul ignore next */
-function noop() {}
+function noop () {}

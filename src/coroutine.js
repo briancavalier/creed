@@ -1,43 +1,43 @@
-'use strict';
+'use strict'
 
 export default function (resolve, iterator, promise) {
-	new Coroutine(resolve, iterator, promise).run();
-	return promise;
+	new Coroutine(resolve, iterator, promise).run()
+	return promise
 }
 
 class Coroutine {
-	constructor(resolve, iterator, promise) {
-		this.resolve = resolve;
-		this.iterator = iterator;
-		this.promise = promise;
+	constructor (resolve, iterator, promise) {
+		this.resolve = resolve
+		this.iterator = iterator
+		this.promise = promise
 	}
 
-	run() {
-		this.step(this.iterator.next, void 0);
+	run () {
+		this.step(this.iterator.next, void 0)
 	}
 
-	step(continuation, x) {
+	step (continuation, x) {
 		try {
-			this.handle(continuation.call(this.iterator, x));
+			this.handle(continuation.call(this.iterator, x))
 		} catch (e) {
-			this.promise._reject(e);
+			this.promise._reject(e)
 		}
 	}
 
-	handle(result) {
+	handle (result) {
 		if (result.done) {
-			return this.promise._resolve(result.value);
+			return this.promise._resolve(result.value)
 		}
 
-		this.resolve(result.value)._runAction(this);
+		this.resolve(result.value)._runAction(this)
 	}
 
-	fulfilled(ref) {
-		this.step(this.iterator.next, ref.value);
+	fulfilled (ref) {
+		this.step(this.iterator.next, ref.value)
 	}
 
-	rejected(ref) {
-		this.step(this.iterator.throw, ref.value);
-		return true;
+	rejected (ref) {
+		this.step(this.iterator.throw, ref.value)
+		return true
 	}
 }

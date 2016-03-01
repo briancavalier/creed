@@ -1,249 +1,246 @@
-import { future, reject, fulfill, never, Future } from '../src/Promise';
-import { silenceError } from '../src/inspect';
-import { assertSame } from './lib/test-util';
-import assert from 'assert';
+import { describe, it } from 'mocha'
+import { future, reject, fulfill, never, Future } from '../src/Promise'
+import { silenceError } from '../src/inspect'
+import { assertSame } from './lib/test-util'
+import assert from 'assert'
 
-const f = x => x+1;
-const fp = x => fulfill(x+1);
+const f = x => x + 1
+const fp = x => fulfill(x + 1)
 
 describe('future', () => {
+	it('should return { resolve, promise }', () => {
+		const { resolve, promise } = future()
+		assert(typeof resolve === 'function')
+		assert(promise instanceof Future)
+	})
 
-    it('should return { resolve, promise }', () => {
-        let { resolve, promise } = future();
-        assert(typeof resolve === 'function');
-        assert(promise instanceof Future);
-    });
+	describe('then', () => {
+		it('should add handlers', () => {
+			const { resolve, promise } = future()
+			assertSame(promise.then(f), promise.then(fp))
+			setTimeout(resolve, 0, 1)
+			return promise
+		})
+	})
 
-    describe('then', () => {
-        it('should add handlers', () => {
-            let { resolve, promise } = future();
-            assertSame(promise.then(f), promise.then(fp));
-            setTimeout(resolve, 0, 1);
-            return promise;
-        });
-    });
+	describe('resolve', () => {
+		it('should fulfill promise with value', () => {
+			const { resolve, promise } = future()
+			const expected = {}
+			resolve(expected)
+			return promise.then(x => assert.strictEqual(expected, x))
+		})
 
-    describe('resolve', () => {
-        it('should fulfill promise with value', () => {
-            let { resolve, promise } = future();
-            let expected = {};
-            resolve(expected);
-            return promise.then(x => assert.strictEqual(expected, x));
-        });
+		it('should resolve to fulfilled promise', () => {
+			const { resolve, promise } = future()
+			const expected = {}
+			resolve(fulfill(expected))
+			return promise.then(x => assert.strictEqual(expected, x))
+		})
 
-        it('should resolve to fulfilled promise', () => {
-            let { resolve, promise } = future();
-            let expected = {};
-            resolve(fulfill(expected));
-            return promise.then(x => assert.strictEqual(expected, x));
-        });
+		it('should resolve to rejected promise', () => {
+			const { resolve, promise } = future()
+			const expected = {}
+			resolve(reject(expected))
+			return promise.then(assert.ifError, x => assert.strictEqual(expected, x))
+		})
+	})
 
-        it('should resolve to rejected promise', () => {
-            let { resolve, promise } = future();
-            let expected = {};
-            resolve(reject(expected));
-            return promise.then(assert.ifError, x => assert.strictEqual(expected, x));
-        });
-    });
+	describe('when resolved to another promise', () => {
+		describe('state', () => {
+			it('should have fulfilled state', () => {
+				const { resolve, promise } = future()
 
-    describe('when resolved to another promise', () => {
+				const p = fulfill(1)
+				resolve(p)
+				assert.equal(p.state(), promise.state())
+			})
 
-        describe('state', () => {
-            it('should have fulfilled state', () => {
-                let { resolve, promise } = future();
+			it('should have rejected state', () => {
+				const { resolve, promise } = future()
 
-                var p = fulfill(1);
-                resolve(p);
-                assert.equal(p.state(), promise.state());
-            });
+				const p = reject(1)
+				silenceError(p)
+				resolve(p)
+				assert.equal(p.state(), promise.state())
+			})
 
-            it('should have rejected state', () => {
-                let { resolve, promise } = future();
+			it('should have never state', () => {
+				const { resolve, promise } = future()
 
-                var p = reject(1);
-                silenceError(p);
-                resolve(p);
-                assert.equal(p.state(), promise.state());
-            });
+				const p = never()
+				resolve(p)
+				assert.equal(p.state(), promise.state())
+			})
+		})
 
-            it('should have never state', () => {
-                let { resolve, promise } = future();
+		describe('inspect', () => {
+			it('should have fulfilled state', () => {
+				const { resolve, promise } = future()
 
-                var p = never();
-                resolve(p);
-                assert.equal(p.state(), promise.state());
-            });
-        });
+				const p = fulfill(1)
+				resolve(p)
+				assert.equal(p.inspect(), promise.inspect())
+			})
 
-        describe('inspect', () => {
-            it('should have fulfilled state', () => {
-                let { resolve, promise } = future();
+			it('should have rejected state', () => {
+				const { resolve, promise } = future()
 
-                var p = fulfill(1);
-                resolve(p);
-                assert.equal(p.inspect(), promise.inspect());
-            });
+				const p = reject(1)
+				silenceError(p)
+				resolve(p)
+				assert.equal(p.inspect(), promise.inspect())
+			})
 
-            it('should have rejected state', () => {
-                let { resolve, promise } = future();
+			it('should have never state', () => {
+				const { resolve, promise } = future()
 
-                var p = reject(1);
-                silenceError(p);
-                resolve(p);
-                assert.equal(p.inspect(), promise.inspect());
-            });
+				const p = never()
+				resolve(p)
+				assert.equal(p.inspect(), promise.inspect())
+			})
+		})
 
-            it('should have never state', () => {
-                let { resolve, promise } = future();
+		describe('catch', () => {
+			it('should behave like fulfilled', () => {
+				const { resolve, promise } = future()
 
-                var p = never();
-                resolve(p);
-                assert.equal(p.inspect(), promise.inspect());
-            });
-        });
+				const p = fulfill(1)
+				resolve(p)
+				assert.strictEqual(p, promise.catch(f))
+			})
 
-        describe('catch', () => {
-            it('should behave like fulfilled', () => {
-                let { resolve, promise } = future();
+			it('should have rejected state', () => {
+				const { resolve, promise } = future()
 
-                var p = fulfill(1);
-                resolve(p);
-                assert.strictEqual(p, promise.catch(f));
-            });
+				const p = reject(1)
+				resolve(p)
+				return assertSame(p.catch(f), promise.catch(f))
+			})
 
-            it('should have rejected state', () => {
-                let { resolve, promise } = future();
+			it('should have never state', () => {
+				const { resolve, promise } = future()
 
-                var p = reject(1);
-                resolve(p);
-                return assertSame(p.catch(f), promise.catch(f));
-            });
+				const p = never()
+				resolve(p)
+				assert.strictEqual(p, promise.catch(f))
+			})
+		})
 
-            it('should have never state', () => {
-                let { resolve, promise } = future();
+		describe('map', () => {
+			it('should behave like fulfilled', () => {
+				const { resolve, promise } = future()
 
-                var p = never();
-                resolve(p);
-                assert.strictEqual(p, promise.catch(f));
-            });
-        });
+				const p = fulfill(1)
+				resolve(p)
+				return assertSame(p.map(f), promise.map(f))
+			})
 
-        describe('map', () => {
-            it('should behave like fulfilled', () => {
-                let { resolve, promise } = future();
+			it('should have rejected state', () => {
+				const { resolve, promise } = future()
 
-                var p = fulfill(1);
-                resolve(p);
-                return assertSame(p.map(f), promise.map(f));
-            });
+				const p = reject(1)
+				silenceError(p)
+				resolve(p)
+				assert.strictEqual(p, promise.map(f))
+			})
 
-            it('should have rejected state', () => {
-                let { resolve, promise } = future();
+			it('should have never state', () => {
+				const { resolve, promise } = future()
 
-                var p = reject(1);
-                silenceError(p);
-                resolve(p);
-                assert.strictEqual(p, promise.map(f));
-            });
+				const p = never()
+				resolve(p)
+				assert.strictEqual(p, promise.map(f))
+			})
+		})
 
-            it('should have never state', () => {
-                let { resolve, promise } = future();
+		describe('chain', () => {
+			it('should behave like fulfilled', () => {
+				const { resolve, promise } = future()
 
-                var p = never();
-                resolve(p);
-                assert.strictEqual(p, promise.map(f));
-            });
-        });
+				const p = fulfill(1)
+				resolve(p)
+				return assertSame(p.chain(fp), promise.chain(fp))
+			})
 
-        describe('chain', () => {
-            it('should behave like fulfilled', () => {
-                let { resolve, promise } = future();
+			it('should have rejected state', () => {
+				const { resolve, promise } = future()
 
-                var p = fulfill(1);
-                resolve(p);
-                return assertSame(p.chain(fp), promise.chain(fp));
-            });
+				const p = reject(1)
+				silenceError(p)
+				resolve(p)
+				assert.strictEqual(p, promise.chain(fp))
+			})
 
-            it('should have rejected state', () => {
-                let { resolve, promise } = future();
+			it('should have never state', () => {
+				const { resolve, promise } = future()
 
-                var p = reject(1);
-                silenceError(p);
-                resolve(p);
-                assert.strictEqual(p, promise.chain(fp));
-            });
+				const p = never()
+				resolve(p)
+				assert.strictEqual(p, promise.chain(fp))
+			})
+		})
 
-            it('should have never state', () => {
-                let { resolve, promise } = future();
+		describe('ap', () => {
+			it('should behave like fulfilled', () => {
+				const { resolve, promise } = future()
 
-                var p = never();
-                resolve(p);
-                assert.strictEqual(p, promise.chain(fp));
-            });
-        });
+				const p = fulfill(f)
+				const q = fulfill(1)
+				resolve(p)
+				return assertSame(p.ap(q), promise.ap(q))
+			})
 
-        describe('ap', () => {
-            it('should behave like fulfilled', () => {
-                let { resolve, promise } = future();
+			it('should behave like rejected', () => {
+				const { resolve, promise } = future()
 
-                var p = fulfill(f);
-                var q = fulfill(1);
-                resolve(p);
-                return assertSame(p.ap(q), promise.ap(q));
-            });
+				const p = reject(f)
+				silenceError(p)
+				resolve(p)
+				assert.strictEqual(p, promise.ap(fulfill(1)))
+			})
 
-            it('should behave like rejected', () => {
-                let { resolve, promise } = future();
+			it('should behave like never', () => {
+				const { resolve, promise } = future()
 
-                var p = reject(f);
-                silenceError(p);
-                resolve(p);
-                assert.strictEqual(p, promise.ap(fulfill(1)));
-            });
+				const p = never()
+				resolve(p)
+				return assert.strictEqual(p, promise.ap(fulfill(1)))
+			})
+		})
 
-            it('should behave like never', () => {
-                let { resolve, promise } = future();
+		describe('concat', () => {
+			it('should behave like fulfilled', () => {
+				const { resolve, promise } = future()
 
-                var p = never();
-                resolve(p);
-                return assert.strictEqual(p, promise.ap(fulfill(1)));
-            });
-        });
+				const p1 = fulfill(1)
+				const p2 = fulfill(2)
 
-        describe('concat', () => {
-            it('should behave like fulfilled', () => {
-                let { resolve, promise } = future();
+				resolve(p1)
+				return assertSame(p1.concat(p2), promise.concat(p2))
+			})
 
-                var p1 = fulfill(1);
-                var p2 = fulfill(2);
+			it('should behave like rejected', () => {
+				const { resolve, promise } = future()
 
-                resolve(p1);
-                return assertSame(p1.concat(p2), promise.concat(p2));
-            });
+				const p1 = reject(new Error())
+				const p2 = reject(new Error())
+				silenceError(p1)
+				silenceError(p2)
 
-            it('should behave like rejected', () => {
-                let { resolve, promise } = future();
+				resolve(p1)
+				assert.strictEqual(p1.concat(p2), promise.concat(p2))
+			})
 
-                var p1 = reject(new Error());
-                var p2 = reject(new Error());
-                silenceError(p1);
-                silenceError(p2);
+			it('should behave like never', () => {
+				const { resolve, promise } = future()
 
-                resolve(p1);
-                assert.strictEqual(p1.concat(p2), promise.concat(p2));
-            });
+				const p1 = never()
+				const p2 = fulfill(2)
 
-            it('should behave like never', () => {
-                let { resolve, promise } = future();
-
-                var p1 = never();
-                var p2 = fulfill(2);
-
-                resolve(p1);
-                return assertSame(p1.concat(p2), promise.concat(p2));
-            });
-
-        });
-    });
-
-});
+				resolve(p1)
+				return assertSame(p1.concat(p2), promise.concat(p2))
+			})
+		})
+	})
+})

@@ -1,28 +1,26 @@
-'use strict';
-
-import maybeThenable from './maybeThenable';
+'use strict'
 
 export default function (f, p, promise) {
-	p._when(new Map(f, promise));
-	return promise;
+	p._when(new Map(f, promise))
+	return promise
 }
 
 class Map {
-	constructor(f, promise) {
-		this.f = f;
-		this.promise = promise;
+	constructor (f, promise) {
+		this.f = f
+		this.promise = promise
 	}
 
-	fulfilled(p) {
+	fulfilled (p) {
 		try {
-			const f = this.f;
-			this.promise._fulfill(f(p.value));
+			const f = this.f
+			this.promise._fulfill(f(p.value))
 		} catch (e) {
-			this.promise._reject(e);
+			this.promise._reject(e)
 		}
 	}
 
-	rejected(p) {
-		this.promise._become(p);
+	rejected (p) {
+		this.promise._become(p)
 	}
 }
