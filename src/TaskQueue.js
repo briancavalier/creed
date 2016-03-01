@@ -18,7 +18,7 @@ export default class TaskQueue {
 	}
 
 	_drain () {
-		let q = this.tasks
+		const q = this.tasks
 		for (let i = 0; i < this.length; ++i) {
 			q[i].run()
 			q[i] = void 0

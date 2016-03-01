@@ -6,7 +6,7 @@ export function resultsArray (iterable) {
 }
 
 export function resolveIterable (resolve, handler, promises, promise) {
-	let run = Array.isArray(promises) ? runArray : runIterable
+	const run = Array.isArray(promises) ? runArray : runIterable
 	try {
 		run(resolve, handler, promises, promise)
 	} catch (e) {
@@ -42,7 +42,7 @@ function handleItem (resolve, handler, x, i, promise) {
 		return
 	}
 
-	let p = resolve(x)
+	const p = resolve(x)
 
 	if (promise._isResolved()) {
 		if (!isFulfilled(p)) {

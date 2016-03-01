@@ -27,7 +27,7 @@ export function isHandled (p) {
 }
 
 export function getValue (p) {
-	let n = p.near()
+	const n = p.near()
 	if (!isFulfilled(n)) {
 		throw new TypeError('getValue called on ' + p)
 	}
@@ -36,7 +36,7 @@ export function getValue (p) {
 }
 
 export function getReason (p) {
-	let n = p.near()
+	const n = p.near()
 	if (!isRejected(n)) {
 		throw new TypeError('getReason called on ' + p)
 	}

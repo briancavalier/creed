@@ -3,7 +3,7 @@
 import TimeoutError from './TimeoutError'
 
 export default function (ms, p, promise) {
-	let timer = setTimeout(rejectOnTimeout, ms, promise)
+	const timer = setTimeout(rejectOnTimeout, ms, promise)
 	p._runAction(new Timeout(timer, promise))
 	return promise
 }

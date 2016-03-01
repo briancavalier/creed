@@ -38,7 +38,7 @@ export function coroutine (generator) {
 }
 
 function runGenerator (generator, thisArg, args) {
-	var iterator = generator.apply(thisArg, args)
+	const iterator = generator.apply(thisArg, args)
 	return _runCoroutine(resolve, iterator, new Future())
 }
 
@@ -93,14 +93,14 @@ function runResolver (run, f, thisArg, args, p) {
 
 // delay :: number -> Promise e a -> Promise e a
 export function delay (ms, x) {
-	let p = resolve(x)
+	const p = resolve(x)
 	return ms <= 0 || isRejected(p) || isNever(p) ? p
 		: _delay(ms, p, new Future())
 }
 
 // timeout :: number -> Promise e a -> Promise (e|TimeoutError) a
 export function timeout (ms, x) {
-	var p = resolve(x)
+	const p = resolve(x)
 	return isSettled(p) ? p : _timeout(ms, p, new Future())
 }
 
@@ -115,7 +115,7 @@ export function any (promises) {
 
 // settle :: Iterable (Promise e a) -> Promise e [Promise e a]
 export function settle (promises) {
-	let handler = new Settle(resolve, resultsArray(promises))
+	const handler = new Settle(resolve, resultsArray(promises))
 	return iterablePromise(handler, promises)
 }
 
@@ -129,7 +129,7 @@ export function merge (f, ...args) {
 }
 
 function runMerge (f, thisArg, args) {
-	let handler = new Merge(new MergeHandler(f, thisArg), resultsArray(args))
+	const handler = new Merge(new MergeHandler(f, thisArg), resultsArray(args))
 	return iterablePromise(handler, args)
 }
 
@@ -185,7 +185,7 @@ CreedPromise.race = race
 
 export function shim () {
 	/* global self */
-	let orig = typeof Promise === 'function' && Promise
+	const orig = typeof Promise === 'function' && Promise
 
 	/* istanbul ignore if */
 	if (typeof self !== 'undefined') {

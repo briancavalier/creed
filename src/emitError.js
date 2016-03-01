@@ -25,7 +25,7 @@ export default function () {
 			}
 
 			return !hasCustomEvent ? noop : function (type, error) {
-				let ev = new CustomEvent(type, {
+				const ev = new CustomEvent(type, {
 					detail: {
 						reason: error.value,
 						promise: error

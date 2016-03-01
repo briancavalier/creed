@@ -37,7 +37,7 @@ function reportErrors (report, errors) {
 
 function reportAll (errors, report) {
 	for (let i = 0; i < errors.length; ++i) {
-		let e = errors[i]
+		const e = errors[i]
 		/* istanbul ignore else */
 		if (!isHandled(e)) {
 			report(e)

@@ -15,11 +15,11 @@ import Race from './Race'
 import Merge from './Merge'
 import { resolveIterable, resultsArray } from './iterable'
 
-let taskQueue = new TaskQueue()
+const taskQueue = new TaskQueue()
 export { taskQueue }
 
 /* istanbul ignore next */
-let errorHandler = new ErrorHandler(makeEmitError(), e => {
+const errorHandler = new ErrorHandler(makeEmitError(), e => {
 	throw e.value
 })
 
@@ -60,39 +60,39 @@ export class Future extends Core {
 	// then :: Promise e a -> () -> (e -> b) -> Promise e b
 	// then :: Promise e a -> (a -> b) -> (e -> b) -> Promise e b
 	then (f, r) {
-		let n = this.near()
+		const n = this.near()
 		return n === this ? then(f, r, n, new Future()) : n.then(f, r)
 	}
 
 	// catch :: Promise e a -> (e -> b) -> Promise e b
 	catch (r) {
-		let n = this.near()
+		const n = this.near()
 		return n === this ? then(void 0, r, n, new Future()) : n.catch(r)
 	}
 
 	// map :: Promise e a -> (a -> b) -> Promise e b
 	map (f) {
-		let n = this.near()
+		const n = this.near()
 		return n === this ? map(f, n, new Future()) : n.map(f)
 	}
 
 	// ap :: Promise e (a -> b) -> Promise e a -> Promise e b
 	ap (p) {
-		let n = this.near()
-		let pp = p.near()
+		const n = this.near()
+		const pp = p.near()
 		return n === this ? this.chain(f => pp.map(f)) : n.ap(pp)
 	}
 
 	// chain :: Promise e a -> (a -> Promise e b) -> Promise e b
 	chain (f) {
-		let n = this.near()
+		const n = this.near()
 		return n === this ? chain(f, n, new Future()) : n.chain(f)
 	}
 
 	// concat :: Promise e a -> Promise e a -> Promise e a
 	concat (b) {
-		let n = this.near()
-		let bp = b.near()
+		const n = this.near()
+		const bp = b.near()
 
 		return isSettled(n) || isNever(bp) ? n
 			: isSettled(bp) || isNever(n) ? bp
@@ -106,7 +106,7 @@ export class Future extends Core {
 
 	// inspect :: Promise e a -> String
 	inspect () {
-		let n = this.near()
+		const n = this.near()
 		return n === this ? 'Promise { pending }' : n.inspect()
 	}
 
@@ -176,7 +176,7 @@ export class Future extends Core {
 	}
 
 	run () {
-		let p = this.ref.near()
+		const p = this.ref.near()
 		p._runAction(this.action)
 		this.action = void 0
 
@@ -395,7 +395,7 @@ export function future () {
 
 // all :: Iterable (Promise e a) -> Promise e [a]
 export function all (promises) {
-	let handler = new Merge(allHandler, resultsArray(promises))
+	const handler = new Merge(allHandler, resultsArray(promises))
 	return iterablePromise(handler, promises)
 }
 
@@ -419,7 +419,7 @@ export function iterablePromise (handler, iterable) {
 		return reject(new TypeError('expected an iterable'))
 	}
 
-	let p = new Future()
+	const p = new Future()
 	return resolveIterable(resolveMaybeThenable, handler, iterable, p)
 }
 
@@ -438,7 +438,7 @@ function resolveMaybeThenable (x) {
 
 function refForMaybeThenable (otherwise, x) {
 	try {
-		let then = x.then
+		const then = x.then
 		return typeof then === 'function'
 			? extractThenable(then, x)
 			: otherwise(x)
@@ -449,7 +449,7 @@ function refForMaybeThenable (otherwise, x) {
 
 // WARNING: Naming the first arg "then" triggers babel compilation bug
 function extractThenable (thn, thenable) {
-	let p = new Future()
+	const p = new Future()
 
 	try {
 		thn.call(thenable, x => p._resolve(x), e => p._reject(e))
