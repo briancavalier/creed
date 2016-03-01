@@ -5,7 +5,7 @@
   "main": "perf.js",
   "dependencies": {
     "async": "^1.5.2",
-    "bluebird": "^3.2.0",
+    "bluebird": "^3.3.0",
     "co": "^4.6.0",
     "optimist": "~0.6.0",
     "rsvp": "^3.2.0",
