@@ -93,6 +93,7 @@ function runResolver (run, f, thisArg, args, p) {
 
 // delay :: number -> Promise e a -> Promise e a
 export function delay (ms, x) {
+	/* eslint complexity:[2,4] */
 	const p = resolve(x)
 	return ms <= 0 || isRejected(p) || isNever(p) ? p
 		: _delay(ms, p, new Future())

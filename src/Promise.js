@@ -91,6 +91,7 @@ export class Future extends Core {
 
 	// concat :: Promise e a -> Promise e a -> Promise e a
 	concat (b) {
+		/* eslint complexity:[2,5] */
 		const n = this.near()
 		const bp = b.near()
 

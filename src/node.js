@@ -1,6 +1,7 @@
 'use strict'
 
 export default function runNode (f, thisArg, args, promise) {
+	/* eslint complexity:[2,5] */
 	function settleNode (e, x) {
 		if (e) {
 			promise._reject(e)

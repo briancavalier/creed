@@ -1,6 +1,7 @@
 'use strict'
 
 export default function runPromise (f, thisArg, args, promise) {
+	/* eslint complexity:[2,5] */
 	function resolve (x) {
 		promise._resolve(x)
 	}

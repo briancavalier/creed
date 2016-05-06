@@ -614,6 +614,7 @@
 		// concat :: Promise e a -> Promise e a -> Promise e a
 
 		Future.prototype.concat = function concat(b) {
+			/* eslint complexity:[2,5] */
 			var n = this.near();
 			var bp = b.near();
 
@@ -1184,6 +1185,7 @@
 	})();
 
 	function runPromise$1(f, thisArg, args, promise) {
+		/* eslint complexity:[2,5] */
 		function resolve(x) {
 			promise._resolve(x);
 		}
@@ -1214,6 +1216,7 @@
 	}
 
 	function runNode$1(f, thisArg, args, promise) {
+		/* eslint complexity:[2,5] */
 		function settleNode(e, x) {
 			if (e) {
 				promise._reject(e);
@@ -1374,6 +1377,7 @@
 
 	// delay :: number -> Promise e a -> Promise e a
 	function delay(ms, x) {
+		/* eslint complexity:[2,4] */
 		var p = resolve(x);
 		return ms <= 0 || isRejected(p) || isNever(p) ? p : _delay(ms, p, new Future());
 	}
