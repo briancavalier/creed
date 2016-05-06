@@ -1,6 +1,6 @@
 {
   "name": "creed",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, fantasy-land",
   "main": "dist/creed.js",
   "jsnext:main": "src/main.js",
@@ -47,7 +47,7 @@
     "jsinspect": "^0.7.0",
     "mocha": "^2.3.0",
     "promises-aplus-tests": "^2.1.1",
-    "rollup": "^0.25.0",
+    "rollup": "^0.26.2",
     "uglify-js": "^2.6.0"
   }
 }
