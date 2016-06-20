@@ -47,6 +47,7 @@ export function silenceError (p) {
 	p._runAction(silencer)
 }
 
+// implements Action
 const silencer = {
 	fulfilled () {},
 	rejected: setHandled
