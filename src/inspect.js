@@ -1,4 +1,5 @@
 import { PENDING, FULFILLED, REJECTED, SETTLED, NEVER, HANDLED } from './state'
+import Action from './Action'
 
 export function isPending (p) {
 	return (p.state() & PENDING) > 0
@@ -47,11 +48,8 @@ export function silenceError (p) {
 	p._runAction(silencer)
 }
 
-const silencer = {
-	fulfilled () {},
-	rejected: setHandled
-}
-
-function setHandled (rejected) {
-	rejected._state |= HANDLED
+const silencer = new Action(null)
+silencer.fulfilled = function fulfilled (p) { }
+silencer.rejected = function setHandled (p) {
+	p._state |= HANDLED
 }

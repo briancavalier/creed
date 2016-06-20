@@ -1,21 +1,19 @@
+import Action from './Action'
+
 export default function (ms, p, promise) {
 	p._runAction(new Delay(ms, promise))
 	return promise
 }
 
-class Delay {
+class Delay extends Action {
 	constructor (time, promise) {
+		super(promise)
 		this.time = time
-		this.promise = promise
 	}
 
 	fulfilled (p) {
 		/*global setTimeout*/
 		setTimeout(become, this.time, p, this.promise)
-	}
-
-	rejected (p) {
-		this.promise._become(p)
 	}
 }
 

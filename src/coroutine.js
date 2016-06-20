@@ -1,25 +1,21 @@
+import Action from './Action'
+
 export default function (resolve, iterator, promise) {
 	new Coroutine(resolve, iterator, promise).run()
+	// taskQueue.add(new Coroutine(resolve, iterator, promise))
 	return promise
 }
 
-class Coroutine {
+class Coroutine extends Action {
 	constructor (resolve, iterator, promise) {
+		super(promise)
 		this.resolve = resolve
-		this.iterator = iterator
-		this.promise = promise
+		this.next = iterator.next.bind(iterator)
+		this.throw = iterator.throw.bind(iterator)
 	}
 
 	run () {
-		this.step(this.iterator.next, void 0)
-	}
-
-	step (continuation, x) {
-		try {
-			this.handle(continuation.call(this.iterator, x))
-		} catch (e) {
-			this.promise._reject(e)
-		}
+		this.tryCall(this.next, void 0)
 	}
 
 	handle (result) {
@@ -31,11 +27,11 @@ class Coroutine {
 	}
 
 	fulfilled (ref) {
-		this.step(this.iterator.next, ref.value)
+		this.tryCall(this.next, ref.value)
 	}
 
 	rejected (ref) {
-		this.step(this.iterator.throw, ref.value)
+		this.tryCall(this.throw, ref.value)
 		return true
 	}
 }

@@ -1,3 +1,4 @@
+import Action from './Action'
 import TimeoutError from './TimeoutError'
 
 export default function (ms, p, promise) {
@@ -6,10 +7,10 @@ export default function (ms, p, promise) {
 	return promise
 }
 
-class Timeout {
+class Timeout extends Action {
 	constructor (timer, promise) {
+		super(promise)
 		this.timer = timer
-		this.promise = promise
 	}
 
 	fulfilled (p) {
@@ -19,8 +20,7 @@ class Timeout {
 
 	rejected (p) {
 		clearTimeout(this.timer)
-		this.promise._become(p)
-		return false
+		return super.rejected(p)
 	}
 }
 
