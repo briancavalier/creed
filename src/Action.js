@@ -1,5 +1,8 @@
-export default class Action {
+import Handle from './Handle'
+
+export default class Action extends Handle {
 	constructor (promise) {
+		super(null)
 		this.promise = promise
 	}
 
@@ -24,5 +27,10 @@ export default class Action {
 			return
 		} // else
 		this.handle(result)
+	}
+
+	run () {
+		this.ref._runAction(this)
+		super.run()
 	}
 }

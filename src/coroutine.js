@@ -2,8 +2,9 @@ import { resolve } from './Promise'
 import Action from './Action'
 
 export default function coroutine (iterator, promise) {
-	new Coroutine(iterator, promise).run()
-	// taskQueue.add(new Coroutine(iterator, promise))
+	new Coroutine(iterator, promise).start()
+	// taskQueue.add(new Coroutine(iterator, promise)) // with start for run
+	// resolve(undefined)._when(new Coroutine(iterator, promise))
 	return promise
 }
 
@@ -14,7 +15,7 @@ class Coroutine extends Action {
 		this.throw = iterator.throw.bind(iterator)
 	}
 
-	run () {
+	start () {
 		this.tryCall(this.next, void 0)
 	}
 

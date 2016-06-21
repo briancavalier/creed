@@ -34,13 +34,44 @@ describe('coroutine', function () {
 			.then(x => assert.strictEqual(x, expected))
 	})
 
+	it('should fulfill on return', () => {
+		const expected = {}
+		const f = coroutine(function *(a) {
+			return a
+		})
+
+		return f(expected)
+			.then(x => assert.strictEqual(x, expected))
+	})
+
 	it('should reject on uncaught exception', () => {
 		const expected = new Error()
 		const f = coroutine(function *(a) {
-			yield reject(a)
+			throw a
 		})
 
 		return f(expected)
 			.then(assert.ifError, e => assert.strictEqual(e, expected))
+	})
+	
+	it('should be able to wait for the same promise multiple times', () => {
+		const f = coroutine(function *(a) {
+			var p = fulfill(a)
+			return (yield p) + (yield p)
+		})
+
+		return f('a').then(x => assert.equal(x, 'aa'))
+	})
+	
+	it('should be able to loop multiple promises', () => {
+		const f = coroutine(function *(a) {
+			var arr = []
+			for (let i=0; i<5; i++) {
+				arr.push(yield delay(1, i))
+			}
+			return arr
+		})
+
+		return f().then(x => assert.deepEqual(x, [0, 1, 2, 3, 4]))
 	})
 })

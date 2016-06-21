@@ -6,6 +6,8 @@ import { TaskQueue, Continuation } from './TaskQueue'
 import ErrorHandler from './ErrorHandler'
 import emitError from './emitError'
 
+import Handle from './Handle'
+
 import Action from './Action'
 import then from './then'
 import map from './map'
@@ -48,9 +50,7 @@ class Core {
 export class Future extends Core {
 	constructor () {
 		super()
-		this.ref = void 0
-		this.action = void 0
-		this.length = 0
+		this.handle = void 0
 	}
 
 	// then :: Promise e a -> (a -> b) -> Promise e b
@@ -110,21 +110,21 @@ export class Future extends Core {
 
 	// near :: Promise e a -> Promise e a
 	near () {
-		if (!this._isResolved()) {
+		if (this.handle === void 0) {
 			return this
 		}
-
-		this.ref = this.ref.near()
-		return this.ref
+		return this.handle.near()
 	}
 
 	// state :: Promise e a -> Int
 	state () {
-		return this._isResolved() ? this.ref.near().state() : PENDING
+		// return this._isResolved() ? this.handle.near().state() : PENDING
+		var n = this.near()
+		return n === this ? PENDING : n.state()
 	}
 
 	_isResolved () {
-		return this.ref !== void 0
+		return this.near() !== this
 	}
 
 	_when (action) {
@@ -132,18 +132,29 @@ export class Future extends Core {
 	}
 
 	_runAction (action) {
-		if (this.action === void 0) {
-			this.action = action
+		if (this.handle) {
+			this.handle._add(action)
+		} else if (action.ref != null && action.ref !== this) {
+			this.handle = new Handle(this)
+			this.handle._add(action)
 		} else {
-			this[this.length++] = action
+			this.handle = action
+			this.handle.ref = this
 		}
 	}
 
 	_resolve (x) {
-		this._become(resolve(x))
+		x = resolve(x)
+		if (this._isResolved()) {
+			return
+		}
+		this._become(x)
 	}
 
 	_fulfill (x) {
+		if (this._isResolved()) {
+			return
+		}
 		this._become(new Fulfilled(x))
 	}
 
@@ -151,36 +162,30 @@ export class Future extends Core {
 		if (this._isResolved()) {
 			return
 		}
-
-		this.__become(new Rejected(e))
+		this._become(new Rejected(e))
 	}
 
 	_become (p) {
-		if (this._isResolved()) {
-			return
+		if (p === this) {
+			p = cycle()
 		}
 
-		this.__become(p)
-	}
-
-	__become (p) {
-		this.ref = p === this ? cycle() : p
-
-		if (this.action === void 0) {
-			return
-		}
-
-		taskQueue.add(this)
-	}
-
-	run () {
-		const p = this.ref.near()
-		p._runAction(this.action)
-		this.action = void 0
-
-		for (let i = 0; i < this.length; ++i) {
-			p._runAction(this[i])
-			this[i] = void 0
+		if (this.handle) {
+			// assert: this.handle.ref === this
+			this.handle.ref = p
+			if (isSettled(p)) {
+				taskQueue.add(this.handle)
+			} else {
+				p._runAction(this.handle)
+			}
+		} else {
+			if (isSettled(p)) {
+				// for not unnecessarily creating handles that never see any actions
+				// works well because it has a near() method
+				this.handle = p
+			} else {
+				this.handle = new Handle(p)
+			}
 		}
 	}
 }
