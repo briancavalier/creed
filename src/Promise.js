@@ -166,6 +166,7 @@ export class Future extends Core {
 	}
 
 	_become (p) {
+		/* eslint complexity:[2,6] */
 		if (p === this) {
 			p = cycle()
 		}
@@ -183,8 +184,11 @@ export class Future extends Core {
 				// for not unnecessarily creating handles that never see any actions
 				// works well because it has a near() method
 				this.handle = p
+			} else if (p.handle) {
+				this.handle = p.handle
 			} else {
-				this.handle = new Handle(p)
+				// explicit handle to avoid reference chain between multiple futures
+				this.handle = p.handle = new Handle(p)
 			}
 		}
 	}

@@ -46,6 +46,29 @@ describe('future', () => {
 			resolve(reject(expected))
 			return promise.then(assert.ifError, x => assert.strictEqual(expected, x))
 		})
+
+		it('should resolve with pending promise', () => {
+			const { resolve: resolve1, promise: promise1 } = future()
+			const { resolve: resolve2, promise: promise2 } = future()
+			const { resolve: resolve3, promise: promise3 } = future()
+			const expected = {}
+			setTimeout(resolve2, 1, promise1)
+			setTimeout(resolve1, 2, expected)
+			setTimeout(resolve3, 2, promise2)
+			return promise3.then(x => assert.strictEqual(expected, x))
+		})
+
+		it('should resolve with pending promise that already has handle', () => {
+			const { resolve: resolve1, promise: promise1 } = future()
+			const { resolve: resolve2, promise: promise2 } = future()
+			const { resolve: resolve3, promise: promise3 } = future()
+			const expected = {}
+			promise1.map(x => x === expected)
+			setTimeout(resolve2, 1, promise1)
+			setTimeout(resolve1, 2, expected)
+			setTimeout(resolve3, 2, promise2)
+			return promise3.then(x => assert.strictEqual(expected, x))
+		})
 	})
 
 	describe('when resolved to another promise', () => {
