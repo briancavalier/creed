@@ -1,4 +1,4 @@
-import { resolve } from './Promise'
+import { resolve, reject } from './Promise'
 
 export default class CancelToken {
 	// https://domenic.github.io/cancelable-promise/#sec-canceltoken-constructor
@@ -12,6 +12,9 @@ export default class CancelToken {
 	_cancel (reason) {
 		if (this._cancelled) return
 		this._cancelled = true
+	}
+	getRejected () {
+		return reject(this.reason)
 	}
 	// https://domenic.github.io/cancelable-promise/#sec-canceltoken.prototype.requested
 	get requested () {
@@ -28,5 +31,8 @@ export default class CancelToken {
 		return new this(cancel => resolve(thenable).then(cancel)) // finally?
 	}
 	static from (cancelTokenlike) {
+		if (cancelTokenlike instanceof CancelToken) {
+			return cancelTokenlike
+		}
 	}
 }

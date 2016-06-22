@@ -11,6 +11,8 @@ import then from './then'
 import map from './map'
 import chain from './chain'
 
+import CancelToken from './CancelToken'
+
 import { race } from './combinators'
 
 export const taskQueue = new TaskQueue()
@@ -46,44 +48,45 @@ class Core {
 // Future :: Promise e a
 // A promise whose value cannot be known until some future time
 export class Future extends Core {
-	constructor () {
+	constructor (token) {
 		super()
 		this.ref = void 0
 		this.action = void 0
+		this.token = token != null ? CancelToken.from(token) : null
 		this.length = 0
 	}
 
 	// then :: Promise e a -> (a -> b) -> Promise e b
 	// then :: Promise e a -> () -> (e -> b) -> Promise e b
 	// then :: Promise e a -> (a -> b) -> (e -> b) -> Promise e b
-	then (f, r) {
+	then (f, r, token) {
 		const n = this.near()
-		return n === this ? then(f, r, n, new Future()) : n.then(f, r)
+		return n === this ? then(f, r, n, new Future(token)) : n.then(f, r, token)
 	}
 
 	// catch :: Promise e a -> (e -> b) -> Promise e b
-	catch (r) {
+	catch (r, token) {
 		const n = this.near()
-		return n === this ? then(void 0, r, n, new Future()) : n.catch(r)
+		return n === this ? then(void 0, r, n, new Future(token)) : n.catch(r, token)
 	}
 
 	// map :: Promise e a -> (a -> b) -> Promise e b
-	map (f) {
+	map (f, token) {
 		const n = this.near()
-		return n === this ? map(f, n, new Future()) : n.map(f)
+		return n === this ? map(f, n, new Future(token)) : n.map(f, token)
 	}
 
 	// ap :: Promise e (a -> b) -> Promise e a -> Promise e b
-	ap (p) {
+	ap (p, token) {
 		const n = this.near()
 		const pp = p.near()
-		return n === this ? this.chain(f => pp.map(f)) : n.ap(pp)
+		return n === this ? this.chain(f => pp.map(f, token)) : n.ap(pp, token)
 	}
 
 	// chain :: Promise e a -> (a -> Promise e b) -> Promise e b
-	chain (f) {
+	chain (f, token) {
 		const n = this.near()
-		return n === this ? chain(f, n, new Future()) : n.chain(f)
+		return n === this ? chain(f, n, new Future(token)) : n.chain(f, token)
 	}
 
 	// concat :: Promise e a -> Promise e a -> Promise e a
@@ -193,27 +196,27 @@ class Fulfilled extends Core {
 		this.value = x
 	}
 
-	then (f) {
-		return typeof f === 'function' ? then(f, void 0, this, new Future()) : this
+	then (f, _, token) {
+		return typeof f === 'function' ? then(f, void 0, this, new Future(token)) : rejectedIfCancelled(token, this)
 	}
 
-	catch () {
-		return this
+	catch (_, token) {
+		return rejectedIfCancelled(token, this)
 	}
 
-	map (f) {
-		return map(f, this, new Future())
+	map (f, token) {
+		return map(f, this, new Future(token))
 	}
 
-	ap (p) {
-		return p.map(this.value)
+	ap (p, token) {
+		return p.map(this.value, token)
 	}
 
-	chain (f) {
-		return chain(f, this, new Future())
+	chain (f, token) {
+		return chain(f, this, new Future(token))
 	}
 
-	concat () {
+	concat (_) {
 		return this
 	}
 
@@ -252,27 +255,27 @@ class Rejected extends Core {
 		errorHandler.track(this)
 	}
 
-	then (_, r) {
-		return typeof r === 'function' ? this.catch(r) : this
+	then (_, r, token) {
+		return typeof r === 'function' ? this.catch(r, token) : rejectedIfCancelled(token, this)
 	}
 
-	catch (r) {
-		return then(void 0, r, this, new Future())
+	catch (r, token) {
+		return then(void 0, r, this, new Future(token))
 	}
 
-	map () {
-		return this
+	map (_, token) {
+		return rejectedIfCancelled(token, this)
 	}
 
-	ap () {
-		return this
+	ap (_, token) {
+		return rejectedIfCancelled(token, this)
 	}
 
-	chain () {
-		return this
+	chain (_, token) {
+		return rejectedIfCancelled(token, this)
 	}
 
-	concat () {
+	concat (_) {
 		return this
 	}
 
@@ -306,24 +309,24 @@ class Rejected extends Core {
 // Never :: Promise e a
 // A promise that waits forever for its value to be known
 class Never extends Core {
-	then () {
-		return this
+	then (_, __, token) {
+		return rejectedWhenCancel(token, this)
 	}
 
-	catch () {
-		return this
+	catch (_, token) {
+		return rejectedWhenCancel(token, this)
 	}
 
-	map () {
-		return this
+	map (_, token) {
+		return rejectedWhenCancel(token, this)
 	}
 
-	ap () {
-		return this
+	ap (_, token) {
+		return rejectedWhenCancel(token, this)
 	}
 
-	chain () {
-		return this
+	chain (_, token) {
+		return rejectedWhenCancel(token, this)
 	}
 
 	concat (b) {
@@ -396,8 +399,8 @@ export function fulfill (x) {
 
 // future :: () -> { resolve: Resolve e a, promise: Promise e a }
 // type Resolve e a = a|Thenable e a -> ()
-export function future () {
-	const promise = new Future()
+export function future (token) {
+	const promise = new Future(token)
 	return {resolve: x => promise._resolve(x), promise}
 }
 
@@ -408,6 +411,17 @@ export function future () {
 // isPromise :: * -> boolean
 function isPromise (x) {
 	return x instanceof Core
+}
+
+function rejectedIfCancelled (token, settled) {
+	if (token == null) return settled
+	token = CancelToken.from(token)
+	if (token.requested) return token.getRejected()
+	return settled
+}
+function rejectedWhenCancel (token, never) {
+	if (token == null) return never
+	return CancelToken.from(token).getRejected()
 }
 
 function refForMaybeThenable (x) {

@@ -90,11 +90,11 @@ function checkFunction (f) {
 // -------------------------------------------------------------
 
 // delay :: number -> Promise e a -> Promise e a
-export function delay (ms, x) {
+export function delay (ms, x, token) {
 	/* eslint complexity:[2,4] */
 	const p = resolve(x)
 	return ms <= 0 || isRejected(p) || isNever(p) ? p
-		: _delay(ms, p, new Future())
+		: _delay(ms, p, new Future(token))
 }
 
 // timeout :: number -> Promise e a -> Promise (e|TimeoutError) a
@@ -113,8 +113,8 @@ const NOARGS = []
 // type Reject e = e -> ()
 // Promise :: (Resolve a -> Reject e -> ()) -> Promise e a
 class CreedPromise extends Future {
-	constructor (f) {
-		super()
+	constructor (f, token) {
+		super(token)
 		runResolver(_runPromise, f, void 0, NOARGS, this)
 	}
 }
