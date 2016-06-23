@@ -1,6 +1,7 @@
-import { isObject } from './util'
+import { isObject, noop } from './util'
 import { Future, reject, resolveObject, silenceError } from './Promise' // deferred
 import { isFulfilled, isRejected } from './inspect'
+import CancelToken from './CancelToken'
 import Action from './Action'
 
 function isIterable (x) {
@@ -12,7 +13,7 @@ export function iterablePromise (handler, iterable) {
 		return reject(new TypeError('expected an iterable'))
 	}
 
-	const p = new Future()
+	const p = new Future(new CancelToken(noop))
 	return resolveIterable(handler, iterable, p)
 }
 
@@ -79,10 +80,14 @@ function handleItem (handler, x, i, promise) {
 
 class Indexed extends Action {
 	constructor (handler, i, promise) {
-		// assert: promise.token == null - this is never cancelled
 		super(promise)
 		this.i = i
 		this.handler = handler
+	}
+
+	_destroy () {
+		super._destroy()
+		this.handler = null
 	}
 
 	fulfilled (p) {

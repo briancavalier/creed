@@ -1,3 +1,5 @@
+import CancelReason from './CancelReason'
+
 export default class Merge {
 	constructor (mergeHandler, results) {
 		this.pending = 0
@@ -15,7 +17,9 @@ export default class Merge {
 	}
 
 	rejectAt (p, i, promise) {
+		const token = promise.token
 		promise._become(p)
+		token._cancel(new CancelReason('result is already rejected', p.value))
 	}
 
 	complete (total, promise) {

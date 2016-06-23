@@ -1,6 +1,6 @@
 import { isObject } from './util'
 import { PENDING, FULFILLED, REJECTED, NEVER, HANDLED } from './state'
-import { isNever, isSettled } from './inspect'
+import { isRejected, isNever, isSettled } from './inspect'
 
 import { TaskQueue, Continuation } from './TaskQueue'
 import ErrorHandler from './ErrorHandler'
@@ -183,12 +183,15 @@ export class Future extends Core {
 	}
 
 	run () {
+		/* eslint complexity:[2,6] */
 		const p = this.ref.near()
 		if (this.action.promise) p._runAction(this.action)
+		else if (isRejected(p)) silenceError(p)
 		this.action = void 0
 
 		for (let i = 0; i < this.length; ++i) {
 			if (this[i].promise) p._runAction(this[i])
+			else if (isRejected(p)) silenceError(p)
 			this[i] = void 0
 		}
 		this.length = 0

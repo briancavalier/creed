@@ -1,4 +1,5 @@
 import { never } from './Promise' // deferred
+import CancelReason from './CancelReason'
 
 export default class Race {
 	valueAt (x, i, promise) {
@@ -6,11 +7,15 @@ export default class Race {
 	}
 
 	fulfillAt (p, i, promise) {
+		const token = promise.token
 		promise._become(p)
+		token._cancel(new CancelReason('result is already fulfilled'))
 	}
 
 	rejectAt (p, i, promise) {
+		const token = promise.token
 		promise._become(p)
+		token._cancel(new CancelReason('result is already rejected', p.value))
 	}
 
 	complete (total, promise) {

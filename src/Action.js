@@ -1,7 +1,7 @@
 export default class Action {
 	constructor (promise) {
 		this.promise = promise // the Future which this Action tries to resolve
-
+                               // when null, the action is cancelled and won't be executed
 		const token = promise.token
 		if (token != null) {
 			token._subscribe(this)
