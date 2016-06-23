@@ -1,4 +1,5 @@
-import { Future, resolve, reject, silenceError } from './Promise' // deferred
+import { Future, resolve, reject, silenceError, taskQueue } from './Promise' // deferred
+import { isSettled } from './inspect'
 
 export default class CancelToken {
 	// https://domenic.github.io/cancelable-promise/#sec-canceltoken-constructor
@@ -40,10 +41,25 @@ export default class CancelToken {
 		return result
 	}
 	_subcribe (action) {
+		if (this.requested && this.length === 0) {
+			taskQueue.add(this) // asynchronous?
+		}
 		this[this.length++] = action
 	}
 	_unsubscribe (action) {
-		action.destroy() // too simple of course
+		action.destroy() // TODO too simple of course
+	}
+	subscribe (fn, promise) {
+		promise = resolve(promise)
+		this._subscribe({
+			cancel (p) {
+				if (!isSettled(promise)) {
+					return fn(p.value)
+				}
+			}
+		})
+		// TODO unsubscribe when promise settles
+		return this
 	}
 	getRejected () {
 		if (this.promise === void 0) {
@@ -69,5 +85,39 @@ export default class CancelToken {
 		if (cancelTokenlike instanceof CancelToken) {
 			return cancelTokenlike
 		}
+	}
+	static empty () {
+		return new this(noop) // NeverCancelToken
+	}
+	concat (token) {
+		return new CancelToken(cancel => {
+			this.subscribe(cancel)
+			token.subscribe(cancel)
+		})
+	}
+}
+
+class CancelTokenPool {
+	constructor (tokens) {
+		this.token = new CancelToken(noop)
+		this.reasons = []
+		this.count = 0
+		this.check = r => {
+			this.reasons.push(r)
+			if (--this.count === 0) {
+				this.token._cancel(this.reasons) // forward return value ???
+				this.reasons = null
+			}
+		}
+		if (tokens) this.add(...tokens)
+		// if (this.count === 0 && !this.token.requested) this.token._cancel() ???
+	}
+	add (...tokens) {
+		if (this.token.requested) return
+		this.count += tokens.length
+		for (let t of tokens) CancelToken.from(t).subscribe(this.check)
+	}
+	get () {
+		return this.token
 	}
 }
