@@ -10,6 +10,8 @@ import { isRejected, isSettled, isNever } from './inspect'
 export { all, race, any, settle, merge } from './combinators'
 import { all, race } from './combinators'
 
+import Action from './Action'
+
 import _delay from './delay'
 import _timeout from './timeout'
 
@@ -115,7 +117,22 @@ const NOARGS = []
 class CreedPromise extends Future {
 	constructor (f, token) {
 		super(token)
+		if (this.token != null) {
+			if (this.token.requested) {
+				this._resolve(this.token.getRejected())
+				return
+			}
+			this.cancelAction = new Action(this)
+			this.token._subscribe(this.cancelAction)
+		}
 		runResolver(_runPromise, f, void 0, NOARGS, this)
+	}
+	__become (p) {
+		if (this.token != null && this.cancelAction != null) {
+			this.token._unsubscribe(this.cancelAction) // TODO better solution
+			this.cancelAction = null
+		}
+		super.__become(p)
 	}
 }
 

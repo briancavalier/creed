@@ -79,6 +79,7 @@ function handleItem (handler, x, i, promise) {
 
 class Indexed extends Action {
 	constructor (handler, i, promise) {
+		// assert: promise.token == null - this is never cancelled
 		super(promise)
 		this.i = i
 		this.handler = handler

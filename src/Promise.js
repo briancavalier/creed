@@ -127,7 +127,12 @@ export class Future extends Core {
 	}
 
 	_isResolved () {
-		return this.ref !== void 0
+		if (this.ref !== void 0) return true
+		if (this.token != null && this.token.requested) {
+			this.__become(this.token.getRejected())
+			return true
+		}
+		return false
 	}
 
 	_when (action) {
@@ -168,6 +173,7 @@ export class Future extends Core {
 
 	__become (p) {
 		this.ref = p === this ? cycle() : p
+		this.token = null
 
 		if (this.action === void 0) {
 			return
@@ -178,13 +184,14 @@ export class Future extends Core {
 
 	run () {
 		const p = this.ref.near()
-		p._runAction(this.action)
+		if (this.action.promise) p._runAction(this.action)
 		this.action = void 0
 
 		for (let i = 0; i < this.length; ++i) {
-			p._runAction(this[i])
+			if (this[i].promise) p._runAction(this[i])
 			this[i] = void 0
 		}
+		this.length = 0
 	}
 }
 

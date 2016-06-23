@@ -1,6 +1,9 @@
 import Action from './Action'
 
 export default function then (f, r, p, promise) {
+	if (promise.token != null && promise.token.requested) {
+		return promise.token.getRejected()
+	}
 	p._when(new Then(f, r, promise))
 	return promise
 }
@@ -12,6 +15,12 @@ class Then extends Action {
 		this.r = r
 	}
 
+	destroy () {
+		super.destroy()
+		this.f = null
+		this.r = null
+	}
+
 	fulfilled (p) {
 		this.runThen(this.f, p)
 	}
@@ -21,13 +30,15 @@ class Then extends Action {
 	}
 
 	runThen (f, p) {
-		if (typeof f !== 'function') {
-			this.promise._become(p)
-			return false
-		} else {
+		const token = this.promise.token
+		const hasHandler = typeof f === 'function'
+		if (hasHandler) {
 			this.tryCall(f, p.value)
-			return true
+		} else {
+			this.promise._become(p)
 		}
+		if (token != null) token._unsubscribe(this)
+		return hasHandler
 	}
 
 	handle (result) {

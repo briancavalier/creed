@@ -1,4 +1,4 @@
-import { resolve, reject } from './Promise'
+import { Future, resolve, reject, silenceError } from './Promise' // deferred
 
 export default class CancelToken {
 	// https://domenic.github.io/cancelable-promise/#sec-canceltoken-constructor
@@ -7,14 +7,49 @@ export default class CancelToken {
 			throw new TypeError('must provide an executor function')
 		}
 		this._cancelled = false
+		this.promise = void 0
+		this.length = 0
 		executor(reason => this._cancel(reason))
 	}
 	_cancel (reason) {
 		if (this._cancelled) return
 		this._cancelled = true
+		const p = reject(reason) // tag as intentionally rejected, p._state |= CANCELLED?
+		silenceError(p)
+		if (this.promise !== void 0) {
+			this.promise._resolve(p)
+		} else {
+			this.promise = p
+		}
+		return this.run()
+	}
+	run () {
+		/* eslint complexity:[2,4] */
+		const result = []
+		for (let i = 0; i < this.length; ++i) {
+			try {
+				if (this[i].promise) { // not already destroyed
+					result.push(resolve(this[i].cancel(this.promise)))
+				}
+			} catch (e) {
+				result.push(reject(e))
+			}
+			this[i] = void 0
+		}
+		this.length = 0
+		return result
+	}
+	_subcribe (action) {
+		this[this.length++] = action
+	}
+	_unsubscribe (action) {
+		action.destroy() // too simple of course
 	}
 	getRejected () {
-		return reject(this.reason)
+		if (this.promise === void 0) {
+			this.promise = new Future() // never cancelled :-)
+		}
+		return this.promise
 	}
 	// https://domenic.github.io/cancelable-promise/#sec-canceltoken.prototype.requested
 	get requested () {
