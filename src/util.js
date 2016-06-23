@@ -4,4 +4,4 @@ export function isObject (x) {
 }
 
 /* istanbul ignore next */
-export function noop () {}
+export function noop (_) {}

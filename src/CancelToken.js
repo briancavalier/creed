@@ -1,3 +1,4 @@
+import { noop } from './util'
 import { Future, resolve, reject, silenceError, taskQueue } from './Promise' // deferred
 import { isSettled } from './inspect'
 
@@ -10,7 +11,11 @@ export default class CancelToken {
 		this._cancelled = false
 		this.promise = void 0
 		this.length = 0
-		executor(reason => this._cancel(reason))
+		this.scanLow = 0
+		this.scanHigh = 0
+		if (executor !== noop) {
+			executor(reason => this._cancel(reason))
+		}
 	}
 	_cancel (reason) {
 		if (this._cancelled) return
@@ -29,7 +34,7 @@ export default class CancelToken {
 		const result = []
 		for (let i = 0; i < this.length; ++i) {
 			try {
-				if (this[i].promise) { // not already destroyed
+				if (this[i] && this[i].promise) { // not already destroyed
 					result.push(resolve(this[i].cancel(this.promise)))
 				}
 			} catch (e) {
@@ -47,13 +52,33 @@ export default class CancelToken {
 		this[this.length++] = action
 	}
 	_unsubscribe (action) {
-		action.destroy() // TODO too simple of course
+		for (let i=Math.min(5, this.length); i--; ) {
+			// an inplace-filtering algorithm to remove empty actions
+			// executed at up to 5 steps per unsubscribe
+			if (this.scanHigh < this.length) {
+				if (this[this.scanHigh] === action) {
+					this[this.scanHigh] = action = null;
+				} else if (this[this.scanHigh].promise == null) {
+					this[this.scanHigh] = null;
+				} else {
+					this[this.scanLow++] = this[this.scanHigh]
+				}
+				this.scanHigh++
+			} else {
+				this.length = this.scanLow;
+				this.scanLow = this.scanHigh = 0;
+			}
+		}
+		if (action) { // when not found
+			action._destroy() // at least mark explictly as empty
+		}
 	}
 	subscribe (fn, promise) {
 		promise = resolve(promise)
 		this._subscribe({
+			promise,
 			cancel (p) {
-				if (!isSettled(promise)) {
+				if (!isSettled(this.promise)) {
 					return fn(p.value)
 				}
 			}
@@ -73,10 +98,17 @@ export default class CancelToken {
 	}
 	// https://domenic.github.io/cancelable-promise/#sec-canceltoken.source
 	static source () {
-		// optimise case if (this === CancelToken)
-		let cancel
-		const token = new this(c => { cancel = c })
-		return {token, cancel}
+		if (this === CancelToken) {
+			const token = new this(noop)
+			return {
+				token,
+				cancel (r) { token._cancel(r) }
+			}
+		} else {
+			let cancel
+			const token = new this(c => { cancel = c })
+			return {token, cancel}
+		}
 	}
 	static for (thenable) {
 		return new this(cancel => resolve(thenable).then(cancel)) // finally?
