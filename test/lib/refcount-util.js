@@ -67,30 +67,11 @@ export default function getCounts(exec, report, targets = knownNames, withResult
 }
 
 export function collect(sources, targets = knownNames, seenBefore = new WeakSet) {
-	var counts = {}
-	for (let name of targets) {
-		counts[name+'s'] = 0
-		counts['new'+name+'s'] = 0
-	}
-	var seen = new WeakSet([])
+	var seenHere = new Set([])
 	function test(o) {
-		if (seen.has(o)) {
-			return
-		} else {
-			seen.add(o)
-		}
-		
-		const name = o.constructor.name
-		if (targets.includes(name)) {
-			counts[name+'s']++
-			if (!seenBefore.has(o)) {
-				counts['new'+name+'s']++
-			}
-		} else {
-			console.log('unknown kind:', o)
-		}
-		seenBefore.add(o)
-		
+		if (seenHere.has(o)) return
+		seenHere.add(o)
+
 		for (let property in o) {
 			let value = o[property]
 			if (value && typeof value == 'object') { // ignore function objects
@@ -100,6 +81,24 @@ export function collect(sources, targets = knownNames, seenBefore = new WeakSet)
 	}
 	for (let source of sources) {
 		test(source)
+	}
+
+	var counts = {}
+	for (let name of targets) {
+		counts[name+'s'] = 0
+		counts['new'+name+'s'] = 0
+	}
+	for (let o of seenHere) {
+		const name = o.constructor.name
+		if (targets.includes(name)) {
+			counts[name+'s']++
+			if (!seenBefore.has(o)) {
+				seenBefore.add(o)
+				counts['new'+name+'s']++
+			}
+		} else {
+			console.log('unknown kind "'+name+'":', o)
+		}
 	}
 	return counts
 }
