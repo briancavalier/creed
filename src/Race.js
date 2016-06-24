@@ -6,10 +6,12 @@ export default class Race {
 	}
 
 	fulfillAt (p, i, promise) {
+		if (promise._isResolved()) return
 		promise._become(p)
 	}
 
 	rejectAt (p, i, promise) {
+		if (promise._isResolved()) return
 		promise._become(p)
 	}
 

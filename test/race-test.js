@@ -41,4 +41,24 @@ describe('race', () => {
 		return race([reject(1), never()])
 			.then(assert.ifError, x => assert.equal(x, 1))
 	})
+
+	it('should fulfill with first value', () => {
+		return race([resolve(2).then(resolve), resolve(1)])
+			.then(x => assert.equal(x, 1))
+	})
+
+	it('should reject with first value', () => {
+		return race([resolve(2).then(resolve), reject(1)])
+			.then(assert.ifError, x => assert.equal(x, 1))
+	})
+
+	it('should fulfill with first value despite rejection', () => {
+		return race([resolve(2).then(reject), resolve(1)])
+			.then(x => assert.equal(x, 1))
+	})
+
+	it('should reject with first value despite rejection', () => {
+		return race([resolve(2).then(reject), reject(1)])
+			.then(assert.ifError, x => assert.equal(x, 1))
+	})
 })
