@@ -1,6 +1,6 @@
 import makeAsync from './async'
 
-export class TaskQueue {
+export default class TaskQueue {
 	constructor () {
 		this.tasks = new Array(2 << 15)
 		this.length = 0
@@ -22,17 +22,5 @@ export class TaskQueue {
 			q[i] = void 0
 		}
 		this.length = 0
-	}
-}
-
-// make an Action runnable on a Promise
-export class Continuation {
-	constructor (action, promise) {
-		this.action = action
-		this.promise = promise
-	}
-
-	run () {
-		this.promise._runAction(this.action)
 	}
 }

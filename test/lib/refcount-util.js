@@ -2,7 +2,7 @@ import { resolve, isRejected, isNever } from '../../src/main'
 import { Future } from '../../src/Promise'
 import Action from '../../src/Action'
 
-const knownNames = ['Handle', 'Action',
+const knownNames = ['Handle', 'ShareHandle', 'Action',
 	'Then', 'Chain', 'Map', 'Delay',
 	'Future', 'Fulfilled', 'Rejected',
 	'Settle', 'Merge', 'Any', 'Race']

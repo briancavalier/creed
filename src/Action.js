@@ -1,9 +1,24 @@
-import Handle from './Handle'
+import { Handle, ShareHandle } from './Handle'
 
 export default class Action extends Handle {
 	constructor (promise) {
-		super(null)
+		super(null) // ref will be set when used as handle
 		this.promise = promise
+	}
+
+	_concat (action) {
+		if (!action._isReused() && (this._isReused() || action instanceof ShareHandle)) {
+			return action._concat(this)
+		} else {
+			return new ShareHandle(this.ref)._concat(this)._concat(action)
+		}
+	}
+	run () {
+		const settled = this.ref
+		if (this._isReused()) {
+			this.ref = null // make action reusable elsewhere
+		}
+		settled._runAction(this)
 	}
 
 	// default onFulfilled action
@@ -29,8 +44,14 @@ export default class Action extends Handle {
 		this.handle(result)
 	}
 
-	run () {
-		this.ref._runAction(this)
-		super.run()
+	tryCallContext (f, c, x) {
+		let result
+		try {
+			result = f.call(c, x)
+		} catch (e) {
+			this.promise._reject(e)
+			return
+		} // else
+		this.handle(result)
 	}
 }

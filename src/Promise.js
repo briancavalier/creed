@@ -1,12 +1,11 @@
 import { isObject } from './util'
 import { PENDING, FULFILLED, REJECTED, NEVER, HANDLED } from './state'
 import { isNever, isSettled } from './inspect'
+import { ShareHandle } from './Handle'
 
-import { TaskQueue, Continuation } from './TaskQueue'
+import TaskQueue from './TaskQueue'
 import ErrorHandler from './ErrorHandler'
 import emitError from './emitError'
-
-import Handle from './Handle'
 
 import Action from './Action'
 import then from './then'
@@ -50,7 +49,7 @@ class Core {
 export class Future extends Core {
 	constructor () {
 		super()
-		this.handle = void 0
+		this.handle = void 0 // becomes something with a near() method
 	}
 
 	// then :: Promise e a -> (a -> b) -> Promise e b
@@ -132,14 +131,13 @@ export class Future extends Core {
 	}
 
 	_runAction (action) {
+		// assert: this.handle is not a Settled promise
 		if (this.handle) {
-			this.handle._add(action)
-		} else if (action.ref != null && action.ref !== this) {
-			this.handle = new Handle(this)
-			this.handle._add(action)
+			this.handle = this.handle._concat(action)
 		} else {
+			// assert: action.ref == null || action.ref.handle == action
+			action.ref = this
 			this.handle = action
-			this.handle.ref = this
 		}
 	}
 
@@ -166,30 +164,27 @@ export class Future extends Core {
 	}
 
 	_become (p) {
-		/* eslint complexity:[2,6] */
+		/* eslint complexity:[2,8] */
 		if (p === this) {
 			p = cycle()
 		}
-
-		if (this.handle) {
-			// assert: this.handle.ref === this
-			this.handle.ref = p
-			if (isSettled(p)) {
+		if (isSettled(p) || isNever(p)) {
+			if (this.handle) {
+				// assert: this.handle.ref === this
+				this.handle.ref = p
 				taskQueue.add(this.handle)
-			} else {
-				p._runAction(this.handle)
 			}
+			this.handle = p // works well because it has a near() method
 		} else {
-			if (isSettled(p)) {
-				// for not unnecessarily creating handles that never see any actions
-				// works well because it has a near() method
-				this.handle = p
-			} else if (p.handle) {
-				this.handle = p.handle
-			} else {
-				// explicit handle to avoid reference chain between multiple futures
-				this.handle = p.handle = new Handle(p)
+			if (this.handle) {
+				// assert: this.handle.ref === this
+				p._runAction(this.handle)
+			} else if (!p.handle) {
+				p.handle = new ShareHandle(p)
+			} else if (p.handle._isReused()) {
+				p.handle = new ShareHandle(p)._concat(p.handle)
 			}
+			this.handle = p.handle // share handle to avoid reference chain between multiple futures
 		}
 	}
 }
@@ -243,7 +238,9 @@ class Fulfilled extends Core {
 	}
 
 	_when (action) {
-		taskQueue.add(new Continuation(action, this))
+		// assert: action.ref == null || action.ref === this
+		action.ref = this
+		taskQueue.add(action)
 	}
 
 	_runAction (action) {
@@ -302,7 +299,9 @@ class Rejected extends Core {
 	}
 
 	_when (action) {
-		taskQueue.add(new Continuation(action, this))
+		// assert: action.ref == null || action.ref === this
+		action.ref = this
+		taskQueue.add(action)
 	}
 
 	_runAction (action) {

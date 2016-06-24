@@ -11,12 +11,15 @@ export default function coroutine (iterator, promise) {
 class Coroutine extends Action {
 	constructor (iterator, promise) {
 		super(promise)
-		this.next = iterator.next.bind(iterator)
-		this.throw = iterator.throw.bind(iterator)
+		this.iterator = iterator
+	}
+
+	_isReused () {
+		return true
 	}
 
 	start () {
-		this.tryCall(this.next, void 0)
+		this.tryCallContext(this.iterator.next, this.iterator, void 0)
 	}
 
 	handle (result) {
@@ -28,11 +31,11 @@ class Coroutine extends Action {
 	}
 
 	fulfilled (ref) {
-		this.tryCall(this.next, ref.value)
+		this.tryCallContext(this.iterator.next, this.iterator, ref.value)
 	}
 
 	rejected (ref) {
-		this.tryCall(this.throw, ref.value)
+		this.tryCallContext(this.iterator.throw, this.iterator, ref.value)
 		return true
 	}
 }

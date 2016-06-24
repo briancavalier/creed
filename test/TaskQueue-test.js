@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import { TaskQueue } from '../src/TaskQueue'
+import TaskQueue from '../src/TaskQueue'
 import assert from 'assert'
 
 describe('TaskQueue', () => {
