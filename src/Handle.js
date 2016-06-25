@@ -1,12 +1,9 @@
 export class Handle {
 	constructor (ref) {
-		this.ref = ref
+		this.ref = ref // a ShareHandle, known Promise or unresolved Future
 	}
-	near () {
-		if (this.ref.handle !== this) {
-			this.ref = this.ref.near()
-		}
-		return this.ref
+	_getRef () {
+		return this.ref._getRef()
 	}
 	// the ref will be lost, e.g. when an action is used multiple times
 	_isReused () {
@@ -21,7 +18,7 @@ export class ShareHandle extends Handle {
 		this.length = 0
 	}
 	_concat (action) {
-		action.ref = this // a ShareHandle is not a Promise with a .handle, but .near() is enough
+		action.ref = this
 		this[this.length++] = action
 		// potential for flattening the tree here
 		return this

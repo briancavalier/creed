@@ -36,6 +36,11 @@ class Core {
 	static of (x) {
 		return fulfill(x)
 	}
+
+	_getRef () {
+		// assert: isNever(this) || !isPending(this)
+		return this
+	}
 }
 
 // data Promise e a where
@@ -49,7 +54,7 @@ class Core {
 export class Future extends Core {
 	constructor () {
 		super()
-		this.handle = void 0 // becomes something with a near() method
+		this.handle = void 0 // becomes something with a _getRef() method
 	}
 
 	// then :: Promise e a -> (a -> b) -> Promise e b
@@ -112,12 +117,11 @@ export class Future extends Core {
 		if (this.handle === void 0) {
 			return this
 		}
-		return this.handle.near()
+		return this.handle._getRef()
 	}
 
 	// state :: Promise e a -> Int
 	state () {
-		// return this._isResolved() ? this.handle.near().state() : PENDING
 		var n = this.near()
 		return n === this ? PENDING : n.state()
 	}
@@ -127,6 +131,7 @@ export class Future extends Core {
 	}
 
 	_when (action) {
+		// assert: !this._isResolved()
 		this._runAction(action)
 	}
 
@@ -174,7 +179,7 @@ export class Future extends Core {
 				this.handle.ref = p
 				taskQueue.add(this.handle)
 			}
-			this.handle = p // works well because it has a near() method
+			this.handle = p // works well because it has a _getRef() method
 		} else {
 			if (this.handle) {
 				// assert: this.handle.ref === this
