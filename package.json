@@ -6,7 +6,8 @@
   "jsnext:main": "dist/creed.es.js",
   "files": [
     "dist/creed.js",
-    "dist/creed.es.js"
+    "dist/creed.es.js",
+    "dist/creed.node.js"
   ],
   "repository": {
     "type": "git",
@@ -28,7 +29,7 @@
   "scripts": {
     "compile": "npm run compile-src",
     "compile-src": "mkdirp build/src && buble -m -i src -o build/src --no modules",
-    "build-dist": "npm run compile && mkdirp dist && rollup -c",
+    "build-dist": "npm run compile && mkdirp dist && rollup -c && rollup -f cjs -o dist/creed.node.js src/main.js",
     "build": "npm run build-dist && uglifyjs -c \"warnings=false\" -m -o dist/creed.min.js -- dist/creed.js",
     "preversion": "npm run build",
     "check-coverage": "istanbul check-coverage --statements 100 --branches 100 --lines 100 --functions 100 coverage/coverage*.json",
