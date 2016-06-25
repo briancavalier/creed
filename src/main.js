@@ -30,7 +30,7 @@ export {
 // coroutine :: Generator e a -> (...* -> Promise e a)
 // Make a coroutine from a promise-yielding generator
 export function coroutine (generator) {
-	return function (...args) {
+	return function coroutinified (...args) {
 		return runGenerator(generator, this, args)
 	}
 }
@@ -50,7 +50,7 @@ function runGenerator (generator, thisArg, args) {
 // fromNode :: NodeApi e a -> (...args -> Promise e a)
 // Turn a Node API into a promise API
 export function fromNode (f) {
-	return function (...args) {
+	return function promisified (...args) {
 		return runResolver(_runNode, f, this, args, new Future())
 	}
 }

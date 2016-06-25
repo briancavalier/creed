@@ -4,7 +4,7 @@ global.useWhen = false;
 
 global.useCreed = true;
 
-var creed = require('../../dist/creed');
+var creed = require('../..');
 
 require('../lib/fakesP');
 
