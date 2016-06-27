@@ -1,5 +1,5 @@
 import { noop } from './util'
-import { Future, resolve, reject, silenceError, taskQueue } from './Promise' // deferred
+import { Future, resolve, reject, never, silenceError, taskQueue } from './Promise' // deferred
 import { isSettled } from './inspect'
 
 export default class CancelToken {
@@ -45,36 +45,37 @@ export default class CancelToken {
 		this.length = 0
 		return result
 	}
-	_subcribe (action) {
+	_subscribe (action) {
 		if (this.requested && this.length === 0) {
 			taskQueue.add(this) // asynchronous?
 		}
 		this[this.length++] = action
 	}
 	_unsubscribe (action) {
-		for (let i=Math.min(5, this.length); i--; ) {
+		/* eslint complexity:[2,6] */
+		for (let i = Math.min(5, this.length); i--;) {
 			// an inplace-filtering algorithm to remove empty actions
 			// executed at up to 5 steps per unsubscribe
 			if (this.scanHigh < this.length) {
 				if (this[this.scanHigh] === action) {
-					this[this.scanHigh] = action = null;
+					this[this.scanHigh] = action = null
 				} else if (this[this.scanHigh].promise == null) {
-					this[this.scanHigh] = null;
+					this[this.scanHigh] = null
 				} else {
 					this[this.scanLow++] = this[this.scanHigh]
 				}
 				this.scanHigh++
 			} else {
-				this.length = this.scanLow;
-				this.scanLow = this.scanHigh = 0;
+				this.length = this.scanLow
+				this.scanLow = this.scanHigh = 0
 			}
 		}
 		if (action) { // when not found
-			action._destroy() // at least mark explictly as empty
+			action.destroy() // at least mark explictly as empty
 		}
 	}
 	subscribe (fn, promise) {
-		promise = resolve(promise)
+		promise = promise != null ? resolve(promise) : never()
 		this._subscribe({
 			promise,
 			cancel (p) {
@@ -114,6 +115,7 @@ export default class CancelToken {
 		return new this(cancel => resolve(thenable).then(cancel)) // finally?
 	}
 	static from (cancelTokenlike) {
+		/* istanbul ignore else */
 		if (cancelTokenlike instanceof CancelToken) {
 			return cancelTokenlike
 		}
@@ -122,10 +124,15 @@ export default class CancelToken {
 		return new this(noop) // NeverCancelToken
 	}
 	concat (token) {
+		if (this.requested) return this
+		if (token.requested) return token
 		return new CancelToken(cancel => {
 			this.subscribe(cancel)
 			token.subscribe(cancel)
 		})
+	}
+	static pool (tokens) {
+		return new CancelTokenPool(tokens)
 	}
 }
 
@@ -147,7 +154,10 @@ class CancelTokenPool {
 	add (...tokens) {
 		if (this.token.requested) return
 		this.count += tokens.length
-		for (let t of tokens) CancelToken.from(t).subscribe(this.check)
+		// for (let t of tokens) { // https://phabricator.babeljs.io/T2164
+		for (let i = 0, t; i < tokens.length && (t = tokens[i]); i++) {
+			CancelToken.from(t).subscribe(this.check)
+		}
 	}
 	get () {
 		return this.token

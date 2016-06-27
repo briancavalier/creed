@@ -10,6 +10,8 @@ import { isRejected, isSettled, isNever } from './inspect'
 export { all, race, any, settle, merge } from './combinators'
 import { all, race } from './combinators'
 
+export { default as CancelToken } from './CancelToken'
+
 import Action from './Action'
 
 import _delay from './delay'

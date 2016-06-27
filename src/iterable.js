@@ -85,8 +85,8 @@ class Indexed extends Action {
 		this.handler = handler
 	}
 
-	_destroy () {
-		super._destroy()
+	destroy () {
+		super.destroy()
 		this.handler = null
 	}
 

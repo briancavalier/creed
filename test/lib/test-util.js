@@ -57,3 +57,42 @@ class ThrowingIterator {
 		throw e
 	}
 }
+
+export class FakeCancelAction {
+	constructor (promise, cb) {
+		this.promise = promise
+		this.cb = cb
+		this.isCancelled = 0
+		this.isDestroyed = 0
+		const token = promise.token
+		if (token != null) {
+			token._subscribe(this)
+		}
+	}
+
+	destroy () {
+		this.isDestroyed++
+		this.promise = null
+	}
+
+	cancel (p) {
+		this.isCancelled++
+		if (typeof this.cb === 'function') this.cb(p)
+		if (typeof this.promise._isResolved !== 'function' || this.promise._isResolved()) {
+			this.destroy()
+		}
+	}
+}
+
+export function raceCallbacks (future) {
+	const {resolve, promise} = future()
+	return {
+		ok (x) {
+			setTimeout(resolve, 1, x) // wait for noks
+		},
+		nok (e) {
+			promise._reject(e)
+		},
+		result: promise
+	}
+}
