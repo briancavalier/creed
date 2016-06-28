@@ -80,7 +80,7 @@ export class Future extends Core {
 	ap (p, token) {
 		const n = this.near()
 		const pp = p.near()
-		return n === this ? this.chain(f => pp.map(f, token)) : n.ap(pp, token)
+		return n === this ? this.chain(f => pp.map(f, token), token) : n.ap(pp, token)
 	}
 
 	// chain :: Promise e a -> (a -> Promise e b) -> Promise e b
@@ -251,6 +251,7 @@ class Fulfilled extends Core {
 	}
 
 	_runAction (action) {
+		// assert: action.promise != null
 		action.fulfilled(this)
 	}
 }
@@ -310,6 +311,7 @@ class Rejected extends Core {
 	}
 
 	_runAction (action) {
+		// assert: action.promise != null
 		if (action.rejected(this)) {
 			errorHandler.untrack(this)
 		}

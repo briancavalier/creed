@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import { delay, never, reject, fulfill, isNever, isPending } from '../src/main'
+import { delay, never, reject, fulfill, isRejected, isNever, isPending, CancelToken } from '../src/main'
 import { Future, silenceError } from '../src/Promise'
 import { assertSame } from './lib/test-util'
 import assert from 'assert'
@@ -52,5 +52,65 @@ describe('delay', function () {
 		const now = Date.now()
 		return assertSame(fulfill(x), p)
 			.then(() => assert(lte(t, Date.now() - now)))
+	})
+
+	it('should delay fulfilled when never cancelled', () => {
+		const x = {}
+		const t = 10
+		const p = delay(t, fulfill(x), CancelToken.empty())
+
+		const now = Date.now()
+		return assertSame(fulfill(x), p)
+			.then(() => assert(lte(t, Date.now() - now)))
+	})
+
+	it('should return cancellation with cancelled token for fulfill', () => {
+		const {token, cancel} = CancelToken.source()
+		cancel({})
+		const p = delay(10, fulfill(1), token)
+		assert.strictEqual(token.getRejected(), p)
+	})
+
+	it('should return cancellation with cancelled token for reject', () => {
+		const {token, cancel} = CancelToken.source()
+		cancel({})
+		const p = delay(10, reject(1), token)
+		assert.strictEqual(token.getRejected(), p)
+	})
+
+	it('should behave like cancellation when cancelled for never', () => {
+		const {token, cancel} = CancelToken.source()
+		const p = delay(10, never(), token)
+		cancel({})
+		assert(isRejected(p))
+		return assertSame(token.getRejected(), p)
+	})
+
+	it('should behave like cancellation when cancelled', () => {
+		const {token, cancel} = CancelToken.source()
+		const p = delay(10, fulfill(1), token)
+		cancel({})
+		assert(isRejected(p))
+		return assertSame(token.getRejected(), p)
+	})
+
+	it('should behave like cancellation when cancelled during delay', () => {
+		const {token, cancel} = CancelToken.source()
+		const p = delay(10, fulfill(1), token)
+		return delay(5).then(() => {
+			cancel({})
+			assert(isRejected(p))
+			return assertSame(token.getRejected(), p)
+		})
+	})
+
+	it('should behave like cancellation when cancelled before fulfill', () => {
+		const {token, cancel} = CancelToken.source()
+		const p = delay(5, delay(10), token)
+		return delay(5).then(() => {
+			cancel({})
+			assert(isRejected(p))
+			return assertSame(token.getRejected(), p)
+		})
 	})
 })

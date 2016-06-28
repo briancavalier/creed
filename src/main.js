@@ -95,10 +95,12 @@ function checkFunction (f) {
 
 // delay :: number -> Promise e a -> Promise e a
 export function delay (ms, x, token) {
-	/* eslint complexity:[2,4] */
+	/* eslint complexity:[2,5] */
+	if (token != null && token.requested) return token.getRejected()
 	const p = resolve(x)
-	return ms <= 0 || isRejected(p) || isNever(p) ? p
-		: _delay(ms, p, new Future(token))
+	if (ms <= 0) return p
+	if (token == null && (isRejected(p) || isNever(p))) return p
+	return _delay(ms, p, new Future(token))
 }
 
 // timeout :: number -> Promise e a -> Promise (e|TimeoutError) a

@@ -13,6 +13,7 @@ export default class Action {
 	}
 
 	cancel (p) {
+		/* istanbul ignore else */
 		if (this.promise._isResolved()) { // promise checks for cancellation itself
 			this.destroy()
 		}
@@ -35,13 +36,14 @@ export default class Action {
 	}
 
 	tryCall (f, x) {
+		/* eslint complexity:[2,4] */
 		let result
 		try {
 			result = f(x)
 		} catch (e) {
-			this.promise._reject(e)
+			if (this.promise) this.promise._reject(e)
 			return
 		} // else
-		this.handle(result)
+		if (this.promise) this.handle(result)
 	}
 }

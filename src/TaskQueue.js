@@ -33,6 +33,6 @@ export class Continuation {
 	}
 
 	run () {
-		this.promise._runAction(this.action)
+		if (this.action.promise) this.promise._runAction(this.action)
 	}
 }
