@@ -12,6 +12,8 @@ import { all, race } from './combinators'
 
 export { default as CancelToken } from './CancelToken'
 
+export { default as coroutine } from './coroutine.js'
+
 import Action from './Action'
 
 import _delay from './delay'
@@ -19,24 +21,6 @@ import _timeout from './timeout'
 
 import _runPromise from './runPromise'
 import _runNode from './node'
-import _runCoroutine from './coroutine.js'
-
-// -------------------------------------------------------------
-// ## Coroutine
-// -------------------------------------------------------------
-
-// coroutine :: Generator e a -> (...* -> Promise e a)
-// Make a coroutine from a promise-yielding generator
-export function coroutine (generator) {
-	return function coroutinified (...args) {
-		return runGenerator(generator, this, args)
-	}
-}
-
-function runGenerator (generator, thisArg, args) {
-	const iterator = generator.apply(thisArg, args)
-	return _runCoroutine(iterator, new Future())
-}
 
 // -------------------------------------------------------------
 // ## Node-style async

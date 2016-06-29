@@ -115,10 +115,9 @@ export default class CancelToken {
 		return new this(cancel => resolve(thenable).then(cancel)) // finally?
 	}
 	static from (cancelTokenlike) {
-		/* istanbul ignore else */
-		if (cancelTokenlike instanceof CancelToken) {
-			return cancelTokenlike
-		}
+		// if (cancelTokenlike == null) return null
+		if (cancelTokenlike instanceof CancelToken) return cancelTokenlike
+		return null
 	}
 	static empty () {
 		return new this(noop) // NeverCancelToken
