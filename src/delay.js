@@ -1,6 +1,6 @@
 import Action from './Action'
 
-export default function (ms, p, promise) {
+export default function delay (ms, p, promise) {
 	p._runAction(new Delay(ms, promise))
 	return promise
 }

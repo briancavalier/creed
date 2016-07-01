@@ -1,47 +1,44 @@
 import { isNode } from './env'
+import { noop } from './util'
+import { UNHANDLED_REJECTION } from './ErrorHandler'
 
-const UNHANDLED_REJECTION = 'unhandledRejection'
-
-export default function () {
-	/*global process, self, CustomEvent*/
-	// istanbul ignore else */
-	if (isNode && typeof process.emit === 'function') {
-		// Returning falsy here means to call the default reportRejection API.
-		// This is safe even in browserify since process.emit always returns
-		// falsy in browserify:
-		// https://github.com/defunctzombie/node-process/blob/master/browser.js#L40-L46
-		return function (type, error) {
-			return type === UNHANDLED_REJECTION
-				? process.emit(type, error.value, error)
-				: process.emit(type, error)
-		}
-	} else if (typeof self !== 'undefined' && typeof CustomEvent === 'function') {
-		return (function (noop, self, CustomEvent) {
-			var hasCustomEvent
-			try {
-				hasCustomEvent = new CustomEvent(UNHANDLED_REJECTION) instanceof CustomEvent
-			} catch (e) {
-				hasCustomEvent = false
-			}
-
-			return !hasCustomEvent ? noop : function (type, error) {
-				const ev = new CustomEvent(type, {
-					detail: {
-						reason: error.value,
-						promise: error
-					},
-					bubbles: false,
-					cancelable: true
-				})
-
-				return !self.dispatchEvent(ev)
-			}
-		}(noop, self, CustomEvent))
+let emitError
+/*global process, self, CustomEvent*/
+// istanbul ignore else */
+if (isNode && typeof process.emit === 'function') {
+	// Returning falsy here means to call the default reportRejection API.
+	// This is safe even in browserify since process.emit always returns
+	// falsy in browserify:
+	// https://github.com/defunctzombie/node-process/blob/master/browser.js#L40-L46
+	emitError = function emit (type, error) {
+		return type === UNHANDLED_REJECTION
+			? process.emit(type, error.value, error)
+			: process.emit(type, error)
 	}
+} else if (typeof self !== 'undefined' && typeof CustomEvent === 'function') {
+	emitError = (function (self, CustomEvent) {
+		try {
+			let usable = new CustomEvent(UNHANDLED_REJECTION) instanceof CustomEvent
+			if (!usable) return noop
+		} catch (e) {
+			return noop
+		}
 
-	// istanbul ignore next */
-	return noop
+		return function emit (type, error) {
+			const ev = new CustomEvent(type, {
+				detail: {
+					reason: error.value,
+					promise: error
+				},
+				bubbles: false,
+				cancelable: true
+			})
+
+			return !self.dispatchEvent(ev)
+		}
+	}(self, CustomEvent))
+} else {
+	emitError = noop
 }
 
-// istanbul ignore next */
-function noop () {}
+export default emitError

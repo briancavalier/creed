@@ -1,6 +1,6 @@
 import Action from './Action'
 
-export default function (f, p, promise) {
+export default function map (f, p, promise) {
 	p._when(new Map(f, promise))
 	return promise
 }

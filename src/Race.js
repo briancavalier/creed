@@ -1,8 +1,6 @@
-export default class Race {
-	constructor (never) {
-		this.never = never
-	}
+import { never } from './Promise' // deferred
 
+export default class Race {
 	valueAt (x, i, promise) {
 		promise._fulfill(x)
 	}
@@ -17,7 +15,7 @@ export default class Race {
 
 	complete (total, promise) {
 		if (total === 0) {
-			promise._become(this.never())
+			promise._become(never())
 		}
 	}
 }

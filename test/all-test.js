@@ -1,5 +1,6 @@
 import { describe, it } from 'mocha'
-import { Future, all, resolve } from '../src/Promise'
+import { all, resolve } from '../src/main'
+import { Future } from '../src/Promise'
 import { throwingIterable, arrayIterable } from './lib/test-util'
 import assert from 'assert'
 

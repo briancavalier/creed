@@ -1,23 +1,22 @@
-import TaskQueue from './TaskQueue'
-import ErrorHandler from './ErrorHandler'
-import makeEmitError from './emitError'
-import maybeThenable from './maybeThenable'
-import { PENDING, FULFILLED, REJECTED, NEVER } from './state'
+import { isObject } from './util'
+import { PENDING, FULFILLED, REJECTED, NEVER, HANDLED } from './state'
 import { isNever, isSettled } from './inspect'
 
+import { TaskQueue, Continuation } from './TaskQueue'
+import ErrorHandler from './ErrorHandler'
+import emitError from './emitError'
+
+import Action from './Action'
 import then from './then'
 import map from './map'
 import chain from './chain'
 
-import Race from './Race'
-import Merge from './Merge'
-import { resolveIterable, resultsArray } from './iterable'
+import { race } from './combinators'
 
-const taskQueue = new TaskQueue()
-export { taskQueue }
+export const taskQueue = new TaskQueue()
 
 /* istanbul ignore next */
-const errorHandler = new ErrorHandler(makeEmitError(), e => {
+const errorHandler = new ErrorHandler(emitError, e => {
 	throw e.value
 })
 
@@ -249,7 +248,7 @@ class Rejected extends Core {
 	constructor (e) {
 		super()
 		this.value = e
-		this._state = REJECTED
+		this._state = REJECTED // mutated by the silencer
 		errorHandler.track(this)
 	}
 
@@ -354,6 +353,16 @@ class Never extends Core {
 	}
 }
 
+const silencer = new Action(never())
+silencer.fulfilled = function fulfilled (p) { }
+silencer.rejected = function setHandled (p) {
+	p._state |= HANDLED
+}
+
+export function silenceError (p) {
+	p._runAction(silencer)
+}
+
 // -------------------------------------------------------------
 // ## Creating promises
 // -------------------------------------------------------------
@@ -362,8 +371,12 @@ class Never extends Core {
 // resolve :: a -> Promise e a
 export function resolve (x) {
 	return isPromise(x) ? x.near()
-		: maybeThenable(x) ? refForMaybeThenable(fulfill, x)
+		: isObject(x) ? refForMaybeThenable(x)
 		: new Fulfilled(x)
+}
+
+export function resolveObject (o) {
+	return isPromise(o) ? o.near() : refForMaybeThenable(o)
 }
 
 // reject :: e -> Promise e a
@@ -389,40 +402,6 @@ export function future () {
 }
 
 // -------------------------------------------------------------
-// ## Iterables
-// -------------------------------------------------------------
-
-// all :: Iterable (Promise e a) -> Promise e [a]
-export function all (promises) {
-	const handler = new Merge(allHandler, resultsArray(promises))
-	return iterablePromise(handler, promises)
-}
-
-const allHandler = {
-	merge (promise, args) {
-		promise._fulfill(args)
-	}
-}
-
-// race :: Iterable (Promise e a) -> Promise e a
-export function race (promises) {
-	return iterablePromise(new Race(never), promises)
-}
-
-function isIterable (x) {
-	return typeof x === 'object' && x !== null
-}
-
-export function iterablePromise (handler, iterable) {
-	if (!isIterable(iterable)) {
-		return reject(new TypeError('expected an iterable'))
-	}
-
-	const p = new Future()
-	return resolveIterable(resolveMaybeThenable, handler, iterable, p)
-}
-
-// -------------------------------------------------------------
 // # Internals
 // -------------------------------------------------------------
 
@@ -431,16 +410,12 @@ function isPromise (x) {
 	return x instanceof Core
 }
 
-function resolveMaybeThenable (x) {
-	return isPromise(x) ? x.near() : refForMaybeThenable(fulfill, x)
-}
-
-function refForMaybeThenable (otherwise, x) {
+function refForMaybeThenable (x) {
 	try {
 		const then = x.then
 		return typeof then === 'function'
 			? extractThenable(then, x)
-			: otherwise(x)
+			: fulfill(x)
 	} catch (e) {
 		return new Rejected(e)
 	}
@@ -461,15 +436,4 @@ function extractThenable (thn, thenable) {
 
 function cycle () {
 	return new Rejected(new TypeError('resolution cycle'))
-}
-
-class Continuation {
-	constructor (action, promise) {
-		this.action = action
-		this.promise = promise
-	}
-
-	run () {
-		this.promise._runAction(this.action)
-	}
 }

@@ -1,15 +1,15 @@
+import { resolve } from './Promise'
 import Action from './Action'
 
-export default function (resolve, iterator, promise) {
-	new Coroutine(resolve, iterator, promise).run()
-	// taskQueue.add(new Coroutine(resolve, iterator, promise))
+export default function coroutine (iterator, promise) {
+	new Coroutine(iterator, promise).run()
+	// taskQueue.add(new Coroutine(iterator, promise))
 	return promise
 }
 
 class Coroutine extends Action {
-	constructor (resolve, iterator, promise) {
+	constructor (iterator, promise) {
 		super(promise)
-		this.resolve = resolve
 		this.next = iterator.next.bind(iterator)
 		this.throw = iterator.throw.bind(iterator)
 	}
@@ -23,7 +23,7 @@ class Coroutine extends Action {
 			return this.promise._resolve(result.value)
 		}
 
-		this.resolve(result.value)._runAction(this)
+		resolve(result.value)._runAction(this)
 	}
 
 	fulfilled (ref) {

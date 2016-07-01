@@ -1,14 +1,13 @@
-import { silenceError } from './inspect'
+import { fulfill, silenceError } from './Promise' // deferred
 
 export default class Settle {
-	constructor (resolve, results) {
+	constructor (results) {
 		this.pending = 0
 		this.results = results
-		this.resolve = resolve
 	}
 
 	valueAt (x, i, promise) {
-		this.settleAt(this.resolve(x), i, promise)
+		this.settleAt(fulfill(x), i, promise)
 	}
 
 	fulfillAt (p, i, promise) {

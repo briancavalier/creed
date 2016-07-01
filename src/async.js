@@ -2,11 +2,11 @@ import { isNode, MutationObs } from './env'
 
 /* global process,document */
 
-export default function (f) {
-	return isNode ? createNodeScheduler(f) /* istanbul ignore next */
-		: MutationObs ? createBrowserScheduler(f)
-		: createFallbackScheduler(f)
-}
+const createScheduler = isNode ? createNodeScheduler /* istanbul ignore next */
+	: MutationObs ? createBrowserScheduler
+	: createFallbackScheduler
+
+export { createScheduler as default }
 
 /* istanbul ignore next */
 function createFallbackScheduler (f) {

@@ -1,7 +1,7 @@
+import { isObject } from './util'
 import Action from './Action'
-import maybeThenable from './maybeThenable'
 
-export default function (f, p, promise) {
+export default function chain (f, p, promise) {
 	p._when(new Chain(f, promise))
 	return promise
 }
@@ -17,7 +17,7 @@ class Chain extends Action {
 	}
 
 	handle (y) {
-		if (!(maybeThenable(y) && typeof y.then === 'function')) {
+		if (!(isObject(y) && typeof y.then === 'function')) {
 			this.promise._reject(new TypeError('f must return a promise'))
 		}
 

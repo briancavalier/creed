@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
-import { fulfill, reject } from '../src/main'
-import { silenceError, getValue } from '../src/inspect'
+import { fulfill, reject, getValue } from '../src/main'
+import { silenceError } from '../src/Promise'
 import assert from 'assert'
 
 describe('fulfill', () => {

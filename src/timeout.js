@@ -1,7 +1,7 @@
 import Action from './Action'
 import TimeoutError from './TimeoutError'
 
-export default function (ms, p, promise) {
+export default function timeout (ms, p, promise) {
 	const timer = setTimeout(rejectOnTimeout, ms, promise)
 	p._runAction(new Timeout(timer, promise))
 	return promise

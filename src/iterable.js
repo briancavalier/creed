@@ -1,32 +1,46 @@
-import { isFulfilled, isRejected, silenceError } from './inspect'
+import { isObject } from './util'
+import { Future, reject, resolveObject, silenceError } from './Promise' // deferred
+import { isFulfilled, isRejected } from './inspect'
 import Action from './Action'
-import maybeThenable from './maybeThenable'
+
+function isIterable (x) {
+	return typeof x === 'object' && x !== null
+}
+
+export function iterablePromise (handler, iterable) {
+	if (!isIterable(iterable)) {
+		return reject(new TypeError('expected an iterable'))
+	}
+
+	const p = new Future()
+	return resolveIterable(handler, iterable, p)
+}
 
 export function resultsArray (iterable) {
 	return Array.isArray(iterable) ? new Array(iterable.length) : []
 }
 
-export function resolveIterable (resolve, handler, promises, promise) {
+export function resolveIterable (handler, promises, promise) {
 	const run = Array.isArray(promises) ? runArray : runIterable
 	try {
-		run(resolve, handler, promises, promise)
+		run(handler, promises, promise)
 	} catch (e) {
 		promise._reject(e)
 	}
 	return promise.near()
 }
 
-function runArray (resolve, handler, promises, promise) {
+function runArray (handler, promises, promise) {
 	let i = 0
 
 	for (; i < promises.length; ++i) {
-		handleItem(resolve, handler, promises[i], i, promise)
+		handleItem(handler, promises[i], i, promise)
 	}
 
 	handler.complete(i, promise)
 }
 
-function runIterable (resolve, handler, promises, promise) {
+function runIterable (handler, promises, promise) {
 	let i = 0
 	const iter = promises[Symbol.iterator]()
 
@@ -35,20 +49,20 @@ function runIterable (resolve, handler, promises, promise) {
 		if (step.done) {
 			break
 		}
-		handleItem(resolve, handler, step.value, i++, promise)
+		handleItem(handler, step.value, i++, promise)
 	}
 
 	handler.complete(i, promise)
 }
 
-function handleItem (resolve, handler, x, i, promise) {
+function handleItem (handler, x, i, promise) {
 	/*eslint complexity:[1,6]*/
-	if (!maybeThenable(x)) {
+	if (!isObject(x)) {
 		handler.valueAt(x, i, promise)
 		return
 	}
 
-	const p = resolve(x)
+	const p = resolveObject(x)
 
 	if (promise._isResolved()) {
 		if (!isFulfilled(p)) {

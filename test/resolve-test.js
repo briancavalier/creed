@@ -1,5 +1,6 @@
 import { describe, it } from 'mocha'
-import { resolve, Future } from '../src/Promise'
+import { resolve } from '../src/main'
+import { Future } from '../src/Promise'
 import assert from 'assert'
 
 describe('resolve', () => {

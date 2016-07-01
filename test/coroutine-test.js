@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import { fulfill, reject, delay, coroutine } from '../src/main'
+import { coroutine, fulfill, reject, delay } from '../src/main'
 import assert from 'assert'
 
 describe('coroutine', function () {

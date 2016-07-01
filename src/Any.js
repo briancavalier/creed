@@ -1,4 +1,4 @@
-import { silenceError } from './inspect.js'
+import { silenceError } from './Promise' // deferred
 
 export default class Any {
 	constructor () {
