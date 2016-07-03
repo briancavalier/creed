@@ -48,6 +48,6 @@
     "mocha": "^2.3.0",
     "promises-aplus-tests": "^2.1.1",
     "rollup": "^0.26.2",
-    "uglify-js": "^2.6.0"
+    "uglify-js": "^2.7.0"
   }
 }
