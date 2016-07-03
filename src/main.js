@@ -1,5 +1,3 @@
-'use strict'
-
 import { isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason } from './inspect'
 import { Future, resolve, reject, future, never, fulfill, all, race, iterablePromise, taskQueue } from './Promise'
 
