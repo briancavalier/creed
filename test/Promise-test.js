@@ -124,17 +124,6 @@ describe('Promise', () => {
 			}, token).then(x => assert.strictEqual(expected, x))
 		})
 
-		it('should have no effect after resolving the promise', () => {
-			const {token, cancel} = CancelToken.source()
-			const expected = {}
-			return new Promise(resolve => {
-				setTimeout(() => {
-					resolve(new Promise(resolve => setTimeout(resolve, 1, expected)))
-					cancel(new Error())
-				}, 1)
-			}, token).then(x => assert.strictEqual(expected, x))
-		})
-
 		it('should have no effect after rejecting the promise', () => {
 			const {token, cancel} = CancelToken.source()
 			const expected = new Error()
@@ -142,6 +131,17 @@ describe('Promise', () => {
 				setTimeout(() => {
 					reject(expected)
 					cancel(1)
+				}, 1)
+			}, token).then(assert.ifError, x => assert.strictEqual(expected, x))
+		})
+
+		it('should still reject the promise after resolving the promise without settling it', () => {
+			const {token, cancel} = CancelToken.source()
+			const expected = {}
+			return new Promise(resolve => {
+				setTimeout(() => {
+					resolve(new Promise(resolve => setTimeout(resolve, 1)))
+					cancel(expected)
 				}, 1)
 			}, token).then(assert.ifError, x => assert.strictEqual(expected, x))
 		})

@@ -100,6 +100,23 @@ export class Future extends Core {
 			: race([n, bp])
 	}
 
+	// untilCancel :: Promise e a -> CancelToken e -> Promise e a
+	untilCancel (token) {
+		/* eslint complexity:[2,5] */
+		const n = this.near()
+		if (n !== this) {
+			return n.untilCancel(token)
+		} else if (token == null || token === this.token) {
+			return this
+		}
+		const p = new Future(token)
+		if (p.token.requested) {
+			return p.token.getRejected()
+		}
+		this._runAction(new Action(p))
+		return p
+	}
+
 	// toString :: Promise e a -> String
 	toString () {
 		return '[object ' + this.inspect() + ']'
@@ -148,7 +165,7 @@ export class Future extends Core {
 	}
 
 	_resolve (x) {
-		this._become(resolve(x))
+		this._become(resolve(x, this.token))
 	}
 
 	_fulfill (x) {
@@ -230,6 +247,10 @@ class Fulfilled extends Core {
 		return this
 	}
 
+	untilCancel (token) {
+		return rejectedIfCancelled(token, this)
+	}
+
 	toString () {
 		return '[object ' + this.inspect() + ']'
 	}
@@ -290,6 +311,10 @@ class Rejected extends Core {
 		return this
 	}
 
+	untilCancel (token) {
+		return rejectedIfCancelled(token, this)
+	}
+
 	toString () {
 		return '[object ' + this.inspect() + ']'
 	}
@@ -345,6 +370,10 @@ class Never extends Core {
 		return b
 	}
 
+	untilCancel (token) {
+		return rejectedWhenCancel(token, this)
+	}
+
 	toString () {
 		return '[object ' + this.inspect() + ']'
 	}
@@ -382,16 +411,24 @@ export function silenceError (p) {
 // ## Creating promises
 // -------------------------------------------------------------
 
+// resolve :: Thenable e a -> CancelToken e -> Promise e a
 // resolve :: Thenable e a -> Promise e a
 // resolve :: a -> Promise e a
-export function resolve (x) {
-	return isPromise(x) ? x.near()
-		: isObject(x) ? refForMaybeThenable(x)
-		: new Fulfilled(x)
+export function resolve (x, token) {
+	/* eslint complexity:[2,6] */
+	if (isPromise(x)) {
+		return x.untilCancel(token)
+	} else if (token != null && token.requested) {
+		return token.getRejected()
+	} else if (isObject(x)) {
+		return refForMaybeThenable(x, token)
+	} else {
+		return new Fulfilled(x)
+	}
 }
 
 export function resolveObject (o) {
-	return isPromise(o) ? o.near() : refForMaybeThenable(o)
+	return isPromise(o) ? o.near() : refForMaybeThenable(o, null)
 }
 
 // reject :: e -> Promise e a
@@ -436,11 +473,11 @@ function rejectedWhenCancel (token, never) {
 	return CancelToken.from(token).getRejected()
 }
 
-function refForMaybeThenable (x) {
+function refForMaybeThenable (x, token) {
 	try {
 		const then = x.then
 		return typeof then === 'function'
-			? extractThenable(then, x)
+			? extractThenable(then, x, token)
 			: fulfill(x)
 	} catch (e) {
 		return new Rejected(e)
@@ -448,11 +485,11 @@ function refForMaybeThenable (x) {
 }
 
 // WARNING: Naming the first arg "then" triggers babel compilation bug
-function extractThenable (thn, thenable) {
+function extractThenable (thn, thenable, token) {
 	const p = new Future()
 
 	try {
-		thn.call(thenable, x => p._resolve(x), e => p._reject(e))
+		thn.call(thenable, x => p._resolve(x), e => p._reject(e), token)
 	} catch (e) {
 		p._reject(e)
 	}

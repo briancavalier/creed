@@ -4,6 +4,7 @@ export default class Action {
                                // when null, the action is cancelled and won't be executed
 		const token = promise.token
 		if (token != null) {
+			// assert: !token.requested
 			token._subscribe(this)
 		}
 	}
