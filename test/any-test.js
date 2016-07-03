@@ -17,13 +17,13 @@ describe('any', () => {
 	it('should resolve a value', () => {
 		const a = [1, 2, 3]
 		const s = arrayIterable(a)
-		return any(s).then(x => assert(a.includes(x)))
+		return any(s).then(x => assert(a.indexOf(x) >= 0))
 	})
 
 	it('should resolve a promise', () => {
 		const a = [1, 2, 3]
 		const s = arrayIterable(a.map(resolve))
-		return any(s).then(x => assert(a.includes(x)))
+		return any(s).then(x => assert(a.indexOf(x) >= 0))
 	})
 
 	it('should resolve if at least one input resolves', () => {
