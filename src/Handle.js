@@ -3,7 +3,7 @@ export class Handle {
 		this.ref = ref // a ShareHandle, known Promise or unresolved Future
 	}
 	_getRef () {
-		return this.ref._getRef()
+		return this.ref
 	}
 	// the ref will be lost, e.g. when an action is used multiple times
 	_isReused () {

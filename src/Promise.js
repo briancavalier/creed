@@ -41,6 +41,11 @@ class Core {
 		// assert: isNever(this) || !isPending(this)
 		return this
 	}
+
+	_getHandle () {
+		// assert: this is a Fulfilled, Rejected or Never
+		return this
+	}
 }
 
 // data Promise e a where
@@ -114,16 +119,29 @@ export class Future extends Core {
 
 	// near :: Promise e a -> Promise e a
 	near () {
-		if (this.handle === void 0) {
+		let h = this.handle
+		if (h === void 0) {
 			return this
 		}
-		return this.handle._getRef()
+		let ref = h._getRef()
+		if (ref !== this && ref !== h) {
+			do {
+				h = ref
+				ref = h._getRef()
+			} while (ref !== h)
+			this.handle = ref._getHandle()
+		}
+		return ref
 	}
 
 	// state :: Promise e a -> Int
 	state () {
 		var n = this.near()
 		return n === this ? PENDING : n.state()
+	}
+
+	_getHandle () {
+		return this.handle
 	}
 
 	_isResolved () {
@@ -170,6 +188,7 @@ export class Future extends Core {
 
 	_become (p) {
 		/* eslint complexity:[2,8] */
+		// assert: p is not a resolved future
 		if (p === this) {
 			p = cycle()
 		}
