@@ -1,3 +1,4 @@
+import { noop } from './util'
 import { Future, resolve, reject } from './Promise'
 import CancelToken from './CancelToken'
 import Action from './Action'
@@ -18,18 +19,18 @@ const stack = []
 Object.defineProperty(coroutine, 'cancel', {
 	get () {
 		if (!stack.length) throw new SyntaxError('coroutine.cancel is only available inside a coroutine')
-		return stack[stack.length - 1].curToken
+		return stack[stack.length - 1].token
 	},
 	set (token) {
 		if (!stack.length) throw new SyntaxError('coroutine.cancel is only available inside a coroutine')
 		token = CancelToken.from(token)
-		stack[stack.length - 1].setToken(token)
+		stack[stack.length - 1].token._follow(token)
 	},
 	configurable: true
 })
 
 function runGenerator (generator) {
-	const promise = new Future()
+	const promise = new Future(new SwappableCancelToken())
 	new Coroutine(generator, promise).run()
 	// taskQueue.add(new Coroutine(generator, promise))
 	return promise
@@ -40,8 +41,14 @@ class Coroutine extends Action {
 		super(promise)
 		// the generator that is driven. After cancellation, reference to cleanup coroutine
 		this.generator = generator
-		// the CancelToken (or null) currently associated with this.promise
-		this.curToken = null
+		// the CancelToken that can be directed to follow the current token
+		this.token = promise.token
+	}
+
+	destroy () {
+		super.destroy()
+		this.generator = null
+		this.token = null
 	}
 
 	run () {
@@ -58,9 +65,9 @@ class Coroutine extends Action {
 	}
 
 	cancel (p) {
-		super.cancel(p)
 		/* istanbul ignore else */
-		if (!this.promise) { // action got destroyed
+		if (this.promise._isResolved()) { // promise checks for cancellation itself
+			this.promise = null
 			const res = this.initCancel(p)
 			if (stack.indexOf(this) < 0) {
 				this.resumeCancel()
@@ -81,10 +88,12 @@ class Coroutine extends Action {
 			stack.pop() // assert: === this
 		}
 		if (this.promise) {
+			const token = this.promise.token
 			if (result.done) {
 				this.promise._resolve(result.value)
+				if (token != null) token._unsubscribe(this)
 			} else {
-				resolve(result.value)._runAction(this)
+				resolve(result.value, token)._runAction(this)
 			}
 		} else { // cancelled during execution
 			// ignoring result.done and result.value
@@ -94,43 +103,65 @@ class Coroutine extends Action {
 	}
 
 	initCancel (p) {
-		// assert: p === this.curToken.getRejected()
+		// assert: p === this.promise.token.getRejected()
 		const promise = new Future()
-		const cancelRoutine = new Coroutine(this.generator, promise)
-		cancelRoutine.curToken = p.value
-		this.generator = cancelRoutine
+		this.generator = new Coroutine(this.generator, promise, p.value)
 		return promise
 	}
 
 	resumeCancel () {
 		const cancelRoutine = this.generator
 		this.generator = null
-		const reason = cancelRoutine.curToken
-		cancelRoutine.curToken = null
-		// assert: reason === this.curToken.getRejected().value
-		this.curToken = null
+		const reason = cancelRoutine.token
+		cancelRoutine.token = null // not cancellable
+		// assert: reason === this.token.getRejected().value
+		this.token = null
 		cancelRoutine.step(cancelRoutine.generator.return, reason)
 	}
+}
 
-	setToken (newToken) {
-		/* eslint complexity:[2,6] */
+class SwappableCancelToken extends CancelToken { // also implements cancel parts of Action
+	constructor () {
+		super(noop)
+		this.promise = new Future()
+		this.curToken = null
+	}
+
+	destroy () {
+		// possibly called when unsubscribed from curToken
+	}
+
+	cancel (p) {
+		if (this._cancelled) return
+		if (p !== this.curToken.getRejected()) return
+		this._cancelled = true
+		this.promise._resolve(p)
+		return this.run()
+	}
+
+	get requested () {
+		if (this.curToken == null) return false
+		const c = this.curToken.requested
+		if (c && !this._cancelled) {
+			this.cancel(this.curToken.getRejected())
+		}
+		return c
+	}
+
+	_follow (newToken) {
+		/* eslint complexity:[2,7] */
 		const oldToken = this.curToken
 		if (oldToken && oldToken.requested) {
-			throw new ReferenceError('coroutine.cancel must not be changed after being cancelled')
+			throw new ReferenceError('token must not be changed after being cancelled')
 		}
-		if (oldToken !== newToken) {
-			const p = this.promise
+		if (oldToken !== newToken && this !== newToken) {
 			if (oldToken) {
-				oldToken._unsubscribe(this) // BUG: unsubscribing can destroy the action
-				this.promise = p // we don't want that and restore it - cancel() might still be called
-				//                  but that doesn't have an effect when newToken isn't cancelled
+				oldToken._unsubscribe(this)
 			}
-			this.curToken = p.token = newToken
+			this.curToken = newToken
 			if (newToken) {
 				if (newToken.requested) {
-					const r = newToken.getRejected()
-					super.cancel(r)
-					this.initCancel(r)
+					this.cancel(newToken.getRejected())
 				} else {
 					newToken._subscribe(this)
 				}

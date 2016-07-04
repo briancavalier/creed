@@ -190,7 +190,6 @@ export class Future extends Core {
 
 	__become (p) {
 		this.ref = p === this ? cycle() : p
-		this.token = null
 
 		if (this.action === void 0) {
 			return

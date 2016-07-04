@@ -180,15 +180,37 @@ describe('coroutine', function () {
 	})
 
 	describe('coroutine.cancel', () => {
-		it('should behave like assignment', () => {
+		it('should behave like the last assigned token', () => {
+			const {token, cancel} = CancelToken.source()
+			let c_token
+			const p = coroutine(function* () {
+				assert(!coroutine.cancel.requested)
+				coroutine.cancel = CancelToken.empty()
+				assert(!coroutine.cancel.requested)
+				coroutine.cancel = null
+				assert(!coroutine.cancel.requested)
+				coroutine.cancel = token
+				assert(!coroutine.cancel.requested)
+				cancel({})
+				assert(coroutine.cancel.requested)
+				c_token = coroutine.cancel
+			})()
+			return p.then(assert.ifError, e => {
+				assert.strictEqual(c_token, p.token)
+				return assertSame(token.getRejected(), c_token.getRejected())
+			})
+		})
+
+		it('should always return the same token', () => {
 			return coroutine(function* () {
-				const token = CancelToken.empty()
-				coroutine.cancel = token
+				const token = coroutine.cancel
 				assert.strictEqual(coroutine.cancel, token)
-				coroutine.cancel = token
+				coroutine.cancel = CancelToken.empty()
+				assert.strictEqual(coroutine.cancel, token)
 				coroutine.cancel = null
-				assert.strictEqual(coroutine.cancel, null)
-				coroutine.cancel = null
+				assert.strictEqual(coroutine.cancel, token)
+				coroutine.cancel = coroutine.cancel
+				assert.strictEqual(coroutine.cancel, token)
 			})()
 		})
 
