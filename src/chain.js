@@ -1,5 +1,3 @@
-'use strict'
-
 import maybeThenable from './maybeThenable'
 
 export default function (f, p, promise) {

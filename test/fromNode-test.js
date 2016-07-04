@@ -3,10 +3,10 @@ import { fromNode, all } from '../src/main'
 import assert from 'assert'
 
 function makefn () {
-	return fromNode((...args) => {
-		let last = args.length - 1
-		let cb = args[last]
-		let a = args.slice(0, last)
+	return fromNode(function (...args) {
+		const last = args.length - 1
+		const cb = args[last]
+		const a = args.slice(0, last)
 
 		cb(null, a.reduce(append))
 	})

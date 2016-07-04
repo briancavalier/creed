@@ -1,5 +1,3 @@
-'use strict'
-
 export default function (resolve, iterator, promise) {
 	new Coroutine(resolve, iterator, promise).run()
 	return promise

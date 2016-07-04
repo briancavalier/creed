@@ -1,5 +1,3 @@
-'use strict'
-
 import makeAsync from './async'
 
 export default class TaskQueue {

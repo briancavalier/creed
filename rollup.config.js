@@ -1,10 +1,7 @@
-import buble from 'rollup-plugin-buble'
-
 const pkg = require('./package.json')
 
 export default {
-  entry: 'src/main.js',
-  plugins: [buble()],
+  entry: 'build/src/main.js',
   targets: [
     {
       format: 'umd',

@@ -36,11 +36,11 @@ class ArrayIterator {
 						: { done: true, value: void 0 }
 	}
 
-	throw (e) {
+	['throw'] (e) {
 		throw e
 	}
 
-	return () {}
+	['return'] () {}
 }
 
 class ThrowingIterator {
@@ -52,7 +52,7 @@ class ThrowingIterator {
 		throw this.error
 	}
 
-	throw (e) {
+	['throw'] (e) {
 		throw e
 	}
 }

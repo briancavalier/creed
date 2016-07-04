@@ -1,5 +1,3 @@
-'use strict'
-
 import TimeoutError from './TimeoutError'
 
 export default function (ms, p, promise) {

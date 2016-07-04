@@ -1,4 +1,3 @@
-'use strict'
 import { silenceError, isHandled } from './inspect'
 
 const UNHANDLED_REJECTION = 'unhandledRejection'

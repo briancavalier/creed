@@ -1,5 +1,3 @@
-'use strict'
-
 import TaskQueue from './TaskQueue'
 import ErrorHandler from './ErrorHandler'
 import makeEmitError from './emitError'

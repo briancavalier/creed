@@ -1,5 +1,3 @@
-'use strict'
-
 export default function (f, p, promise) {
 	p._when(new Map(f, promise))
 	return promise
