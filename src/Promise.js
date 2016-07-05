@@ -283,7 +283,6 @@ class Rejected extends Core {
 		super()
 		this.value = e
 		this._state = REJECTED // mutated by the silencer
-		errorHandler.track(this)
 	}
 
 	then (_, r, token) {
@@ -406,6 +405,11 @@ export function silenceError (p) {
 	p._runAction(silencer)
 }
 
+export function silentReject (e) {
+	const r = new Rejected(e)
+	r._state |= HANDLED
+	return r
+}
 // -------------------------------------------------------------
 // ## Creating promises
 // -------------------------------------------------------------
@@ -432,7 +436,9 @@ export function resolveObject (o) {
 
 // reject :: e -> Promise e a
 export function reject (e) {
-	return new Rejected(e)
+	const r = new Rejected(e)
+	errorHandler.track(r)
+	return r
 }
 
 // never :: Promise e a

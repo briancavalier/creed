@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
 import { CancelToken, isRejected, isPending, getReason, future, reject } from '../src/main'
-import { FakeCancelAction, raceCallbacks } from './lib/test-util'
+import { assertSame, FakeCancelAction, raceCallbacks } from './lib/test-util'
 import assert from 'assert'
 
 describe('CancelToken', function () {
@@ -427,6 +427,86 @@ describe('CancelToken', function () {
 				pool.add(d.token)
 				assert(pool.get().requested)
 			})
+		})
+
+		it('should be requested faster than the subscription', () => {
+			const {token, cancel} = CancelToken.source()
+			token.subscribe(() => {
+				assert(token.requested)
+				assert(pool.get().requested)
+			})
+			const pool = CancelToken.pool([token])
+			return cancel()[0]
+		})
+
+		it('should ignore itself', () => {
+			const {token, cancel} = CancelToken.source()
+			const pool = CancelToken.pool()
+			pool.add(pool.get())
+			assert.strictEqual(pool.tokens.length, 0)
+			assert(!pool.get().requested)
+			pool.add(token)
+			assert(!pool.get().requested)
+			cancel()
+			assert(pool.get().requested)
+		})
+
+		it('should reject if already-cancelled tokens are added', () => {
+			const {token, cancel} = CancelToken.source()
+			const expected = {}
+			cancel(expected)
+			assert(CancelToken.pool([token]).get().requested)
+			const pool = CancelToken.pool()
+			pool.add(token)
+			return pool.get().getRejected().then(assert.ifError, r => {
+				assert.strictEqual(r.length, 1)
+				assert.strictEqual(r[0], expected)
+			})
+		})
+	})
+
+	describe('static reference()', () => {
+		it('should behave like the last assigned token', () => {
+			const {token, cancel} = CancelToken.source()
+			const ref = CancelToken.reference()
+			assert(!ref.get().requested)
+			ref.set(CancelToken.empty())
+			assert(!ref.get().requested)
+			ref.set(null)
+			assert(!ref.get().requested)
+			ref.set(token)
+			assert(!ref.get().requested)
+			cancel({})
+			assert(ref.get().requested)
+			return assertSame(token.getRejected(), ref.get().getRejected())
+		})
+
+		it('should throw when assigned to after cancellation', () => {
+			const {token, cancel} = CancelToken.source()
+			cancel()
+			const ref = CancelToken.reference(token)
+			assert(ref.get().requested)
+			assert.throws(() => { ref.set(null) }, ReferenceError)
+			assert.throws(() => { ref.set(CancelToken.empty()) }, ReferenceError)
+		})
+
+		it('should be requested faster than the subscription', () => {
+			const {token, cancel} = CancelToken.source()
+			token.subscribe(() => {
+				assert(token.requested)
+				assert(ref.get().requested)
+			})
+			const ref = CancelToken.reference(token)
+			return cancel()[0]
+		})
+
+		it('should ignore itself', () => {
+			const {token, cancel} = CancelToken.source()
+			const ref = CancelToken.reference(token)
+			ref.set(token)
+			ref.set(ref.get())
+			cancel()
+			assert(ref.get().requested)
 		})
 	})
 })

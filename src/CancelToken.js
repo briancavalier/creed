@@ -1,5 +1,5 @@
 import { noop } from './util'
-import { Future, resolve, reject, never, silenceError, taskQueue } from './Promise' // deferred
+import { Future, resolve, reject, silentReject, never, taskQueue } from './Promise' // deferred
 import { isSettled } from './inspect'
 
 export default class CancelToken {
@@ -19,9 +19,10 @@ export default class CancelToken {
 	}
 	_cancel (reason) {
 		if (this._cancelled) return
+		return this.__cancel(silentReject(reason))
+	}
+	__cancel (p) {
 		this._cancelled = true
-		const p = reject(reason) // tag as intentionally rejected, p._state |= CANCELLED?
-		silenceError(p)
 		if (this.promise !== void 0) {
 			this.promise._resolve(p)
 		} else {
@@ -33,17 +34,27 @@ export default class CancelToken {
 		/* eslint complexity:[2,4] */
 		const result = []
 		for (let i = 0; i < this.length; ++i) {
-			try {
-				if (this[i] && this[i].promise) { // not already destroyed
-					result.push(resolve(this[i].cancel(this.promise)))
-				}
-			} catch (e) {
-				result.push(reject(e))
+			if (this[i] && this[i].promise) { // not already destroyed
+				this._runAction(this[i], result)
 			}
 			this[i] = void 0
 		}
 		this.length = 0
 		return result
+	}
+	_runAction (action, results) {
+		try {
+			const res = action.cancel(this.promise)
+			if (res != null) {
+				if (Array.isArray(res)) {
+					results.push(...res)
+				} else {
+					results.push(res)
+				}
+			}
+		} catch (e) {
+			results.push(reject(e))
+		}
 	}
 	_subscribe (action) {
 		if (this.requested && this.length === 0) {
@@ -53,7 +64,8 @@ export default class CancelToken {
 	}
 	_unsubscribe (action) {
 		/* eslint complexity:[2,6] */
-		for (let i = Math.min(5, this.length); i--;) {
+		let i = this._cancelled ? 0 : Math.min(5, this.length)
+		while (i--) {
 			// an inplace-filtering algorithm to remove empty actions
 			// executed at up to 5 steps per unsubscribe
 			if (this.scanHigh < this.length) {
@@ -80,7 +92,7 @@ export default class CancelToken {
 			promise,
 			cancel (p) {
 				if (!isSettled(this.promise)) {
-					return fn(p.value)
+					return resolve(fn(p.near().value))
 				}
 			}
 		})
@@ -103,7 +115,7 @@ export default class CancelToken {
 			const token = new this(noop)
 			return {
 				token,
-				cancel (r) { token._cancel(r) }
+				cancel (r) { return token._cancel(r) }
 			}
 		} else {
 			let cancel
@@ -134,32 +146,121 @@ export default class CancelToken {
 	static pool (tokens) {
 		return new CancelTokenPool(tokens)
 	}
+	static reference (cur) {
+		return new CancelTokenReference(cur)
+	}
 }
 
-class CancelTokenPool {
-	constructor (tokens) {
-		this.token = new CancelToken(noop)
-		this.reasons = []
-		this.count = 0
-		this.check = r => {
-			this.reasons.push(r)
-			if (--this.count === 0) {
-				this.token._cancel(this.reasons) // forward return value ???
-				this.reasons = null
-			}
+class LiveCancelToken extends CancelToken {
+	constructor (check) {
+		super(noop)
+		this.check = check
+	}
+	__cancel (p) {
+		this.check = null
+		return super.__cancel(p)
+	}
+	get requested () {
+		return this._cancelled || this.check._testRequested()
+		/* if (this._cancelled) return true
+		const c = this.check._testRequested()
+		if (c) {
+			this.__cancel(this.check._getRejected())
 		}
+		return c */
+	}
+}
+
+class CancelTokenPool { // implements cancel parts of Action
+	constructor (tokens) {
+		this.promise = new LiveCancelToken(this)
+		this.tokens = []
+		this.count = 0
 		if (tokens) this.add(...tokens)
-		// if (this.count === 0 && !this.token.requested) this.token._cancel() ???
+	}
+	// never called (by unsubscribe): destroy () {}
+	cancel (p) {
+		// assert: !this.promise._cancelled
+		if (--this.count === 0) {
+			return this.promise.__cancel(this._getRejected())
+		}
+	}
+	_testRequested () {
+		return this.tokens.length > 0 && this.tokens.every(t => t.requested)
+	}
+	_getRejected () {
+		const reasons = this.tokens.map(t => t.getRejected().near().value)
+		this.tokens = null
+		return silentReject(reasons)
 	}
 	add (...tokens) {
-		if (this.token.requested) return
+		if (this.tokens == null) return
 		this.count += tokens.length
 		// for (let t of tokens) { // https://phabricator.babeljs.io/T2164
 		for (let i = 0, t; i < tokens.length && (t = tokens[i]); i++) {
-			CancelToken.from(t).subscribe(this.check)
+			t = CancelToken.from(t)
+			if (this.promise === t) {
+				this.count--
+				continue
+			}
+			this.tokens.push(t)
+			if (t.requested) {
+				this.count--
+			} else {
+				t._subscribe(this)
+			}
+		}
+		if (this.tokens.length > 0 && this.count === 0) {
+			this.promise.__cancel(this._getRejected())
 		}
 	}
 	get () {
-		return this.token
+		return this.promise
+	}
+}
+
+export class CancelTokenReference { // implements cancel parts of Action
+	constructor (cur) {
+		this.promise = new LiveCancelToken(this)
+		this.curToken = cur
+	}
+	/* istanbul ignore next */
+	destroy () {
+		// possibly called when unsubscribed from curToken
+	}
+	cancel (p) {
+		/* istanbul ignore if */
+		if (this.curToken == null || this.curToken.getRejected() !== p) return // when called from an oldToken
+		// assert: !this.promise._cancelled
+		return this.promise.__cancel(p)
+	}
+	_testRequested () {
+		return this.curToken != null && this.curToken.requested
+	}
+	/* _getRejected () {
+		return this.curToken.getRejected()
+	} */
+	set (newToken) {
+		/* eslint complexity:[2,7] */
+		const oldToken = this.curToken
+		if (oldToken && oldToken.requested) {
+			throw new ReferenceError('token must not be changed after being cancelled')
+		}
+		if (oldToken !== newToken && this.promise !== newToken) {
+			if (oldToken) {
+				oldToken._unsubscribe(this)
+			}
+			this.curToken = newToken
+			if (newToken) {
+				if (newToken.requested) {
+					this.promise.__cancel(newToken.getRejected())
+				} else {
+					newToken._subscribe(this)
+				}
+			}
+		}
+	}
+	get () {
+		return this.promise
 	}
 }

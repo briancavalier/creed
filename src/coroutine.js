@@ -1,4 +1,3 @@
-import { noop } from './util'
 import { Future, resolve, reject } from './Promise'
 import CancelToken from './CancelToken'
 import Action from './Action'
@@ -19,36 +18,31 @@ const stack = []
 Object.defineProperty(coroutine, 'cancel', {
 	get () {
 		if (!stack.length) throw new SyntaxError('coroutine.cancel is only available inside a coroutine')
-		return stack[stack.length - 1].token
+		return stack[stack.length - 1].getToken()
 	},
 	set (token) {
 		if (!stack.length) throw new SyntaxError('coroutine.cancel is only available inside a coroutine')
 		token = CancelToken.from(token)
-		stack[stack.length - 1].token._follow(token)
+		stack[stack.length - 1].setToken(token)
 	},
 	configurable: true
 })
 
 function runGenerator (generator) {
-	const promise = new Future(new SwappableCancelToken())
-	new Coroutine(generator, promise).run()
-	// taskQueue.add(new Coroutine(generator, promise))
+	const swappable = CancelToken.reference(null)
+	const promise = new Future(swappable.get())
+	new Coroutine(generator, promise, swappable).run()
+	// taskQueue.add(new Coroutine(generator, promise, swappable))
 	return promise
 }
 
 class Coroutine extends Action {
-	constructor (generator, promise) {
+	constructor (generator, promise, ref) {
 		super(promise)
 		// the generator that is driven. After cancellation, reference to cleanup coroutine
 		this.generator = generator
-		// the CancelToken that can be directed to follow the current token
-		this.token = promise.token
-	}
-
-	destroy () {
-		super.destroy()
-		this.generator = null
-		this.token = null
+		// a CancelTokenReference
+		this.tokenref = ref
 	}
 
 	run () {
@@ -67,8 +61,10 @@ class Coroutine extends Action {
 	cancel (p) {
 		/* istanbul ignore else */
 		if (this.promise._isResolved()) { // promise checks for cancellation itself
+			// assert: p === this.promise.token.getRejected()
 			this.promise = null
-			const res = this.initCancel(p)
+			const res = new Future()
+			this.generator = new Coroutine(this.generator, res, p.near().value)
 			if (stack.indexOf(this) < 0) {
 				this.resumeCancel()
 			}
@@ -77,7 +73,7 @@ class Coroutine extends Action {
 	}
 
 	step (f, x) {
-		/* eslint complexity:[2,4] */
+		/* eslint complexity:[2,5] */
 		let result
 		stack.push(this)
 		try {
@@ -102,70 +98,23 @@ class Coroutine extends Action {
 		}
 	}
 
-	initCancel (p) {
-		// assert: p === this.promise.token.getRejected()
-		const promise = new Future()
-		this.generator = new Coroutine(this.generator, promise, p.value)
-		return promise
-	}
-
 	resumeCancel () {
 		const cancelRoutine = this.generator
 		this.generator = null
-		const reason = cancelRoutine.token
-		cancelRoutine.token = null // not cancellable
-		// assert: reason === this.token.getRejected().value
-		this.token = null
+		const reason = cancelRoutine.tokenref
+		cancelRoutine.tokenref = null // not cancellable
+		// assert: reason === this.tokenref.get().getRejected().value
+		this.tokenref = null
 		cancelRoutine.step(cancelRoutine.generator.return, reason)
 	}
-}
 
-class SwappableCancelToken extends CancelToken { // also implements cancel parts of Action
-	constructor () {
-		super(noop)
-		this.promise = new Future()
-		this.curToken = null
+	setToken (t) {
+		if (this.tokenref == null) throw new SyntaxError('coroutine.cancel is only available until cancellation')
+		this.tokenref.set(t)
 	}
 
-	destroy () {
-		// possibly called when unsubscribed from curToken
-	}
-
-	cancel (p) {
-		if (this._cancelled) return
-		if (p !== this.curToken.getRejected()) return
-		this._cancelled = true
-		this.promise._resolve(p)
-		return this.run()
-	}
-
-	get requested () {
-		if (this.curToken == null) return false
-		const c = this.curToken.requested
-		if (c && !this._cancelled) {
-			this.cancel(this.curToken.getRejected())
-		}
-		return c
-	}
-
-	_follow (newToken) {
-		/* eslint complexity:[2,7] */
-		const oldToken = this.curToken
-		if (oldToken && oldToken.requested) {
-			throw new ReferenceError('token must not be changed after being cancelled')
-		}
-		if (oldToken !== newToken && this !== newToken) {
-			if (oldToken) {
-				oldToken._unsubscribe(this)
-			}
-			this.curToken = newToken
-			if (newToken) {
-				if (newToken.requested) {
-					this.cancel(newToken.getRejected())
-				} else {
-					newToken._subscribe(this)
-				}
-			}
-		}
+	getToken () {
+		if (this.tokenref == null) throw new SyntaxError('coroutine.cancel is only available until cancellation')
+		return this.tokenref.get()
 	}
 }

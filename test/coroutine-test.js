@@ -180,27 +180,6 @@ describe('coroutine', function () {
 	})
 
 	describe('coroutine.cancel', () => {
-		it('should behave like the last assigned token', () => {
-			const {token, cancel} = CancelToken.source()
-			let c_token
-			const p = coroutine(function* () {
-				assert(!coroutine.cancel.requested)
-				coroutine.cancel = CancelToken.empty()
-				assert(!coroutine.cancel.requested)
-				coroutine.cancel = null
-				assert(!coroutine.cancel.requested)
-				coroutine.cancel = token
-				assert(!coroutine.cancel.requested)
-				cancel({})
-				assert(coroutine.cancel.requested)
-				c_token = coroutine.cancel
-			})()
-			return p.then(assert.ifError, e => {
-				assert.strictEqual(c_token, p.token)
-				return assertSame(token.getRejected(), c_token.getRejected())
-			})
-		})
-
 		it('should always return the same token', () => {
 			return coroutine(function* () {
 				const token = coroutine.cancel
@@ -214,9 +193,39 @@ describe('coroutine', function () {
 			})()
 		})
 
-		it('should throw when used outside a coroutine', () => {
+		it('should return the token of the result promise', () => {
+			const p = coroutine(function* () {
+				return coroutine.cancel
+			})()
+			return p.then(token => {
+				assert.strictEqual(token, p.token)
+			})
+		})
+
+		it('should not be available outside a coroutine', () => {
 			assert.throws(() => coroutine.cancel, SyntaxError)
 			assert.throws(() => { coroutine.cancel = null }, SyntaxError)
+		})
+
+		it('should not be available in finally blocks after cancellation', () => {
+			let err
+			const p = coroutine(function* () {
+				const {token, cancel} = CancelToken.source()
+				coroutine.cancel = token
+				try {
+					yield delay(1)
+					yield cancel()
+				} finally {
+					try {
+						assert(isRejected(p))
+						assert.throws(() => coroutine.cancel, SyntaxError)
+						assert.throws(() => { coroutine.cancel = null }, SyntaxError)
+					} catch (e) {
+						err = e
+					}
+				}
+			})()
+			return p.then(assert.ifError, () => assert.ifError(err))
 		})
 
 		it('should throw when assigned to after cancellation', () => {
