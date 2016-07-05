@@ -352,6 +352,48 @@ describe('CancelToken', function () {
 		})
 	})
 
+	describe('static race()', () => {
+		// see also concat test cases
+		it('should ignore tokens added after cancellation', () => {
+			const race = CancelToken.race()
+			const a = CancelToken.source()
+			race.add(a.token)
+			const expected = {}
+			a.cancel(expected)
+			assert(race.get().requested)
+			const b = CancelToken.source()
+			b.cancel()
+			race.add(b.token)
+			assert(race.get().requested)
+			return race.get().getRejected().then(assert.ifError, e => {
+				assert.strictEqual(e, expected)
+				const c = CancelToken.source()
+				race.add(c.token)
+				assert(race.get().requested)
+			})
+		})
+
+		it('should be requested faster than the subscription', () => {
+			const {token, cancel} = CancelToken.source()
+			token.subscribe(() => {
+				assert(token.requested)
+				assert(race.get().requested)
+			})
+			const race = CancelToken.race([token])
+			return cancel()[0]
+		})
+
+		it('should ignore itself', () => {
+			const {token, cancel} = CancelToken.source()
+			const race = CancelToken.race()
+			race.add(race.get())
+			assert(!race.get().requested)
+			race.add(token)
+			cancel()
+			assert(race.get().requested)
+		})
+	})
+
 	describe('static pool()', () => {
 		it('should cancel when all tokens are cancelled', () => {
 			const sources = []
