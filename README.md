@@ -1,5 +1,7 @@
 # creed :: async
 
+[![Join the chat at https://gitter.im/briancavalier/creed](https://badges.gitter.im/briancavalier/creed.svg)](https://gitter.im/briancavalier/creed?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, [fantasy-land](https://github.com/fantasyland/fantasy-land).
 
 Creed simplifies async by letting you write coroutines using ES2015 generators and promises, and encourages functional programming via fantasy-land.  It also makes uncaught errors obvious by default, and supports other ES2015 features such as iterables.
