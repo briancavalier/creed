@@ -65,7 +65,7 @@ export class Future extends Core {
 	}
 
 	// catch :: Promise e a -> (e -> b) -> Promise e b
-	catch (r) {
+	['catch'] (r) {
 		const n = this.near()
 		return n === this ? then(void 0, r, n, new Future()) : n.catch(r)
 	}
@@ -200,7 +200,7 @@ class Fulfilled extends Core {
 		return typeof f === 'function' ? then(f, void 0, this, new Future()) : this
 	}
 
-	catch () {
+	['catch'] () {
 		return this
 	}
 
@@ -259,7 +259,7 @@ class Rejected extends Core {
 		return typeof r === 'function' ? this.catch(r) : this
 	}
 
-	catch (r) {
+	['catch'] (r) {
 		return then(void 0, r, this, new Future())
 	}
 
@@ -313,7 +313,7 @@ class Never extends Core {
 		return this
 	}
 
-	catch () {
+	['catch'] () {
 		return this
 	}
 
