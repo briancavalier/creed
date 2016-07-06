@@ -21,9 +21,7 @@ class Chain extends Action {
 	}
 
 	fulfilled (p) {
-		const token = this.promise.token
 		this.tryCall(this.f, p.value)
-		if (token != null) token._unsubscribe(this)
 	}
 
 	handle (y) {

@@ -84,12 +84,11 @@ class Coroutine extends Action {
 			stack.pop() // assert: === this
 		}
 		if (this.promise) {
-			const token = this.promise.token
+			const res = resolve(result.value, this.promise.token)
 			if (result.done) {
-				this.promise._resolve(result.value)
-				if (token != null) token._unsubscribe(this)
+				this.put(res)
 			} else {
-				resolve(result.value, token)._runAction(this)
+				res._runAction(this)
 			}
 		} else { // cancelled during execution
 			// ignoring result.done and result.value

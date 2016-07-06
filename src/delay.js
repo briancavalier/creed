@@ -24,12 +24,10 @@ class Delay extends Action {
 
 	fulfilled (p) {
 		/* global setTimeout */
-		this.id = setTimeout(become, this.time, p, this)
+		this.id = setTimeout(put, this.time, p, this)
 	}
 }
 
-function become (p, action) {
-	const token = action.promise.token
-	action.promise._become(p)
-	if (token != null) token._unsubscribe(action)
+function put (p, action) {
+	action.put(p)
 }

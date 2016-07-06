@@ -23,28 +23,38 @@ export default class Action {
 	// default onFulfilled action
 	/* istanbul ignore next */
 	fulfilled (p) {
-		const token = this.promise.token
-		this.promise._become(p)
-		if (token != null) token._unsubscribe(this)
+		this.put(p)
 	}
 
 	// default onRejected action
 	rejected (p) {
-		const token = this.promise.token
-		this.promise._become(p)
-		if (token != null) token._unsubscribe(this)
+		this.put(p)
 		return false
 	}
 
 	tryCall (f, x) {
-		/* eslint complexity:[2,4] */
-		let result
-		try {
-			result = f(x)
-		} catch (e) {
-			if (this.promise) this.promise._reject(e)
-			return
-		} // else
-		if (this.promise) this.handle(result)
+		/* eslint complexity:[2,5], no-labels:0, no-lone-blocks:0 */
+		call: {
+			let result
+			try {
+				result = f(x)
+			} catch (e) {
+				if (this.promise == null) return // got cancelled during call
+				this.promise._reject(e)
+				break call
+			} /* else */ {
+				if (this.promise == null) return // got cancelled during call
+				this.handle(result)
+			}
+		}
+		const token = this.promise.token
+		if (token != null) token._unsubscribe(this)
+	}
+
+	put (p) {
+		const promise = this.promise
+		const token = promise.token
+		promise._become(p)
+		if (token != null) token._unsubscribe(this)
 	}
 }

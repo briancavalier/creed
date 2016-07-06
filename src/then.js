@@ -30,14 +30,12 @@ class Then extends Action {
 	}
 
 	runThen (f, p) {
-		const token = this.promise.token
 		const hasHandler = typeof f === 'function'
 		if (hasHandler) {
 			this.tryCall(f, p.value)
 		} else {
-			this.promise._become(p)
+			this.put(p)
 		}
-		if (token != null) token._unsubscribe(this)
 		return hasHandler
 	}
 
