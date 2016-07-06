@@ -10,6 +10,7 @@ import Action from './Action'
 import then from './then'
 import map from './map'
 import chain from './chain'
+import fin from './finally'
 
 import CancelToken from './CancelToken'
 
@@ -115,6 +116,11 @@ export class Future extends Core {
 		}
 		this._runAction(new Action(p))
 		return p
+	}
+
+	finally (f) {
+		const n = this.near()
+		return n === this ? fin(f, this, new Future()) : n.finally(f)
 	}
 
 	// toString :: Promise e a -> String
@@ -250,6 +256,10 @@ class Fulfilled extends Core {
 		return rejectedIfCancelled(token, this)
 	}
 
+	finally (f) {
+		return fin(f, this, new Future())
+	}
+
 	toString () {
 		return '[object ' + this.inspect() + ']'
 	}
@@ -313,6 +323,10 @@ class Rejected extends Core {
 		return rejectedIfCancelled(token, this)
 	}
 
+	finally (f) {
+		return fin(f, this, new Future())
+	}
+
 	toString () {
 		return '[object ' + this.inspect() + ']'
 	}
@@ -370,6 +384,10 @@ class Never extends Core {
 
 	untilCancel (token) {
 		return rejectedWhenCancel(token, this)
+	}
+
+	finally (_) {
+		return this
 	}
 
 	toString () {

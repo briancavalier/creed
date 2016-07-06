@@ -21,7 +21,7 @@ class Chain extends Action {
 	}
 
 	fulfilled (p) {
-		this.tryCall(this.f, p.value)
+		if (this.tryCall(this.f, p.value)) this.tryUnsubscribe()
 	}
 
 	handle (y) {

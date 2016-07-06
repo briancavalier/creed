@@ -32,7 +32,7 @@ class Then extends Action {
 	runThen (f, p) {
 		const hasHandler = typeof f === 'function'
 		if (hasHandler) {
-			this.tryCall(f, p.value)
+			if (this.tryCall(f, p.value)) this.tryUnsubscribe()
 		} else {
 			this.put(p)
 		}

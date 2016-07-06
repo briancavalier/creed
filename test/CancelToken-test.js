@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
-import { CancelToken, isRejected, isPending, getReason, future, reject } from '../src/main'
-import { assertSame, FakeCancelAction, raceCallbacks } from './lib/test-util'
+import { CancelToken, isRejected, isPending, getReason, future } from '../src/main'
+import { assertSame, FakeCancelAction } from './lib/test-util'
 import assert from 'assert'
 
 describe('CancelToken', function () {
@@ -167,16 +167,6 @@ describe('CancelToken', function () {
 			cancel()
 			for (const action of active) assert(action.isCancelled)
 			for (const action of inactive) assert(!action.isCancelled)
-		})
-
-		it('should ignore exceptions thrown by subscriptions', () => {
-			const {token, cancel} = CancelToken.source()
-			const throwAction = new FakeCancelAction({}, () => { throw new Error() })
-			token._subscribe(throwAction)
-			const action = new FakeCancelAction({})
-			token._subscribe(action)
-			cancel()
-			assert(action.isCancelled)
 		})
 
 		it('should run subscriptions when already requested', () => {
@@ -355,6 +345,24 @@ describe('CancelToken', function () {
 			assert.strictEqual(called, 2)
 		})
 
+		it('should invoke f if the token is cancelled during the call', () => {
+			const {token, cancel} = CancelToken.source()
+			let called = 0
+			const call = token.subscribeOrCall(() => { called |= 1; call() }, () => { called |= 2 })
+			assert.strictEqual(called, 0)
+			cancel()
+			assert.strictEqual(called, 1)
+		})
+
+		it('should invoke g if the call happens during the cancellation', () => {
+			const {token, cancel} = CancelToken.source()
+			let called = 0
+			const call = token.subscribeOrCall(() => { called |= 1 }, () => { called |= 2; cancel() })
+			assert.strictEqual(called, 0)
+			call()
+			assert.strictEqual(called, 2)
+		})
+
 		it('should cope with undefined g', () => {
 			const {token, cancel} = CancelToken.source()
 			let called = 0
@@ -374,7 +382,7 @@ describe('CancelToken', function () {
 
 		it('should invoke g with the arguments and context of the call', () => {
 			const o = {a: {}, b: []}
-			const call = CancelToken.empty().subscribeOrCall(() => {}, function(a, b) {
+			const call = CancelToken.empty().subscribeOrCall(() => {}, function (a, b) {
 				assert.strictEqual(this, o)
 				assert.strictEqual(a, o.a)
 				assert.strictEqual(b, o.b)

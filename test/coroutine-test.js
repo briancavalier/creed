@@ -174,7 +174,7 @@ describe('coroutine', function () {
 			return delay(15).then(() => {
 				cancel({})
 				assert(isRejected(p))
-				assert(counter == 0)
+				assert.strictEqual(counter, 0)
 			})
 		})
 	})

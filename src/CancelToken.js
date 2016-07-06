@@ -1,5 +1,5 @@
 import { noop } from './util'
-import { Future, resolve, reject, silentReject, taskQueue } from './Promise' // deferred
+import { Future, resolve, silentReject, taskQueue } from './Promise' // deferred
 import { subscribe, subscribeOrCall } from './subscribe'
 
 export default class CancelToken {
@@ -24,7 +24,7 @@ export default class CancelToken {
 	__cancel (p) {
 		this._cancelled = true
 		if (this.promise !== void 0) {
-			this.promise._resolve(p)
+			this.promise.__become(p)
 		} else {
 			this.promise = p
 		}
@@ -48,22 +48,20 @@ export default class CancelToken {
 		return result
 	}
 	_runAction (action, results) {
-		try {
-			const res = action.cancel(this.promise)
-			if (res != null) {
-				if (Array.isArray(res)) {
+		const res = action.cancel(this.promise)
+		if (res != null) {
+			if (Array.isArray(res)) {
+				if (res.length > 0) {
 					results.push(...res)
-				} else {
-					results.push(res)
 				}
+			} else {
+				results.push(res)
 			}
-		} catch (e) {
-			results.push(reject(e))
 		}
 	}
 	_subscribe (action) {
 		if (this.requested && this.length === 0) {
-			taskQueue.add(this) // asynchronous?
+			taskQueue.add(this)
 		}
 		this[this.length++] = action
 	}
@@ -99,9 +97,9 @@ export default class CancelToken {
 	}
 	getRejected () {
 		if (this.promise === void 0) {
-			this.promise = new Future() // never cancelled :-)
+			this.promise = new Future(this) // while not settled, provides a reference to token
 		}
-		return this.promise
+		return this.promise.near() // TODO: always return same instance?
 	}
 	// https://domenic.github.io/cancelable-promise/#sec-canceltoken.prototype.requested
 	get requested () {

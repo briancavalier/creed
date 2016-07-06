@@ -38,16 +38,16 @@ class Subscription extends Action {
 	cancel (p) {
 		/* eslint complexity:[2,4] */
 		const promise = this.promise
-		const f = this.f
-		if (promise.token != null && promise._isResolved()) { // promise checks for cancellation itself
-			if (f != null) { // avoid destruction in case of reentrancy
-				this.destroy()
+		if (promise.token != null) {
+			const res = super.cancel(p)
+			if (res != null) {
+				return res
 			}
-		} else {
-			this.f = null
-			this.tryCall(f, p.near().value)
-			return promise
 		}
+		const f = this.f
+		this.f = null
+		if (this.tryCall(f, p.near().value)) this.tryUnsubscribe()
+		return promise
 	}
 
 	handle (result) {

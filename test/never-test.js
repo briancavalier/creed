@@ -58,6 +58,11 @@ describe('never', () => {
 		assert.strictEqual(token.getRejected(), p.chain(assert.ifError, token))
 	})
 
+	it('finally should be identity', () => {
+		const p = never()
+		assert.strictEqual(p, p.finally(() => {}))
+	})
+
 	it('_when should not call action', () => {
 		let fail = () => { throw new Error('never._when called action') }
 		let action = {
