@@ -1,6 +1,6 @@
 import { noop } from './util'
-import { Future, resolve, reject, silentReject, never, taskQueue } from './Promise' // deferred
-import { isSettled } from './inspect'
+import { Future, resolve, reject, silentReject, taskQueue } from './Promise' // deferred
+import { subscribe, subscribeOrCall } from './subscribe'
 
 export default class CancelToken {
 	// https://domenic.github.io/cancelable-promise/#sec-canceltoken-constructor
@@ -33,13 +33,18 @@ export default class CancelToken {
 	run () {
 		/* eslint complexity:[2,4] */
 		const result = []
-		for (let i = 0; i < this.length; ++i) {
+		const l = this.length
+		for (let i = 0; i < l; ++i) {
 			if (this[i] && this[i].promise) { // not already destroyed
 				this._runAction(this[i], result)
 			}
 			this[i] = void 0
 		}
-		this.length = 0
+		if (this.length === l) {
+			this.length = 0
+		} else {
+			taskQueue.add(this)
+		}
 		return result
 	}
 	_runAction (action, results) {
@@ -86,18 +91,11 @@ export default class CancelToken {
 			action.destroy() // at least mark explictly as empty
 		}
 	}
-	subscribe (fn, promise) {
-		promise = promise != null ? resolve(promise) : never()
-		this._subscribe({
-			promise,
-			cancel (p) {
-				if (!isSettled(this.promise)) {
-					return resolve(fn(p.near().value))
-				}
-			}
-		})
-		// TODO unsubscribe when promise settles
-		return this
+	subscribe (fn, token) {
+		return subscribe(fn, this, new Future(token))
+	}
+	subscribeOrCall (fn, c) {
+		return subscribeOrCall(fn, c, this, new Future())
 	}
 	getRejected () {
 		if (this.promise === void 0) {
