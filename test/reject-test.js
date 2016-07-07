@@ -87,4 +87,10 @@ describe('reject', () => {
 		cancel({})
 		return assertSame(token.getRejected(), p.chain(assert.ifError, token))
 	})
+
+	it('trifurcate should be identity without r callback', () => {
+		const p = reject(true)
+		silenceError(p)
+		assert.strictEqual(p, p.trifurcate(assert.ifError, undefined, assert.ifError))
+	})
 })

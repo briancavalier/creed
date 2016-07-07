@@ -11,6 +11,7 @@ import then from './then'
 import map from './map'
 import chain from './chain'
 import fin from './finally'
+import trifurcate from './trifurcate'
 
 import CancelToken from './CancelToken'
 
@@ -121,6 +122,11 @@ export class Future extends Core {
 	finally (f) {
 		const n = this.near()
 		return n === this ? fin(f, this, new Future()) : n.finally(f)
+	}
+
+	trifurcate (f, r, c) {
+		const n = this.near()
+		return n === this ? this.token ? trifurcate(f, r, c, this, new Future()) : then(f, r, this, new Future()) : n.trifurcate(f, r, c)
 	}
 
 	// toString :: Promise e a -> String
@@ -260,6 +266,10 @@ class Fulfilled extends Core {
 		return fin(f, this, new Future())
 	}
 
+	trifurcate (f, r, c) {
+		return typeof f === 'function' ? then(f, undefined, this, new Future()) : this
+	}
+
 	toString () {
 		return '[object ' + this.inspect() + ']'
 	}
@@ -327,6 +337,10 @@ class Rejected extends Core {
 		return fin(f, this, new Future())
 	}
 
+	trifurcate (f, r, c) {
+		return this.token ? trifurcate(undefined, r, c, this, new Future()) : typeof r === 'function' ? then(undefined, r, this, new Future()) : this
+	}
+
 	toString () {
 		return '[object ' + this.inspect() + ']'
 	}
@@ -387,6 +401,10 @@ class Never extends Core {
 	}
 
 	finally (_) {
+		return this
+	}
+
+	trifurcate (f, r, c) {
 		return this
 	}
 

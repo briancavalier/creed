@@ -26,6 +26,7 @@ export default class CancelToken {
 		if (this.promise !== void 0) {
 			this.promise.__become(p)
 		} else {
+			p.token = this // TODO ugly but necessary?
 			this.promise = p
 		}
 		return this.run()
@@ -99,7 +100,7 @@ export default class CancelToken {
 		if (this.promise === void 0) {
 			this.promise = new Future(this) // while not settled, provides a reference to token
 		}
-		return this.promise.near() // TODO: always return same instance?
+		return this.promise
 	}
 	// https://domenic.github.io/cancelable-promise/#sec-canceltoken.prototype.requested
 	get requested () {

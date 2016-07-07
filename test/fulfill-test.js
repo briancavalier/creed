@@ -80,4 +80,9 @@ describe('fulfill', () => {
 		cancel({})
 		return assertSame(token.getRejected(), p.chain(assert.ifError, token))
 	})
+
+	it('trifurcate should be identity without f callback', () => {
+		const p = fulfill(true)
+		assert.strictEqual(p, p.trifurcate(undefined, assert.ifError, assert.ifError))
+	})
 })

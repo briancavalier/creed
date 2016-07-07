@@ -63,6 +63,11 @@ describe('never', () => {
 		assert.strictEqual(p, p.finally(() => {}))
 	})
 
+	it('trifurcate should be identity', () => {
+		const p = never()
+		assert.strictEqual(p, p.trifurcate(assert.ifError, assert.ifError, assert.ifError))
+	})
+
 	it('_when should not call action', () => {
 		let fail = () => { throw new Error('never._when called action') }
 		let action = {
