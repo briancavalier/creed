@@ -195,11 +195,10 @@ describe('coroutine', function () {
 
 		it('should return the token of the result promise', () => {
 			const p = coroutine(function* () {
-				return coroutine.cancel
+				yield delay(1)
+				assert.strictEqual(coroutine.cancel, p.token)
 			})()
-			return p.then(token => {
-				assert.strictEqual(token, p.token)
-			})
+			return p
 		})
 
 		it('should not be available outside a coroutine', () => {

@@ -14,13 +14,14 @@ describe('Promise', () => {
 		return p
 	})
 
-	it('should not call executor when token is cancelled', () => {
+	it('should not call executor and immediately reject when token is requested', () => {
 		const {token, cancel} = CancelToken.source()
 		cancel({})
 		let called = false
 		const p = new Promise((resolve, reject) => {
 			called = true
 		}, token)
+		assert(isRejected(p))
 		assert(!called)
 		return assertSame(token.getRejected(), p)
 	})
@@ -78,6 +79,34 @@ describe('Promise', () => {
 			const expected = new Error()
 			return new Promise((resolve, reject) => setTimeout(reject, 1, reject(expected)))
 				.then(assert.ifError, x => assert.strictEqual(expected, x))
+		})
+
+		it('should not change state when called multiple times', () => {
+			let res, rej
+			const promise = new Promise((resolve, reject) => {
+				res = resolve
+				rej = reject
+			})
+			res(1)
+			const expected = promise.state()
+			res(2)
+			assert.strictEqual(promise.state(), expected)
+			rej(3)
+			assert.strictEqual(promise.state(), expected)
+		})
+
+		it('should not change state with token when called multiple times', () => {
+			let res, rej
+			const promise = new Promise((resolve, reject) => {
+				res = resolve
+				rej = reject
+			}, CancelToken.empty())
+			res(1)
+			const expected = promise.state()
+			res(2)
+			assert.strictEqual(promise.state(), expected)
+			rej(3)
+			assert.strictEqual(promise.state(), expected)
 		})
 	})
 

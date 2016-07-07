@@ -29,4 +29,9 @@ describe('chain', function () {
 		return delay(1, expected).then(reject).chain(() => null)
 			.then(assert.ifError, x => assert.strictEqual(x, expected))
 	})
+
+	it('should have cycle detection', () => {
+		const p = delay(1).chain(() => p)
+		return p.then(assert.ifError, e => assert(e instanceof TypeError))
+	})
 })

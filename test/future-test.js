@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import { future, reject, fulfill, isSettled, isPending, never } from '../src/main'
+import { future, reject, fulfill, isSettled, isPending, never, CancelToken } from '../src/main'
 import { Future, silenceError } from '../src/Promise'
 import { assertSame } from './lib/test-util'
 import assert from 'assert'
@@ -22,6 +22,64 @@ describe('future', () => {
 			assertSame(promise.then(f), promise.then(fp))
 			setTimeout(resolve, 0, 1)
 			return promise
+		})
+	})
+
+	describe('state', () => {
+		it('should not change after resolution', () => {
+			const { resolve, promise } = future()
+			resolve(fulfill())
+			const expected = promise.state()
+			resolve(fulfill())
+			assert.strictEqual(promise.state(), expected)
+			resolve(reject())
+			assert.strictEqual(promise.state(), expected)
+		})
+
+		it('should not change after resolution with future', () => {
+			const { resolve, promise } = future()
+			const f = future()
+			resolve(f.promise)
+			const expected = promise.state()
+			resolve(fulfill())
+			assert.strictEqual(promise.state(), expected)
+			resolve(reject())
+			assert.strictEqual(promise.state(), expected)
+
+			f.resolve(reject())
+			const rejected = promise.state()
+			resolve(fulfill())
+			assert.strictEqual(promise.state(), rejected)
+			resolve(reject())
+			assert.strictEqual(promise.state(), rejected)
+		})
+
+		it('should not change with token after resolution', () => {
+			const { resolve, promise } = future(CancelToken.empty())
+			resolve(reject())
+			const expected = promise.state()
+			resolve(fulfill())
+			assert.strictEqual(promise.state(), expected)
+			resolve(reject())
+			assert.strictEqual(promise.state(), expected)
+		})
+
+		it('should not change with token after resolution with future', () => {
+			const { resolve, promise } = future(CancelToken.empty())
+			const f = future()
+			resolve(f.promise)
+			const expected = promise.state()
+			resolve(fulfill())
+			assert.strictEqual(promise.state(), expected)
+			resolve(reject())
+			assert.strictEqual(promise.state(), expected)
+
+			f.resolve(fulfill())
+			const fulfilled = promise.state()
+			resolve(fulfill())
+			assert.strictEqual(promise.state(), fulfilled)
+			resolve(reject())
+			assert.strictEqual(promise.state(), fulfilled)
 		})
 	})
 

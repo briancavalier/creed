@@ -68,6 +68,17 @@ describe('trifurcate', () => {
 			return result
 		})
 
+		it('should asynchronously call the callback', () => {
+			const { resolve, promise } = future(CancelToken.empty())
+			resolve(fulfill(1))
+			let called = false
+			const res = promise.trifurcate(() => {
+				called = true
+			})
+			assert(!called)
+			return res.then(() => assert(called))
+		})
+
 		it('should behave like the input without callback', () => {
 			const { resolve, promise } = future(CancelToken.empty())
 			const p = fulfill(1)
@@ -111,6 +122,17 @@ describe('trifurcate', () => {
 			resolve(reject(1))
 			promise.trifurcate(nok, ok, nok)
 			return result
+		})
+
+		it('should asynchronously call the callback', () => {
+			const { resolve, promise } = future(CancelToken.empty())
+			resolve(reject(1))
+			let called = false
+			const res = promise.trifurcate(undefined, () => {
+				called = true
+			})
+			assert(!called)
+			return res.then(() => assert(called))
 		})
 
 		it('should behave like the input without callback', () => {
@@ -159,11 +181,24 @@ describe('trifurcate', () => {
 			return result
 		})
 
-		it('should behave like getRejected without callback', () => {
+		it('should asynchronously call the callback', () => {
 			const { token, cancel } = CancelToken.source()
 			const { promise } = future(token)
 			cancel(1)
-			return assertSame(token.getRejected(), promise.trifurcate(assert.ifError, assert.ifError, undefined))
+			let called = false
+			const res = promise.trifurcate(undefined, undefined, () => {
+				called = true
+			})
+			assert(!called)
+			return res.then(() => assert(called))
+		})
+
+		it('should behave like rejected without callback', () => {
+			const { token, cancel } = CancelToken.source()
+			const { promise } = future(token)
+			const expected = {}
+			cancel(expected)
+			return assertSame(reject(expected), promise.trifurcate(assert.ifError, assert.ifError, undefined))
 		})
 
 		it('should behave like subscribe', () => {
@@ -202,6 +237,18 @@ describe('trifurcate', () => {
 			promise.trifurcate(ok, nok, nok)
 			resolve(fulfill(1))
 			return result
+		})
+
+		it('should asynchronously call the callback', () => {
+			const { resolve, promise } = future(CancelToken.empty())
+			let called = false
+			const res = promise.trifurcate(() => {
+				called = true
+			})
+			assert(!called)
+			resolve(fulfill(1))
+			assert(!called)
+			return res.then(() => assert(called))
 		})
 
 		it('should behave like the input without callback', () => {
@@ -252,6 +299,18 @@ describe('trifurcate', () => {
 			promise.trifurcate(nok, ok, nok)
 			resolve(reject(1))
 			return result
+		})
+
+		it('should asynchronously call the callback', () => {
+			const { resolve, promise } = future(CancelToken.empty())
+			let called = false
+			const res = promise.trifurcate(undefined, () => {
+				called = true
+			})
+			assert(!called)
+			resolve(reject(1))
+			assert(!called)
+			return res.then(() => assert(called))
 		})
 
 		it('should behave like the input without callback', () => {
@@ -305,12 +364,26 @@ describe('trifurcate', () => {
 			return result
 		})
 
-		it('should behave like getRejected without callback', () => {
+		it('should asynchronously call the callback', () => {
 			const { token, cancel } = CancelToken.source()
 			const { promise } = future(token)
-			const res = promise.trifurcate(assert.ifError, assert.ifError, undefined)
+			let called = false
+			const res = promise.trifurcate(undefined, undefined, () => {
+				called = true
+			})
+			assert(!called)
 			cancel(1)
-			return assertSame(res, token.getRejected())
+			assert(!called)
+			return res.then(() => assert(called))
+		})
+
+		it('should behave like rejected without callback', () => {
+			const { token, cancel } = CancelToken.source()
+			const { promise } = future(token)
+			const expected = {}
+			const res = promise.trifurcate(assert.ifError, assert.ifError, undefined)
+			cancel(expected)
+			return assertSame(res, reject(expected))
 		})
 
 		it('should behave like subscribe', () => {

@@ -345,7 +345,7 @@ describe('CancelToken', function () {
 			assert.strictEqual(called, 2)
 		})
 
-		it('should invoke f if the token is cancelled during the call', () => {
+		it('should only invoke f if the call happens during the cancellation', () => {
 			const {token, cancel} = CancelToken.source()
 			let called = 0
 			const call = token.subscribeOrCall(() => { called |= 1; call() }, () => { called |= 2 })
@@ -354,7 +354,7 @@ describe('CancelToken', function () {
 			assert.strictEqual(called, 1)
 		})
 
-		it('should invoke g if the call happens during the cancellation', () => {
+		it('should only invoke g if the token is cancelled during the call', () => {
 			const {token, cancel} = CancelToken.source()
 			let called = 0
 			const call = token.subscribeOrCall(() => { called |= 1 }, () => { called |= 2; cancel() })
