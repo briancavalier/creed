@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
-import { resolve, fulfill, reject, future, isRejected, CancelToken } from '../src/main'
-import { Future } from '../src/Promise'
+import { resolve, fulfill, reject, future, isCancelled, CancelToken } from '../src/main'
+import { Future, cancel } from '../src/Promise'
 import { assertSame } from './lib/test-util'
 import assert from 'assert'
 
@@ -75,25 +75,25 @@ describe('resolve', () => {
 		it('should return cancellation with cancelled token for true', () => {
 			const {token, cancel} = CancelToken.source()
 			cancel({})
-			assert.strictEqual(token.getRejected(), resolve(true, token))
+			assert.strictEqual(token.getCancelled(), resolve(true, token))
 		})
 
 		it('should return cancellation with cancelled token for future', () => {
 			const {token, cancel} = CancelToken.source()
 			cancel({})
-			assert.strictEqual(token.getRejected(), resolve(new Future(), token))
+			assert.strictEqual(token.getCancelled(), resolve(new Future(), token))
 		})
 
 		it('should return cancellation with cancelled token for fulfill', () => {
 			const {token, cancel} = CancelToken.source()
 			cancel({})
-			assert.strictEqual(token.getRejected(), resolve(fulfill(), token))
+			assert.strictEqual(token.getCancelled(), resolve(fulfill(), token))
 		})
 
 		it('should return cancellation with cancelled token for reject', () => {
 			const {token, cancel} = CancelToken.source()
 			cancel({})
-			assert.strictEqual(token.getRejected(), resolve(reject(), token))
+			assert.strictEqual(token.getCancelled(), resolve(reject(), token))
 		})
 
 		it('should be identity for future with same token', () => {
@@ -107,9 +107,9 @@ describe('resolve', () => {
 			const {promise} = future()
 			const p = resolve(promise, token)
 			cancel({})
-			assert(!isRejected(promise))
-			assert(isRejected(p))
-			return assertSame(token.getRejected(), p)
+			assert(!isCancelled(promise))
+			assert(isCancelled(p))
+			return assertSame(token.getCancelled(), p)
 		})
 
 		it('should cancel result for unresolved promise with different token', () => {
@@ -117,9 +117,9 @@ describe('resolve', () => {
 			const {promise} = future(CancelToken.empty())
 			const p = resolve(promise, token)
 			cancel({})
-			assert(!isRejected(promise))
-			assert(isRejected(p))
-			return assertSame(token.getRejected(), p)
+			assert(!isCancelled(promise))
+			assert(isCancelled(p))
+			return assertSame(token.getCancelled(), p)
 		})
 	})
 
@@ -136,5 +136,12 @@ describe('resolve', () => {
 	it('should be identity for unresolved promise', () => {
 		const p = future().promise
 		assert.strictEqual(resolve(p), p)
+	})
+
+	it('should reject for cancelled promise', () => {
+		const expected = {}
+		return resolve(cancel(expected)).trifurcate(assert.ifError, e => {
+			assert.strictEqual(e, expected)
+		}, assert.ifError)
 	})
 })

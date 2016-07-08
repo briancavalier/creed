@@ -61,7 +61,7 @@ class Coroutine extends Action {
 	cancel (p) {
 		/* istanbul ignore else */
 		if (this.promise._isResolved()) { // promise checks for cancellation itself
-			// assert: p === this.promise.token.getRejected()
+			// assert: p === this.promise.token.getCancelled()
 			this.promise = null
 			const res = new Future()
 			this.generator = new Coroutine(this.generator, res, p.near().value)
@@ -84,7 +84,7 @@ class Coroutine extends Action {
 			stack.pop() // assert: === this
 		}
 		if (this.promise) {
-			const res = resolve(result.value, this.promise.token)
+			const res = resolve(result.value, this.promise.token) // TODO optimise token?
 			if (result.done) {
 				this.put(res)
 			} else {
@@ -102,7 +102,7 @@ class Coroutine extends Action {
 		this.generator = null
 		const reason = cancelRoutine.tokenref
 		cancelRoutine.tokenref = null // not cancellable
-		// assert: reason === this.tokenref.get().getRejected().value
+		// assert: reason === this.tokenref.get().getCancelled().value
 		this.tokenref = null
 		cancelRoutine.step(cancelRoutine.generator.return, reason)
 	}

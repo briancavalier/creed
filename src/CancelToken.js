@@ -1,5 +1,5 @@
 import { noop } from './util'
-import { Future, resolve, silentReject, taskQueue } from './Promise' // deferred
+import { Future, resolve, cancel, taskQueue } from './Promise' // deferred
 import { subscribe, subscribeOrCall } from './subscribe'
 
 export default class CancelToken {
@@ -19,7 +19,7 @@ export default class CancelToken {
 	}
 	_cancel (reason) {
 		if (this._cancelled) return
-		return this.__cancel(silentReject(reason))
+		return this.__cancel(cancel(reason))
 	}
 	__cancel (p) {
 		this._cancelled = true
@@ -96,7 +96,7 @@ export default class CancelToken {
 	subscribeOrCall (fn, c) {
 		return subscribeOrCall(fn, c, this, new Future())
 	}
-	getRejected () {
+	getCancelled () {
 		if (this.promise === void 0) {
 			this.promise = new Future(this) // while not settled, provides a reference to token
 		}
@@ -205,7 +205,7 @@ class CancelTokenRace extends CancelTokenCombinator {
 				continue
 			}
 			if (t.requested) {
-				this.cancel(t.getRejected())
+				this.cancel(t.getCancelled())
 				break
 			} else {
 				this.tokens.push(t)
@@ -232,9 +232,9 @@ class CancelTokenPool extends CancelTokenCombinator {
 	}
 	_check () {
 		if (this.count === 0) {
-			const reasons = this.tokens.map(t => t.getRejected().near().value)
+			const reasons = this.tokens.map(t => t.getCancelled().near().value)
 			this.tokens = null
-			return this.promise.__cancel(silentReject(reasons))
+			return this.promise.__cancel(cancel(reasons))
 		}
 	}
 	add (...tokens) {
@@ -267,7 +267,7 @@ export class CancelTokenReference extends CancelTokenCombinator {
 	}
 	cancel (p) {
 		/* istanbul ignore if */
-		if (this.curToken == null || this.curToken.getRejected() !== p) return // when called from an oldToken
+		if (this.curToken == null || this.curToken.getCancelled() !== p) return // when called from an oldToken
 		// assert: !this.promise._cancelled
 		return this.promise.__cancel(p)
 	}
@@ -287,7 +287,7 @@ export class CancelTokenReference extends CancelTokenCombinator {
 			this.curToken = newToken
 			if (newToken) {
 				if (newToken.requested) {
-					this.promise.__cancel(newToken.getRejected())
+					this.promise.__cancel(newToken.getCancelled())
 				} else {
 					newToken._subscribe(this)
 				}

@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import { coroutine, fulfill, reject, delay, isRejected, CancelToken } from '../src/main'
+import { coroutine, fulfill, reject, delay, isCancelled, CancelToken } from '../src/main'
 import { assertSame } from './lib/test-util'
 import assert from 'assert'
 
@@ -104,7 +104,7 @@ describe('coroutine', function () {
 			const p = f(token)
 			const d = delay(3, {}).then(() => {
 				cancel()
-				assert(isRejected(p))
+				assert(isCancelled(p))
 				assert(!executed, 'at yield')
 			})
 			return delay(5, d).then(() => assert(executed, 'after yield in finally block'))
@@ -121,7 +121,7 @@ describe('coroutine', function () {
 				yield delay(1)
 				try {
 					cancel(expected)
-					rejected = isRejected(p)
+					rejected = isCancelled(p)
 					yield
 					executedT = true
 				} finally {
@@ -143,7 +143,7 @@ describe('coroutine', function () {
 			const f = coroutine(function* () {
 				coroutine.cancel = token
 			})
-			return assertSame(f(), token.getRejected())
+			return assertSame(f(), token.getCancelled())
 		})
 
 		it('should not cancel when the last received token is not cancelled', () => {
@@ -173,7 +173,7 @@ describe('coroutine', function () {
 			const p = f(token)
 			return delay(15).then(() => {
 				cancel({})
-				assert(isRejected(p))
+				assert(isCancelled(p))
 				assert.strictEqual(counter, 0)
 			})
 		})
@@ -216,7 +216,7 @@ describe('coroutine', function () {
 					yield cancel()
 				} finally {
 					try {
-						assert(isRejected(p))
+						assert(isCancelled(p))
 						assert.throws(() => coroutine.cancel, SyntaxError)
 						assert.throws(() => { coroutine.cancel = null }, SyntaxError)
 					} catch (e) {
@@ -235,7 +235,7 @@ describe('coroutine', function () {
 				yield delay(1)
 				cancel()
 				try {
-					assert(isRejected(p))
+					assert(isCancelled(p))
 					assert.throws(() => { coroutine.cancel = null }, ReferenceError)
 					assert.throws(() => { coroutine.cancel = CancelToken.empty() }, ReferenceError)
 				} catch (e) {

@@ -1,4 +1,4 @@
-import { PENDING, FULFILLED, REJECTED, SETTLED, NEVER, HANDLED } from './state'
+import { PENDING, FULFILLED, REJECTED, CANCELLED, SETTLED, NEVER, HANDLED } from './state'
 import { silenceError } from './Promise' // deferred
 
 export function isPending (p) {
@@ -11,6 +11,10 @@ export function isFulfilled (p) {
 
 export function isRejected (p) {
 	return (p.state() & REJECTED) > 0
+}
+
+export function isCancelled (p) {
+	return (p.state() & CANCELLED) > 0
 }
 
 export function isSettled (p) {

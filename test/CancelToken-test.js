@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import { CancelToken, isRejected, isPending, getReason, future } from '../src/main'
+import { CancelToken, isCancelled, isPending, getReason, future } from '../src/main'
 import { assertSame, FakeCancelAction } from './lib/test-util'
 import assert from 'assert'
 
@@ -38,43 +38,43 @@ describe('CancelToken', function () {
 		assert.strictEqual(token.requested, true)
 	})
 
-	describe('getRejected()', () => {
-		it('should return a rejected promise after the token was cancelled', () => {
+	describe('getCancelled()', () => {
+		it('should return a cancelled promise after the token was cancelled', () => {
 			const {token, cancel} = CancelToken.source()
 			cancel()
-			assert(isRejected(token.getRejected()))
+			assert(isCancelled(token.getCancelled()))
 		})
 
 		it('should return a pending promise until the token is cancelled', () => {
 			const {token, cancel} = CancelToken.source()
-			const p = token.getRejected()
+			const p = token.getCancelled()
 			assert(isPending(p))
 			cancel()
-			assert(isRejected(p))
+			assert(isCancelled(p))
 		})
 
-		it('should reject with the argument of the first cancel call', () => {
+		it('should cancel with the argument of the first cancel call', () => {
 			const {token, cancel} = CancelToken.source()
 			const r = {}
 			cancel(r)
 			cancel({})
-			const p = token.getRejected()
+			const p = token.getCancelled()
 			cancel({})
-			return p.then(assert.ifError, e => {
+			return p.trifurcate(assert.ifError, assert.ifError, e => {
 				assert.strictEqual(e, r)
 			})
 		})
 
 		it('should return a pending promise until the token is asynchronously cancelled', () => {
 			const {token, cancel} = CancelToken.source()
-			const p = token.getRejected()
+			const p = token.getCancelled()
 			const r = {}
 			setTimeout(() => {
 				assert(isPending(p))
 				assert(!token.requested)
 				cancel(r)
 			}, 5)
-			return p.then(assert.ifError, e => {
+			return p.trifurcate(assert.ifError, assert.ifError, e => {
 				assert(token.requested)
 				assert.strictEqual(e, r)
 			})
@@ -248,10 +248,10 @@ describe('CancelToken', function () {
 			})
 		})
 
-		it('should behave nearly like getRejected().catch()', () => {
+		it('should behave nearly like getCancelled().catch()', () => {
 			const {token, cancel} = CancelToken.source()
 			const p = token.subscribe(x => x)
-			const q = token.getRejected().catch(x => x)
+			const q = token.getCancelled().catch(x => x)
 			const res = cancel({})
 			assert.strictEqual(res.length, 1)
 			assert.strictEqual(res[0], p)
@@ -290,14 +290,14 @@ describe('CancelToken', function () {
 			assert(!called)
 			a.cancel()
 			assert(!called)
-			return assertSame(p, b.token.getRejected())
+			return assertSame(p, b.token.getCancelled())
 		})
 
 		it('should return cancellation with already cancelled token', () => {
 			const {token, cancel} = CancelToken.source()
 			cancel()
 			const p = CancelToken.empty().subscribe(() => {}, token)
-			assert.strictEqual(p, token.getRejected())
+			assert.strictEqual(p, token.getCancelled())
 		})
 
 		it('should behave like cancellation when token is cancelled from the subscription', () => {
@@ -308,7 +308,7 @@ describe('CancelToken', function () {
 			}, b.token)
 			assert.strictEqual(p.token, b.token)
 			a.cancel()
-			return assertSame(p, b.token.getRejected())
+			return assertSame(p, b.token.getCancelled())
 		})
 
 		it('should call subscriptions that are subscribed from the callback', () => {
@@ -411,7 +411,7 @@ describe('CancelToken', function () {
 			a.cancel(r)
 			assert(token.requested)
 			b.cancel({})
-			return token.getRejected().then(assert.ifError, e => assert.strictEqual(e, r))
+			return token.getCancelled().then(assert.ifError, e => assert.strictEqual(e, r))
 		})
 
 		it('should cancel the result token when b is cancelled first', () => {
@@ -423,7 +423,7 @@ describe('CancelToken', function () {
 			b.cancel(r)
 			assert(token.requested)
 			a.cancel({})
-			return token.getRejected().then(assert.ifError, e => assert.strictEqual(e, r))
+			return token.getCancelled().then(assert.ifError, e => assert.strictEqual(e, r))
 		})
 
 		it('should cancel the result token when a is already cancelled', () => {
@@ -434,7 +434,7 @@ describe('CancelToken', function () {
 			const token = a.token.concat(b.token)
 			assert(token.requested)
 			b.cancel({})
-			return token.getRejected().then(assert.ifError, e => assert.strictEqual(e, r))
+			return token.getCancelled().then(assert.ifError, e => assert.strictEqual(e, r))
 		})
 
 		it('should cancel the result token when b is already cancelled', () => {
@@ -445,7 +445,7 @@ describe('CancelToken', function () {
 			const token = a.token.concat(b.token)
 			assert(token.requested)
 			a.cancel({})
-			return token.getRejected().then(assert.ifError, e => assert.strictEqual(e, r))
+			return token.getCancelled().then(assert.ifError, e => assert.strictEqual(e, r))
 		})
 	})
 
@@ -466,7 +466,7 @@ describe('CancelToken', function () {
 			assert(!token.requested)
 			const r = {}
 			resolve(r)
-			return token.getRejected().then(assert.ifError, e => assert.strictEqual(e, r))
+			return token.getCancelled().then(assert.ifError, e => assert.strictEqual(e, r))
 		})
 	})
 
@@ -483,7 +483,7 @@ describe('CancelToken', function () {
 			b.cancel()
 			race.add(b.token)
 			assert(race.get().requested)
-			return race.get().getRejected().then(assert.ifError, e => {
+			return race.get().getCancelled().then(assert.ifError, e => {
 				assert.strictEqual(e, expected)
 				const c = CancelToken.source()
 				race.add(c.token)
@@ -525,7 +525,7 @@ describe('CancelToken', function () {
 				assert(!pool.get().requested)
 				sources[i].cancel(reasons[i])
 			}
-			return pool.get().getRejected().then(assert.ifError, r => {
+			return pool.get().getCancelled().then(assert.ifError, r => {
 				assert.deepEqual(r, reasons)
 			})
 		})
@@ -566,7 +566,7 @@ describe('CancelToken', function () {
 					s.cancel()
 				}
 			}
-			return pool.get().getRejected().then(assert.ifError, r => {
+			return pool.get().getCancelled().then(assert.ifError, r => {
 				assert(token.requested)
 			})
 		})
@@ -582,7 +582,7 @@ describe('CancelToken', function () {
 			pool.add(c.token)
 			c.cancel()
 			a.cancel()
-			return pool.get().getRejected().then(assert.ifError, () => {
+			return pool.get().getCancelled().then(assert.ifError, () => {
 				const d = CancelToken.source()
 				pool.add(d.token)
 				assert(pool.get().requested)
@@ -618,7 +618,7 @@ describe('CancelToken', function () {
 			assert(CancelToken.pool([token]).get().requested)
 			const pool = CancelToken.pool()
 			pool.add(token)
-			return pool.get().getRejected().then(assert.ifError, r => {
+			return pool.get().getCancelled().then(assert.ifError, r => {
 				assert.strictEqual(r.length, 1)
 				assert.strictEqual(r[0], expected)
 			})
@@ -638,7 +638,7 @@ describe('CancelToken', function () {
 			assert(!ref.get().requested)
 			cancel({})
 			assert(ref.get().requested)
-			return assertSame(token.getRejected(), ref.get().getRejected())
+			return assertSame(token.getCancelled(), ref.get().getCancelled())
 		})
 
 		it('should throw when assigned to after cancellation', () => {

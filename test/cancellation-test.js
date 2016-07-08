@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import { future, reject, fulfill, never, delay, isRejected, CancelToken } from '../src/main'
+import { future, reject, fulfill, never, delay, isCancelled, CancelToken } from '../src/main'
 import { silenceError } from '../src/Promise'
 import { assertSame } from './lib/test-util'
 import assert from 'assert'
@@ -20,7 +20,7 @@ describe('fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = fulfill(1).then(assert.ifError, null, token)
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -29,7 +29,7 @@ describe('fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = fulfill(1).catch(assert.ifError, token)
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		}) */
 
@@ -38,7 +38,7 @@ describe('fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = fulfill(1).map(assert.ifError, token)
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -47,7 +47,7 @@ describe('fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = fulfill(assert.ifError).ap(fulfill(1), token)
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -56,7 +56,7 @@ describe('fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = fulfill(1).chain(assert.ifError, token)
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 	})
@@ -67,7 +67,7 @@ describe('fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				fulfill(1).then(() => cancel({}))
 				const res = fulfill(1).then(assert.ifError, null, token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -76,7 +76,7 @@ describe('fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				fulfill(1).then(() => cancel({}))
 				const res = fulfill(1).catch(assert.ifError, token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		}) */
 
@@ -85,7 +85,7 @@ describe('fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				fulfill(1).then(() => cancel({}))
 				const res = fulfill(1).map(assert.ifError, token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -94,7 +94,7 @@ describe('fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				fulfill(1).then(() => cancel({}))
 				const res = fulfill(assert.ifError).ap(fulfill(1), token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -103,7 +103,7 @@ describe('fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				fulfill(1).then(() => cancel({}))
 				const res = fulfill(1).chain(assert.ifError, token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 	})
@@ -116,13 +116,13 @@ describe('fulfill', () => {
 					cancel({})
 					throw new Error()
 				}, null, token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = fulfill(1).then(() => cancel({}), null, token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -130,7 +130,7 @@ describe('fulfill', () => {
 			it('should behave like cancellation for fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = fulfill(1).map(() => cancel({}), token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -138,7 +138,7 @@ describe('fulfill', () => {
 			it('should behave like cancellation for fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = fulfill(() => cancel({})).ap(fulfill(1), token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -146,7 +146,7 @@ describe('fulfill', () => {
 			it('should behave like cancellation for fulfill', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = fulfill(1).chain(() => cancel({}), token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 	})
@@ -236,7 +236,7 @@ describe('reject', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = silenced(reject(1)).catch(assert.ifError, token)
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -245,7 +245,7 @@ describe('reject', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = silenced(reject(1)).then(assert.ifError, null, token)
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -254,7 +254,7 @@ describe('reject', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = silenced(reject(1)).map(assert.ifError, token)
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -263,7 +263,7 @@ describe('reject', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = silenced(reject(1)).ap(fulfill(1), token)
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -272,7 +272,7 @@ describe('reject', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = silenced(reject(1)).chain(assert.ifError, token)
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		}) */
 	})
@@ -283,7 +283,7 @@ describe('reject', () => {
 				const { token, cancel } = CancelToken.source()
 				reject(1).catch(() => cancel({}))
 				const res = silenced(reject(1)).catch(assert.ifError, token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -292,7 +292,7 @@ describe('reject', () => {
 				const { token, cancel } = CancelToken.source()
 				reject(1).catch(() => cancel({}))
 				const res = silenced(reject(1)).then(assert.ifError, null, token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -301,7 +301,7 @@ describe('reject', () => {
 				const { token, cancel } = CancelToken.source()
 				reject(1).catch(() => cancel({}))
 				const res = silenced(reject(1)).map(assert.ifError, token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -310,7 +310,7 @@ describe('reject', () => {
 				const { token, cancel } = CancelToken.source()
 				reject(1).catch(() => cancel({}))
 				const res = silenced(reject(1)).ap(fulfill(1), token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -319,7 +319,7 @@ describe('reject', () => {
 				const { token, cancel } = CancelToken.source()
 				reject(1).catch(() => cancel({}))
 				const res = silenced(reject(1)).chain(assert.ifError, token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		}) */
 	})
@@ -332,13 +332,13 @@ describe('reject', () => {
 					cancel({})
 					throw new Error()
 				}, token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
 				const { token, cancel } = CancelToken.source()
 				const res = silenced(reject(1)).catch(() => cancel({}), token)
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 	})
@@ -428,7 +428,7 @@ describe('future', () => {
 			const a = future(token)
 			const b = future()
 			a.resolve(b.promise)
-			const res = assertSame(a.promise, token.getRejected())
+			const res = assertSame(a.promise, token.getCancelled())
 			cancel({})
 			return res
 		})
@@ -439,7 +439,7 @@ describe('future', () => {
 			const b = future()
 			a.resolve(b.promise)
 			cancel({})
-			return assertSame(a.promise, token.getRejected())
+			return assertSame(a.promise, token.getCancelled())
 		})
 
 		it('should behave like cancellation before cancelled for same-token resolution', () => {
@@ -447,7 +447,7 @@ describe('future', () => {
 			const a = future(token)
 			const b = future(token)
 			a.resolve(b.promise)
-			const res = assertSame(a.promise, token.getRejected())
+			const res = assertSame(a.promise, token.getCancelled())
 			cancel({})
 			return res
 		})
@@ -458,7 +458,7 @@ describe('future', () => {
 			const b = future(token)
 			a.resolve(b.promise)
 			cancel({})
-			return assertSame(a.promise, token.getRejected())
+			return assertSame(a.promise, token.getCancelled())
 		})
 
 		it('should behave like cancellation before cancelled for different-token resolution', () => {
@@ -466,7 +466,7 @@ describe('future', () => {
 			const a = future(token)
 			const b = future(CancelToken.empty())
 			a.resolve(b.promise)
-			const res = assertSame(a.promise, token.getRejected())
+			const res = assertSame(a.promise, token.getCancelled())
 			cancel({})
 			return res
 		})
@@ -477,7 +477,7 @@ describe('future', () => {
 			const b = future(CancelToken.empty())
 			a.resolve(b.promise)
 			cancel({})
-			return assertSame(a.promise, token.getRejected())
+			return assertSame(a.promise, token.getCancelled())
 		})
 
 		it('should behave like rejection before resolution cancelled for no token', () => {
@@ -685,7 +685,7 @@ describe('future', () => {
 			const { promise } = future()
 			const res = promise.then(null, null, token)
 			cancel({})
-			return assertSame(token.getRejected(), res)
+			return assertSame(token.getCancelled(), res)
 		})
 
 		it('should behave like cancellation when cancelled for never', () => {
@@ -694,7 +694,7 @@ describe('future', () => {
 			const res = promise.then(null, null, token)
 			resolve(never())
 			cancel({})
-			return assertSame(token.getRejected(), res)
+			return assertSame(token.getCancelled(), res)
 		})
 
 		it('should behave like fulfillment when never cancelled for fulfill', () => {
@@ -872,7 +872,7 @@ describe('future', () => {
 				cancel({})
 				const res = promise.then(assert.ifError, null, token)
 				resolve(fulfill(1))
-				assert.strictEqual(token.getRejected(), res)
+				assert.strictEqual(token.getCancelled(), res)
 			})
 
 			it('should return cancellation for reject', () => {
@@ -881,7 +881,7 @@ describe('future', () => {
 				cancel({})
 				const res = promise.then(assert.ifError, null, token)
 				resolve(silenced(reject(1)))
-				assert.strictEqual(token.getRejected(), res)
+				assert.strictEqual(token.getCancelled(), res)
 			})
 		})
 
@@ -892,7 +892,7 @@ describe('future', () => {
 				cancel({})
 				const res = promise.catch(assert.ifError, token)
 				resolve(fulfill(1))
-				assert.strictEqual(token.getRejected(), res)
+				assert.strictEqual(token.getCancelled(), res)
 			})
 
 			it('should return cancellation for reject', () => {
@@ -901,7 +901,7 @@ describe('future', () => {
 				cancel({})
 				const res = promise.catch(assert.ifError, token)
 				resolve(silenced(reject(1)))
-				assert.strictEqual(token.getRejected(), res)
+				assert.strictEqual(token.getCancelled(), res)
 			})
 		})
 
@@ -912,7 +912,7 @@ describe('future', () => {
 				cancel({})
 				const res = promise.map(assert.ifError, token)
 				resolve(fulfill(1))
-				assert.strictEqual(token.getRejected(), res)
+				assert.strictEqual(token.getCancelled(), res)
 			})
 
 			it('should return cancellation for reject', () => {
@@ -921,7 +921,7 @@ describe('future', () => {
 				cancel({})
 				const res = promise.map(assert.ifError, token)
 				resolve(silenced(reject(1)))
-				assert.strictEqual(token.getRejected(), res)
+				assert.strictEqual(token.getCancelled(), res)
 			})
 		})
 
@@ -932,7 +932,7 @@ describe('future', () => {
 				cancel({})
 				const res = promise.ap(fulfill(1), token)
 				resolve(fulfill(assert.ifError))
-				assert.strictEqual(token.getRejected(), res)
+				assert.strictEqual(token.getCancelled(), res)
 			})
 
 			it('should return cancellation for reject', () => {
@@ -941,7 +941,7 @@ describe('future', () => {
 				cancel({})
 				const res = promise.ap(fulfill(1), token)
 				resolve(silenced(reject(1)))
-				assert.strictEqual(token.getRejected(), res)
+				assert.strictEqual(token.getCancelled(), res)
 			})
 		})
 
@@ -952,7 +952,7 @@ describe('future', () => {
 				cancel({})
 				const res = promise.chain(assert.ifError, token)
 				resolve(fulfill(1))
-				assert.strictEqual(token.getRejected(), res)
+				assert.strictEqual(token.getCancelled(), res)
 			})
 
 			it('should return cancellation for reject', () => {
@@ -961,7 +961,7 @@ describe('future', () => {
 				cancel({})
 				const res = promise.chain(assert.ifError, token)
 				resolve(silenced(reject(1)))
-				assert.strictEqual(token.getRejected(), res)
+				assert.strictEqual(token.getCancelled(), res)
 			})
 		})
 	})
@@ -973,8 +973,8 @@ describe('future', () => {
 				const { promise } = future()
 				const res = promise.then(assert.ifError, null, token)
 				cancel({})
-				assert(isRejected(res))
-				return assertSame(token.getRejected(), res)
+				assert(isCancelled(res))
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for never', () => {
@@ -983,8 +983,8 @@ describe('future', () => {
 				const res = promise.then(assert.ifError, null, token)
 				resolve(never())
 				cancel({})
-				assert(isRejected(res))
-				return assertSame(token.getRejected(), res)
+				assert(isCancelled(res))
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -994,8 +994,8 @@ describe('future', () => {
 				const { promise } = future()
 				const res = promise.catch(assert.ifError, token)
 				cancel({})
-				assert(isRejected(res))
-				return assertSame(token.getRejected(), res)
+				assert(isCancelled(res))
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for never', () => {
@@ -1004,8 +1004,8 @@ describe('future', () => {
 				const res = promise.catch(assert.ifError, token)
 				resolve(never())
 				cancel({})
-				assert(isRejected(res))
-				return assertSame(token.getRejected(), res)
+				assert(isCancelled(res))
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1015,8 +1015,8 @@ describe('future', () => {
 				const { promise } = future()
 				const res = promise.map(assert.ifError, token)
 				cancel({})
-				assert(isRejected(res))
-				return assertSame(token.getRejected(), res)
+				assert(isCancelled(res))
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for never', () => {
@@ -1025,8 +1025,8 @@ describe('future', () => {
 				const res = promise.map(assert.ifError, token)
 				resolve(never())
 				cancel({})
-				assert(isRejected(res))
-				return assertSame(token.getRejected(), res)
+				assert(isCancelled(res))
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1036,8 +1036,8 @@ describe('future', () => {
 				const { promise } = future()
 				const res = promise.ap(fulfill(1), token)
 				cancel({})
-				assert(isRejected(res))
-				return assertSame(token.getRejected(), res)
+				assert(isCancelled(res))
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for never', () => {
@@ -1046,8 +1046,8 @@ describe('future', () => {
 				const res = promise.ap(fulfill(1), token)
 				resolve(never())
 				cancel({})
-				assert(isRejected(res))
-				return assertSame(token.getRejected(), res)
+				assert(isCancelled(res))
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1057,8 +1057,8 @@ describe('future', () => {
 				const { promise } = future()
 				const res = promise.chain(assert.ifError, token)
 				cancel({})
-				assert(isRejected(res))
-				return assertSame(token.getRejected(), res)
+				assert(isCancelled(res))
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for never', () => {
@@ -1067,8 +1067,8 @@ describe('future', () => {
 				const res = promise.chain(assert.ifError, token)
 				resolve(never())
 				cancel({})
-				assert(isRejected(res))
-				return assertSame(token.getRejected(), res)
+				assert(isCancelled(res))
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 	})
@@ -1081,7 +1081,7 @@ describe('future', () => {
 				const res = promise.then(assert.ifError, null, token)
 				cancel({})
 				resolve(fulfill(1))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1090,7 +1090,7 @@ describe('future', () => {
 				const res = promise.then(assert.ifError, null, token)
 				cancel({})
 				resolve(silenced(reject(1)))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1101,7 +1101,7 @@ describe('future', () => {
 				const res = promise.catch(assert.ifError, token)
 				cancel({})
 				resolve(fulfill(1))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1110,7 +1110,7 @@ describe('future', () => {
 				const res = promise.catch(assert.ifError, token)
 				cancel({})
 				resolve(silenced(reject(1)))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1121,7 +1121,7 @@ describe('future', () => {
 				const res = promise.map(assert.ifError, token)
 				cancel({})
 				resolve(fulfill(1))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1130,7 +1130,7 @@ describe('future', () => {
 				const res = promise.map(assert.ifError, token)
 				cancel({})
 				resolve(silenced(reject(1)))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1141,7 +1141,7 @@ describe('future', () => {
 				const res = promise.ap(fulfill(1), token)
 				cancel({})
 				resolve(fulfill(assert.ifError))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1150,7 +1150,7 @@ describe('future', () => {
 				const res = promise.ap(fulfill(1), token)
 				cancel({})
 				resolve(silenced(reject(1)))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1161,7 +1161,7 @@ describe('future', () => {
 				const res = promise.chain(assert.ifError, token)
 				cancel({})
 				resolve(fulfill(1))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1170,7 +1170,7 @@ describe('future', () => {
 				const res = promise.chain(assert.ifError, token)
 				cancel({})
 				resolve(silenced(reject(1)))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 	})
@@ -1183,7 +1183,7 @@ describe('future', () => {
 				const res = promise.then(assert.ifError, null, token)
 				resolve(fulfill(1))
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1192,7 +1192,7 @@ describe('future', () => {
 				const res = promise.then(assert.ifError, null, token)
 				resolve(silenced(reject(1)))
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1203,7 +1203,7 @@ describe('future', () => {
 				const res = promise.catch(assert.ifError, token)
 				resolve(fulfill(1))
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1212,7 +1212,7 @@ describe('future', () => {
 				const res = promise.catch(assert.ifError, token)
 				resolve(silenced(reject(1)))
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1223,7 +1223,7 @@ describe('future', () => {
 				const res = promise.map(assert.ifError, token)
 				resolve(fulfill(1))
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1232,7 +1232,7 @@ describe('future', () => {
 				const res = promise.map(assert.ifError, token)
 				resolve(silenced(reject(1)))
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1243,7 +1243,7 @@ describe('future', () => {
 				const res = promise.ap(fulfill(1), token)
 				resolve(fulfill(assert.ifError))
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1252,7 +1252,7 @@ describe('future', () => {
 				const res = promise.ap(fulfill(1), token)
 				resolve(silenced(reject(1)))
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1263,7 +1263,7 @@ describe('future', () => {
 				const res = promise.chain(assert.ifError, token)
 				resolve(fulfill(1))
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1272,7 +1272,7 @@ describe('future', () => {
 				const res = promise.chain(assert.ifError, token)
 				resolve(silenced(reject(1)))
 				cancel({})
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 	})
@@ -1285,7 +1285,7 @@ describe('future', () => {
 				promise.then(() => cancel({}))
 				const res = promise.then(assert.ifError, null, token)
 				resolve(fulfill(1))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1294,7 +1294,7 @@ describe('future', () => {
 				promise.catch(() => cancel({}))
 				const res = promise.then(assert.ifError, null, token)
 				resolve(silenced(reject(1)))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1305,7 +1305,7 @@ describe('future', () => {
 				promise.then(() => cancel({}))
 				const res = promise.catch(assert.ifError, token)
 				resolve(fulfill(1))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1314,7 +1314,7 @@ describe('future', () => {
 				promise.catch(() => cancel({}))
 				const res = promise.catch(assert.ifError, token)
 				resolve(silenced(reject(1)))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1325,7 +1325,7 @@ describe('future', () => {
 				promise.then(() => cancel({}))
 				const res = promise.map(assert.ifError, token)
 				resolve(fulfill(1))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1334,7 +1334,7 @@ describe('future', () => {
 				promise.catch(() => cancel({}))
 				const res = promise.map(assert.ifError, token)
 				resolve(silenced(reject(1)))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1345,7 +1345,7 @@ describe('future', () => {
 				promise.then(() => cancel({}))
 				const res = promise.ap(fulfill(1), token)
 				resolve(fulfill(assert.ifError))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1354,7 +1354,7 @@ describe('future', () => {
 				promise.catch(() => cancel({}))
 				const res = promise.ap(fulfill(1), token)
 				resolve(silenced(reject(1)))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1365,7 +1365,7 @@ describe('future', () => {
 				promise.then(() => cancel({}))
 				const res = promise.chain(assert.ifError, token)
 				resolve(fulfill(1))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for reject', () => {
@@ -1374,7 +1374,7 @@ describe('future', () => {
 				promise.catch(() => cancel({}))
 				const res = promise.chain(assert.ifError, token)
 				resolve(silenced(reject(1)))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 	})
@@ -1390,7 +1390,7 @@ describe('future', () => {
 					throw new Error()
 				}, null, token)
 				resolve(fulfill(1))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 
 			it('should behave like cancellation for fulfill', () => {
@@ -1398,7 +1398,7 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const res = promise.then(() => cancel({}), null, token)
 				resolve(fulfill(1))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1408,7 +1408,7 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const res = promise.catch(() => cancel({}), token)
 				resolve(silenced(reject(1)))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1418,7 +1418,7 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const res = promise.map(() => cancel({}), token)
 				resolve(fulfill(1))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1428,7 +1428,7 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const res = promise.ap(fulfill(1), token)
 				resolve(fulfill(() => cancel({})))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 
@@ -1438,7 +1438,7 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const res = promise.chain(() => cancel({}), token)
 				resolve(fulfill(1))
-				return assertSame(token.getRejected(), res)
+				return assertSame(token.getCancelled(), res)
 			})
 		})
 	})
@@ -1625,7 +1625,7 @@ describe('then with nested callbacks', () => {
 		const p = delay(1, {})
 		const res = p.then(() => delay(1), undefined, token)
 		p.then(cancel)
-		return assertSame(token.getRejected(), res)
+		return assertSame(token.getCancelled(), res)
 	})
 
 	it('should behave like cancellation when the outer promise is cancelled for same inner token', () => {
@@ -1633,7 +1633,7 @@ describe('then with nested callbacks', () => {
 		const p = delay(1, {})
 		const res = p.then(() => delay(1, null, token), undefined, token)
 		p.then(cancel)
-		return assertSame(token.getRejected(), res)
+		return assertSame(token.getCancelled(), res)
 	})
 
 	it('should behave like cancellation when the outer promise is cancelled for different inner token', () => {
@@ -1641,7 +1641,7 @@ describe('then with nested callbacks', () => {
 		const p = delay(1, {})
 		const res = p.then(() => delay(1, null, CancelToken.empty()), undefined, token)
 		p.then(cancel)
-		return assertSame(token.getRejected(), res)
+		return assertSame(token.getCancelled(), res)
 	})
 
 	it('should behave like fulfillment for no inner token', () => {
@@ -1717,7 +1717,7 @@ describe('chain with nested callbacks', () => {
 		const p = delay(1, {})
 		const res = p.chain(() => delay(1), token)
 		p.then(cancel)
-		return assertSame(token.getRejected(), res)
+		return assertSame(token.getCancelled(), res)
 	})
 
 	it('should behave like cancellation when the outer promise is cancelled for same inner token', () => {
@@ -1725,7 +1725,7 @@ describe('chain with nested callbacks', () => {
 		const p = delay(1, {})
 		const res = p.chain(() => delay(1, null, token), token)
 		p.then(cancel)
-		return assertSame(token.getRejected(), res)
+		return assertSame(token.getCancelled(), res)
 	})
 
 	it('should behave like cancellation when the outer promise is cancelled for different inner token', () => {
@@ -1733,7 +1733,7 @@ describe('chain with nested callbacks', () => {
 		const p = delay(1, {})
 		const res = p.chain(() => delay(1, null, CancelToken.empty()), token)
 		p.then(cancel)
-		return assertSame(token.getRejected(), res)
+		return assertSame(token.getCancelled(), res)
 	})
 
 	it('should behave like fulfillment for no inner token', () => {

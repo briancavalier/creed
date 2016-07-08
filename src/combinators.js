@@ -67,6 +67,7 @@ class MergeHandler {
 
 	run () {
 		try {
+			// assert: this.promise.token == null
 			this.promise._resolve(this.f.apply(this.c, this.args))
 		} catch (e) {
 			this.promise._reject(e)

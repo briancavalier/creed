@@ -1,7 +1,7 @@
 import { describe, it } from 'mocha'
 import { resolve, reject, fulfill, never } from '../src/main'
-import { isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason, isHandled } from '../src/inspect'
-import { Future, silenceError } from '../src/Promise'
+import { isFulfilled, isRejected, isCancelled, isSettled, isPending, isNever, getValue, getReason, isHandled } from '../src/inspect'
+import { Future, cancel, silenceError } from '../src/Promise'
 import assert from 'assert'
 
 describe('inspect', () => {
@@ -12,6 +12,10 @@ describe('inspect', () => {
 
 		it('should be false for rejected promise', () => {
 			assert(!isFulfilled(reject()))
+		})
+
+		it('should be false for cancelled promise', () => {
+			assert(!isFulfilled(cancel()))
 		})
 
 		it('should be false for pending promise', () => {
@@ -28,6 +32,10 @@ describe('inspect', () => {
 			assert(isRejected(reject()))
 		})
 
+		it('should be true for cancelled promise', () => {
+			assert(isRejected(cancel()))
+		})
+
 		it('should be false for fulfilled promise', () => {
 			assert(!isRejected(resolve()))
 		})
@@ -41,6 +49,28 @@ describe('inspect', () => {
 		})
 	})
 
+	describe('isCancelled', () => {
+		it('should be true for cancelled promise', () => {
+			assert(isCancelled(cancel()))
+		})
+
+		it('should be false for fulfilled promise', () => {
+			assert(!isCancelled(resolve()))
+		})
+
+		it('should be false for rejected promise', () => {
+			assert(!isCancelled(reject()))
+		})
+
+		it('should be false for pending promise', () => {
+			assert(!isCancelled(new Future()))
+		})
+
+		it('should be false for never', () => {
+			assert(!isCancelled(never()))
+		})
+	})
+
 	describe('isSettled', () => {
 		it('should be true for fulfilled promise', () => {
 			assert(isSettled(resolve()))
@@ -48,6 +78,10 @@ describe('inspect', () => {
 
 		it('should be true for rejected promise', () => {
 			assert(isSettled(reject()))
+		})
+
+		it('should be true for cancelled promise', () => {
+			assert(isSettled(cancel()))
 		})
 
 		it('should be false for pending promise', () => {
@@ -68,6 +102,10 @@ describe('inspect', () => {
 			assert(!isPending(reject()))
 		})
 
+		it('should be false for cancelled promise', () => {
+			assert(!isPending(cancel()))
+		})
+
 		it('should be true for pending promise', () => {
 			assert(isPending(new Future()))
 		})
@@ -84,6 +122,10 @@ describe('inspect', () => {
 
 		it('should be false for rejected promise', () => {
 			assert(!isNever(reject()))
+		})
+
+		it('should be false for cancelled promise', () => {
+			assert(!isNever(cancel()))
 		})
 
 		it('should be false for pending promise', () => {
@@ -119,6 +161,10 @@ describe('inspect', () => {
 			assert(isHandled(p))
 		})
 
+		it('should be true for cancelled promise', () => {
+			assert(isHandled(cancel()))
+		})
+
 		it('should be false for pending promise', () => {
 			assert(!isHandled(new Future()))
 		})
@@ -136,6 +182,10 @@ describe('inspect', () => {
 
 		it('should throw for rejected promise', () => {
 			assert.throws(() => getValue(reject()))
+		})
+
+		it('should throw for cancelled promise', () => {
+			assert.throws(() => getValue(cancel()))
 		})
 
 		it('should throw for pending promise', () => {
@@ -159,6 +209,11 @@ describe('inspect', () => {
 		it('should get reason from rejected promise', () => {
 			let x = {}
 			assert.strictEqual(x, getReason(reject(x)))
+		})
+
+		it('should get reason from cancelled promise', () => {
+			let x = {}
+			assert.strictEqual(x, getReason(cancel(x)))
 		})
 
 		it('should throw for fulfilled promise', () => {

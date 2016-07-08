@@ -1,8 +1,9 @@
-import Action from './Action'
+import { noop } from './util'
+import { CancellableAction } from './Action'
 
 export function subscribe (f, t, promise) {
 	if (promise.token != null && promise.token.requested) {
-		return promise.token.getRejected()
+		return promise.token.getCancelled()
 	}
 	t._subscribe(new Subscription(f, promise))
 	return promise
@@ -14,7 +15,7 @@ export function subscribeOrCall (f, g, t, promise) {
 	return function call () {
 		// TODO: should `g` run despite `t.requested`,
 		// or should none run immediately despite `call` having been called?
-		if (sub != null && sub.f != null) {
+		if (sub != null && sub.f != null && sub.f !== noop) { // noop is the "currently running" sentinel
 			t._unsubscribe(sub)
 			t = sub = null
 			if (typeof g === 'function') {
@@ -24,17 +25,7 @@ export function subscribeOrCall (f, g, t, promise) {
 	}
 }
 
-class Subscription extends Action {
-	constructor (f, promise) {
-		super(promise)
-		this.f = f
-	}
-
-	destroy () {
-		super.destroy()
-		this.f = null
-	}
-
+class Subscription extends CancellableAction {
 	cancel (p) {
 		/* eslint complexity:[2,4] */
 		const promise = this.promise
@@ -44,13 +35,7 @@ class Subscription extends Action {
 				return res
 			}
 		}
-		const f = this.f
-		this.f = null
-		if (this.tryCall(f, p.near().value)) this.tryUnsubscribe()
+		this.tryCall(this.f, p.near().value)
 		return promise
-	}
-
-	handle (result) {
-		this.promise._resolve(result)
 	}
 }

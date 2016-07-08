@@ -1,5 +1,5 @@
-import { isObject } from './util'
-import { PENDING, FULFILLED, REJECTED, NEVER, HANDLED } from './state'
+import { isObject, noop } from './util'
+import { PENDING, FULFILLED, REJECTED, CANCELLED, NEVER, HANDLED } from './state'
 import { isRejected, isNever, isSettled } from './inspect'
 
 import { TaskQueue, Continuation } from './TaskQueue'
@@ -39,6 +39,11 @@ class Core {
 	static of (x) {
 		return fulfill(x)
 	}
+
+	// toString :: Promise e a -> String
+	toString () {
+		return '[object ' + this.inspect() + ']'
+	}
 }
 
 // data Promise e a where
@@ -54,7 +59,7 @@ export class Future extends Core {
 		super()
 		this.ref = void 0
 		this.action = void 0
-		this.token = token != null ? CancelToken.from(token) : null
+		this.token = CancelToken.from(token)
 		this.length = 0
 	}
 
@@ -113,25 +118,22 @@ export class Future extends Core {
 		}
 		const p = new Future(token)
 		if (p.token.requested) {
-			return p.token.getRejected()
+			return p.token.getCancelled()
 		}
 		this._runAction(new Action(p))
 		return p
 	}
 
+	// finally :: Promise e a -> (Promise e a -> ()) -> Promise e a
 	finally (f) {
 		const n = this.near()
 		return n === this ? fin(f, this, new Future()) : n.finally(f)
 	}
 
+	// trifurcate :: Promise e a -> (a -> b) -> (e -> b) -> (e -> b) -> Promise e b
 	trifurcate (f, r, c) {
 		const n = this.near()
-		return n === this ? this.token ? trifurcate(f, r, c, this, new Future()) : then(f, r, this, new Future()) : n.trifurcate(f, r, c)
-	}
-
-	// toString :: Promise e a -> String
-	toString () {
-		return '[object ' + this.inspect() + ']'
+		return n === this ? trifurcate(f, r, c, this, new Future()) : n.trifurcate(f, r, c)
 	}
 
 	// inspect :: Promise e a -> String
@@ -142,26 +144,24 @@ export class Future extends Core {
 
 	// near :: Promise e a -> Promise e a
 	near () {
-		if (!this._isResolved()) {
+		if (!this._isResolved() || this.ref === this) {
 			return this
+		} else {
+			this.ref = this.ref.near()
+			return this.ref
 		}
-
-		this.ref = this.ref.near()
-		return this.ref
 	}
 
 	// state :: Promise e a -> Int
 	state () {
-		return this._isResolved() ? this.ref.near().state() : PENDING
+		return this._isResolved() && this.ref !== this ? this.ref.near().state() : PENDING
 	}
 
 	_isResolved () {
-		if (this.ref !== void 0) return true
 		if (this.token != null && this.token.requested) {
-			this.__become(this.token.getRejected())
-			return true
+			this.__become(this.token.getCancelled())
 		}
-		return false
+		return this.ref !== void 0
 	}
 
 	_when (action) {
@@ -176,8 +176,42 @@ export class Future extends Core {
 		}
 	}
 
-	_resolve (x) {
-		this._become(resolve(x, this.token))
+	_resolve (x, cancelAction) {
+		if (this._isResolved()) {
+			return // TODO: still resolve thenables when cancelled?
+		}
+		if (isPromise(x)) {
+			this._resolvePromise(x.near(), cancelAction)
+		} else {
+			// TODO: can a thenable end up with a Never?
+			if (cancelAction) {
+				cancelAction.end()
+			}
+			this.__become(isObject(x) ? refForMaybeThenable(x, this.token) : new Fulfilled(x))
+		}
+	}
+
+	_resolvePromise (p, cancelAction) {
+		/* eslint complexity:[2,6] */
+		if (p === this) {
+			p = cycle()
+		} else {
+			const state = p.state()
+			if ((state & NEVER) > 0) {
+				p = p.untilCancel(this.token)
+			} else if ((state & CANCELLED) > 0) {
+				p = reject(p.value)
+			} else if ((state & PENDING) > 0 && this.token !== p.token) {
+				this.ref = this
+				// reuse cancelAction - do not .end() it here
+				p._runAction(cancelAction || new Action(this))
+				return
+			}
+		}
+		if (cancelAction) {
+			cancelAction.end()
+		}
+		this.__become(p)
 	}
 
 	_fulfill (x) {
@@ -189,7 +223,7 @@ export class Future extends Core {
 			return
 		}
 
-		this.__become(new Rejected(e))
+		this.__become(reject(e))
 	}
 
 	_become (p) {
@@ -201,7 +235,10 @@ export class Future extends Core {
 	}
 
 	__become (p) {
-		this.ref = p === this ? cycle() : p
+		// assert: isSettled(p) || isNever(p) || p.token === this.token
+		// assert: this.ref == null || this.ref === this
+		this.ref = p
+		this.token = null
 
 		if (this.action === void 0) {
 			return
@@ -235,11 +272,11 @@ class Fulfilled extends Core {
 	}
 
 	then (f, _, token) {
-		return typeof f === 'function' ? then(f, void 0, this, new Future(token)) : rejectedIfCancelled(token, this)
+		return typeof f === 'function' ? then(f, void 0, this, new Future(token)) : cancelledIfRequested(token, this)
 	}
 
 	catch (_, token) {
-		return rejectedIfCancelled(token, this)
+		return cancelledIfRequested(token, this)
 	}
 
 	map (f, token) {
@@ -259,7 +296,7 @@ class Fulfilled extends Core {
 	}
 
 	untilCancel (token) {
-		return rejectedIfCancelled(token, this)
+		return cancelledIfRequested(token, this)
 	}
 
 	finally (f) {
@@ -268,10 +305,6 @@ class Fulfilled extends Core {
 
 	trifurcate (f, r, c) {
 		return typeof f === 'function' ? then(f, undefined, this, new Future()) : this
-	}
-
-	toString () {
-		return '[object ' + this.inspect() + ']'
 	}
 
 	inspect () {
@@ -306,7 +339,7 @@ class Rejected extends Core {
 	}
 
 	then (_, r, token) {
-		return typeof r === 'function' ? this.catch(r, token) : rejectedIfCancelled(token, this)
+		return typeof r === 'function' ? this.catch(r, token) : this._cancelledIfRequested(token)
 	}
 
 	catch (r, token) {
@@ -314,23 +347,23 @@ class Rejected extends Core {
 	}
 
 	map (_, token) {
-		return rejectedIfCancelled(token, this)
+		return this._cancelledIfRequested(token)
 	}
 
 	ap (_, token) {
-		return rejectedIfCancelled(token, this)
+		return this._cancelledIfRequested(token)
 	}
 
 	chain (_, token) {
-		return rejectedIfCancelled(token, this)
+		return this._cancelledIfRequested(token)
 	}
 
 	concat (_) {
-		return this
+		return this._cancelledIfRequested(null)
 	}
 
 	untilCancel (token) {
-		return rejectedIfCancelled(token, this)
+		return this._cancelledIfRequested(token)
 	}
 
 	finally (f) {
@@ -338,11 +371,7 @@ class Rejected extends Core {
 	}
 
 	trifurcate (f, r, c) {
-		return this.token ? trifurcate(undefined, r, c, this, new Future()) : typeof r === 'function' ? then(undefined, r, this, new Future()) : this
-	}
-
-	toString () {
-		return '[object ' + this.inspect() + ']'
+		return typeof r === 'function' ? then(undefined, r, this, new Future()) : this
 	}
 
 	inspect () {
@@ -357,6 +386,10 @@ class Rejected extends Core {
 		return this
 	}
 
+	_cancelledIfRequested (token) {
+		return cancelledIfRequested(token, this)
+	}
+
 	_when (action) {
 		taskQueue.add(new Continuation(action, this))
 	}
@@ -369,27 +402,54 @@ class Rejected extends Core {
 	}
 }
 
+// Cancelled :: Error e => e -> Promise e a
+// A promise whose value was invalidated and cannot be known
+class Cancelled extends Rejected {
+	trifurcate (f, r, c) {
+		return trifurcate(undefined, undefined, c, this, new Future())
+	}
+
+	inspect () {
+		return 'Promise { cancelled: ' + this.value + ' }'
+	}
+
+	state () {
+		return REJECTED | CANCELLED | HANDLED
+	}
+
+	_cancelledIfRequested (token) {
+		// like cancelledIfRequested(token, this), but not quite
+		token = CancelToken.from(token)
+		return token != null && token.requested ? token.getCancelled() : reject(this.value)
+	}
+
+	_runAction (action) {
+		// assert: action.promise != null
+		action.cancelled(this)
+	}
+}
+
 // Never :: Promise e a
 // A promise that waits forever for its value to be known
 class Never extends Core {
 	then (_, __, token) {
-		return rejectedWhenCancel(token, this)
+		return cancelledWhen(token, this)
 	}
 
 	catch (_, token) {
-		return rejectedWhenCancel(token, this)
+		return cancelledWhen(token, this)
 	}
 
 	map (_, token) {
-		return rejectedWhenCancel(token, this)
+		return cancelledWhen(token, this)
 	}
 
 	ap (_, token) {
-		return rejectedWhenCancel(token, this)
+		return cancelledWhen(token, this)
 	}
 
 	chain (_, token) {
-		return rejectedWhenCancel(token, this)
+		return cancelledWhen(token, this)
 	}
 
 	concat (b) {
@@ -397,7 +457,7 @@ class Never extends Core {
 	}
 
 	untilCancel (token) {
-		return rejectedWhenCancel(token, this)
+		return cancelledWhen(token, this)
 	}
 
 	finally (_) {
@@ -432,7 +492,8 @@ class Never extends Core {
 }
 
 const silencer = new Action(never())
-silencer.fulfilled = function fulfilled (p) { }
+silencer.fulfilled = noop
+silencer.cancelled = noop
 silencer.rejected = function setHandled (p) {
 	p._state |= HANDLED
 }
@@ -441,11 +502,6 @@ export function silenceError (p) {
 	p._runAction(silencer)
 }
 
-export function silentReject (e) {
-	const r = new Rejected(e)
-	r._state |= HANDLED
-	return r
-}
 // -------------------------------------------------------------
 // ## Creating promises
 // -------------------------------------------------------------
@@ -454,11 +510,11 @@ export function silentReject (e) {
 // resolve :: Thenable e a -> Promise e a
 // resolve :: a -> Promise e a
 export function resolve (x, token) {
-	/* eslint complexity:[2,6] */
+	/* eslint complexity:[2,7] */
 	if (isPromise(x)) {
 		return x.untilCancel(token)
 	} else if (token != null && token.requested) {
-		return token.getRejected()
+		return token.getCancelled()
 	} else if (isObject(x)) {
 		return refForMaybeThenable(x, token)
 	} else {
@@ -477,6 +533,11 @@ export function reject (e) {
 	return r
 }
 
+// cancel :: e -> Promise e a
+export function cancel (e) {
+	return new Cancelled(e)
+}
+
 // never :: Promise e a
 export function never () {
 	return new Never()
@@ -491,7 +552,50 @@ export function fulfill (x) {
 // type Resolve e a = a|Thenable e a -> ()
 export function future (token) {
 	const promise = new Future(token)
-	return {resolve: x => promise._resolve(x), promise}
+	if (promise.token == null) {
+		return {
+			promise,
+			resolve (x) { promise._resolve(x) }
+		}
+	}
+	let put = new Action(promise)
+	return {
+		promise,
+		resolve (x) {
+			if (put == null) return
+			promise._resolve(x, put)
+			put = null
+		}
+	}
+}
+
+// makeResolvers :: Promise e a -> { resolve: Resolve e a, reject: e -> () }
+export function makeResolvers (promise) {
+	if (promise.token != null) {
+		let put = new Action(promise)
+		return {
+			resolve (x) {
+				if (put == null || put.promise == null) return
+				promise._resolve(x, put)
+				put = promise = null
+			},
+			reject (e) {
+				if (put == null || put.promise == null) return
+				promise._reject(e)
+				put.end()
+				put = promise = null
+			}
+		}
+	} else {
+		return {
+			resolve (x) {
+				promise._resolve(x)
+			},
+			reject (e) {
+				promise._reject(e)
+			}
+		}
+	}
 }
 
 // -------------------------------------------------------------
@@ -503,34 +607,32 @@ function isPromise (x) {
 	return x instanceof Core
 }
 
-function rejectedIfCancelled (token, settled) {
-	if (token == null) return settled
+function cancelledIfRequested (token, settled) {
 	token = CancelToken.from(token)
-	if (token.requested) return token.getRejected()
-	return settled
+	return token != null && token.requested ? token.getCancelled() : settled
 }
-function rejectedWhenCancel (token, never) {
+
+function cancelledWhen (token, never) {
 	if (token == null) return never
-	return CancelToken.from(token).getRejected()
+	return CancelToken.from(token).getCancelled()
 }
 
 function refForMaybeThenable (x, token) {
 	try {
 		const then = x.then
 		return typeof then === 'function'
-			? extractThenable(then, x, token)
+			? extractThenable(then, x, new Future(token))
 			: fulfill(x)
 	} catch (e) {
-		return new Rejected(e)
+		return reject(e)
 	}
 }
 
 // WARNING: Naming the first arg "then" triggers babel compilation bug
-function extractThenable (thn, thenable, token) {
-	const p = new Future()
-
+function extractThenable (thn, thenable, p) {
+	const { resolve, reject } = makeResolvers(p)
 	try {
-		thn.call(thenable, x => p._resolve(x), e => p._reject(e), token)
+		thn.call(thenable, resolve, reject, p.token)
 	} catch (e) {
 		p._reject(e)
 	}
@@ -539,5 +641,5 @@ function extractThenable (thn, thenable, token) {
 }
 
 function cycle () {
-	return new Rejected(new TypeError('resolution cycle'))
+	return reject(new TypeError('resolution cycle'))
 }

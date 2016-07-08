@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import { delay, never, reject, fulfill, isRejected, isNever, isPending, CancelToken } from '../src/main'
+import { delay, never, reject, fulfill, isCancelled, isNever, isPending, CancelToken } from '../src/main'
 import { Future, silenceError } from '../src/Promise'
 import { assertSame } from './lib/test-util'
 import assert from 'assert'
@@ -68,30 +68,30 @@ describe('delay', function () {
 		const {token, cancel} = CancelToken.source()
 		cancel({})
 		const p = delay(10, fulfill(1), token)
-		assert.strictEqual(token.getRejected(), p)
+		assert.strictEqual(token.getCancelled(), p)
 	})
 
 	it('should return cancellation with cancelled token for reject', () => {
 		const {token, cancel} = CancelToken.source()
 		cancel({})
 		const p = delay(10, reject(1), token)
-		assert.strictEqual(token.getRejected(), p)
+		assert.strictEqual(token.getCancelled(), p)
 	})
 
 	it('should behave like cancellation when cancelled for never', () => {
 		const {token, cancel} = CancelToken.source()
 		const p = delay(10, never(), token)
 		cancel({})
-		assert(isRejected(p))
-		return assertSame(token.getRejected(), p)
+		assert(isCancelled(p))
+		return assertSame(token.getCancelled(), p)
 	})
 
 	it('should behave like cancellation when cancelled', () => {
 		const {token, cancel} = CancelToken.source()
 		const p = delay(10, fulfill(1), token)
 		cancel({})
-		assert(isRejected(p))
-		return assertSame(token.getRejected(), p)
+		assert(isCancelled(p))
+		return assertSame(token.getCancelled(), p)
 	})
 
 	it('should behave like cancellation when cancelled during delay', () => {
@@ -99,8 +99,8 @@ describe('delay', function () {
 		const p = delay(10, fulfill(1), token)
 		return delay(5).then(() => {
 			cancel({})
-			assert(isRejected(p))
-			return assertSame(token.getRejected(), p)
+			assert(isCancelled(p))
+			return assertSame(token.getCancelled(), p)
 		})
 	})
 
@@ -109,8 +109,8 @@ describe('delay', function () {
 		const p = delay(5, delay(10), token)
 		return delay(5).then(() => {
 			cancel({})
-			assert(isRejected(p))
-			return assertSame(token.getRejected(), p)
+			assert(isCancelled(p))
+			return assertSame(token.getCancelled(), p)
 		})
 	})
 })

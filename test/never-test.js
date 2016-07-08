@@ -11,7 +11,7 @@ describe('never', () => {
 	it('then with token should return the cancellation', () => {
 		const p = never()
 		const token = CancelToken.empty()
-		assert.strictEqual(token.getRejected(), p.then(assert.ifError, assert.ifError, token))
+		assert.strictEqual(token.getCancelled(), p.then(assert.ifError, assert.ifError, token))
 	})
 
 	it('catch should be identity', () => {
@@ -22,7 +22,7 @@ describe('never', () => {
 	it('catch with token should return the cancellation', () => {
 		const p = never()
 		const token = CancelToken.empty()
-		assert.strictEqual(token.getRejected(), p.catch(assert.ifError, token))
+		assert.strictEqual(token.getCancelled(), p.catch(assert.ifError, token))
 	})
 
 	it('map should be identity', () => {
@@ -33,7 +33,7 @@ describe('never', () => {
 	it('map with token should return the cancellation', () => {
 		const p = never()
 		const token = CancelToken.empty()
-		assert.strictEqual(token.getRejected(), p.map(assert.ifError, token))
+		assert.strictEqual(token.getCancelled(), p.map(assert.ifError, token))
 	})
 
 	it('ap should be identity', () => {
@@ -44,7 +44,7 @@ describe('never', () => {
 	it('ap with token should return the cancellation', () => {
 		const p = never()
 		const token = CancelToken.empty()
-		assert.strictEqual(token.getRejected(), p.ap(fulfill(true), token))
+		assert.strictEqual(token.getCancelled(), p.ap(fulfill(true), token))
 	})
 
 	it('chain should be identity', () => {
@@ -55,7 +55,7 @@ describe('never', () => {
 	it('chain with token should return the cancellation', () => {
 		const p = never()
 		const token = CancelToken.empty()
-		assert.strictEqual(token.getRejected(), p.chain(assert.ifError, token))
+		assert.strictEqual(token.getCancelled(), p.chain(assert.ifError, token))
 	})
 
 	it('finally should be identity', () => {

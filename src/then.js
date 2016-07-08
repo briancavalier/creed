@@ -1,23 +1,21 @@
-import Action from './Action'
+import { CancellableAction } from './Action'
 
 export default function then (f, r, p, promise) {
 	if (promise.token != null && promise.token.requested) {
-		return promise.token.getRejected()
+		return promise.token.getCancelled()
 	}
 	p._when(new Then(f, r, promise))
 	return promise
 }
 
-class Then extends Action {
+class Then extends CancellableAction {
 	constructor (f, r, promise) {
-		super(promise)
-		this.f = f
+		super(f, promise)
 		this.r = r
 	}
 
 	destroy () {
 		super.destroy()
-		this.f = null
 		this.r = null
 	}
 
@@ -30,16 +28,13 @@ class Then extends Action {
 	}
 
 	runThen (f, p) {
-		const hasHandler = typeof f === 'function'
+		const hasHandler = (this.f != null || this.r != null) && typeof f === 'function'
 		if (hasHandler) {
-			if (this.tryCall(f, p.value)) this.tryUnsubscribe()
+			this.r = null
+			this.tryCall(f, p.value)
 		} else {
 			this.put(p)
 		}
 		return hasHandler
-	}
-
-	handle (result) {
-		this.promise._resolve(result)
 	}
 }

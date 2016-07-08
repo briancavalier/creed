@@ -21,14 +21,14 @@ describe('reject', () => {
 		const p = reject(true)
 		const {token, cancel} = CancelToken.source()
 		cancel({})
-		return assertSame(token.getRejected(), p.then(assert.ifError, null, token))
+		return assertSame(token.getCancelled(), p.then(assert.ifError, null, token))
 	})
 
 	it('catch with cancelled token should behave like cancellation', () => {
 		const p = reject(true)
 		const {token, cancel} = CancelToken.source()
 		cancel({})
-		return assertSame(token.getRejected(), p.catch(assert.ifError, token))
+		return assertSame(token.getCancelled(), p.catch(assert.ifError, token))
 	})
 
 	it('map should be identity', () => {
@@ -47,7 +47,7 @@ describe('reject', () => {
 		const p = reject(true)
 		const {token, cancel} = CancelToken.source()
 		cancel({})
-		return assertSame(token.getRejected(), p.map(assert.ifError, token))
+		return assertSame(token.getCancelled(), p.map(assert.ifError, token))
 	})
 
 	it('ap should be identity', () => {
@@ -66,7 +66,7 @@ describe('reject', () => {
 		const p = reject(assert.ifError)
 		const {token, cancel} = CancelToken.source()
 		cancel({})
-		return assertSame(token.getRejected(), p.ap(fulfill(true), token))
+		return assertSame(token.getCancelled(), p.ap(fulfill(true), token))
 	})
 
 	it('chain should be identity', () => {
@@ -85,7 +85,7 @@ describe('reject', () => {
 		const p = reject(true)
 		const {token, cancel} = CancelToken.source()
 		cancel({})
-		return assertSame(token.getRejected(), p.chain(assert.ifError, token))
+		return assertSame(token.getCancelled(), p.chain(assert.ifError, token))
 	})
 
 	it('trifurcate should be identity without r callback', () => {

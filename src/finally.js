@@ -1,6 +1,6 @@
 import { resolve } from './Promise'
 import { isRejected, isFulfilled } from './inspect'
-import Action from './Action'
+import { CancellableAction } from './Action'
 
 export default function _finally (f, p, promise) {
 	// assert: promise.token == null
@@ -9,14 +9,13 @@ export default function _finally (f, p, promise) {
 	return promise
 }
 
-class Final extends Action {
+class Final extends CancellableAction {
 	constructor (f, t, promise) {
-		super(promise)
+		super(f, promise)
 		this.token = t
 		if (t != null) {
 			t._subscribe(this)
 		}
-		this.f = f
 	}
 
 	/* istanbul ignore next */
@@ -28,39 +27,51 @@ class Final extends Action {
 		/* istanbul ignore if */
 		if (this.token == null) return
 		this.token = null
-		return this.tryFin(p)
+		const promise = this.tryFin(p)
+		this.promise = null // prevent cancelled from running
+		return promise
 	}
 
 	fulfilled (p) {
-		this.tryFin(p)
+		this.settled(p, this.f)
 	}
 
 	rejected (p) {
-		this.tryFin(p)
-		return true // TODO: correctness? track again afterwards?
+		return this.settled(p, p)
+	}
+
+	settled (p, res) {
+		if (typeof this.f === 'function') { // f is the callback
+			const token = this.token
+			if (token) {
+				token._unsubscribe(this)
+				this.token = null
+			}
+			this.tryFin(p)
+			return true
+		} else { // f held the original result
+			this.promise.__become(res)
+			this.promise = this.f = null
+			return false
+		}
 	}
 
 	tryFin (p) {
 		/* eslint complexity:[2,5] */
-		const f = this.f
-		if (typeof f !== 'function') return this.promise
-		this.f = null
-		const token = this.token
-		if (token) {
-			token._unsubscribe(this)
-			this.token = null
-		}
 		const orig = this.promise
-		if (!this.tryCall(f, p)) {
+		if (!this.tryCall(this.f, p)) {
 			// assert: orig !== this.promise
 			// assert: !isRejeced(this.promise)
 			if (isFulfilled(this.promise)) {
 				orig._become(p)
 			} else {
-				this.promise._runAction(new Put(p, orig))
+				this.f = p
+				this.promise._runAction(this)
+				this.promise = orig
 			}
+			return this.promise
 		}
-		return this.promise
+		return orig
 	}
 
 	handle (result) {
@@ -71,15 +82,8 @@ class Final extends Action {
 			this.promise = p
 		}
 	}
-}
 
-class Put extends Action {
-	constructor (promise, target) {
-		super(target)
-		this.p = promise
-	}
-
-	fulfilled (_) {
-		this.put(this.p)
+	end () {
+		return this.promise
 	}
 }

@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
 import { future, reject, fulfill, isSettled, isPending, never, CancelToken } from '../src/main'
-import { Future, silenceError } from '../src/Promise'
+import { Future, cancel, silenceError } from '../src/Promise'
 import { assertSame } from './lib/test-util'
 import assert from 'assert'
 
@@ -103,6 +103,13 @@ describe('future', () => {
 			const expected = {}
 			resolve(reject(expected))
 			return promise.then(assert.ifError, x => assert.strictEqual(expected, x))
+		})
+
+		it('should reject for cancelled promise', () => {
+			const { resolve, promise } = future()
+			const expected = {}
+			resolve(cancel(expected))
+			return promise.trifurcate(assert.ifError, e => assert.strictEqual(e, expected), assert.ifError)
 		})
 	})
 

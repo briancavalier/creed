@@ -1,59 +1,50 @@
-import Action from './Action'
+import { CancellableAction } from './Action'
 
 export default function trifurcate (f, r, c, p, promise) {
 	// assert: promise.token == null
-	// assert: p.token != null
-	p._when(new Trifurcation(f, r, c, p.token, promise))
+	p._when(new Trifurcation(f, r, c, promise))
 	return promise
 }
 
-class Trifurcation extends Action {
-	constructor (f, r, c, t, promise) {
-		super(promise)
-		this.token = t
-		t._subscribe(this)
-		this.f = f
+class Trifurcation extends CancellableAction {
+	constructor (f, r, c, promise) {
+		super(f, promise)
 		this.r = r
 		this.c = c
 	}
 
-	/* istanbul ignore next */
-	destroy () { // possibly called when unsubscribed from the token
-		this.token = null
-	}
-
-	cancel (p) {
-		/* istanbul ignore if */
-		if (this.token == null) return
-		this.runTee(this.c, p.near())
-	}
-
 	fulfilled (p) {
-		this.token._unsubscribe(this)
 		this.runTee(this.f, p)
 	}
 
 	rejected (p) {
-		this.token._unsubscribe(this)
 		return this.runTee(this.r, p)
 	}
 
+	cancelled (p) {
+		if (typeof this.c !== 'function') {
+			this.end()._reject(p.value)
+		} else {
+			this.runTee(this.c, p)
+		}
+	}
+
 	runTee (f, p) {
-		this.token = null
-		this.f = null
-		this.r = null
-		this.c = null
-		const hasHandler = typeof f === 'function'
+		/* eslint complexity:[2,4] */
+		const hasHandler = (this.f != null || this.r != null || this.c != null) && typeof f === 'function'
 		if (hasHandler) {
+			this.r = null
+			this.c = null
 			this.tryCall(f, p.value)
 		} else {
 			this.put(p)
 		}
-		this.promise = null
 		return hasHandler
 	}
 
-	handle (result) {
-		this.promise._resolve(result)
+	end () {
+		const promise = this.promise
+		this.promise = null
+		return promise
 	}
 }

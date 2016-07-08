@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import { Promise, fulfill, reject, isRejected, CancelToken } from '../src/main'
+import { Promise, fulfill, reject, isCancelled, CancelToken } from '../src/main'
 import { assertSame } from './lib/test-util'
 import assert from 'assert'
 
@@ -14,16 +14,16 @@ describe('Promise', () => {
 		return p
 	})
 
-	it('should not call executor and immediately reject when token is requested', () => {
+	it('should not call executor and immediately cancel when token is requested', () => {
 		const {token, cancel} = CancelToken.source()
 		cancel({})
 		let called = false
 		const p = new Promise((resolve, reject) => {
 			called = true
 		}, token)
-		assert(isRejected(p))
+		assert(isCancelled(p))
 		assert(!called)
-		return assertSame(token.getRejected(), p)
+		return assertSame(token.getCancelled(), p)
 	})
 
 	it('should reject if resolver throws synchronously', () => {
@@ -111,12 +111,12 @@ describe('Promise', () => {
 	})
 
 	describe('token', () => {
-		it('should immediately reject the promise when cancelled', () => {
+		it('should immediately cancel the promise when cancelled', () => {
 			const {token, cancel} = CancelToken.source()
 			const expected = new Error()
 			const p = new Promise(resolve => {}, token)
 			cancel(expected)
-			assert(isRejected(p))
+			assert(isCancelled(p))
 			return p.then(assert.ifError, x => assert.strictEqual(expected, x))
 		})
 

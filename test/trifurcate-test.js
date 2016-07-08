@@ -1,32 +1,51 @@
 import { describe, it } from 'mocha'
 import { future, fulfill, reject, never, CancelToken, all } from '../src/main'
-import { silentReject } from '../src/Promise'
 import { assertSame, raceCallbacks } from './lib/test-util'
 import assert from 'assert'
 
 describe('untilCancel', () => {
-	it('should always return a promise with the token on its .token property', () => {
+	const testResult = t => f => () => {
+		const token = t()
+		const res = f(token).untilCancel(token)
+		try {
+			assert.strictEqual(res.token, token)
+		} catch (e) {
+			assert.strictEqual(res, token.getCancelled())
+		}
+	}
+	const testUncancelled = testResult(() => CancelToken.empty())
+	const testCancelled = testResult(() => {
 		const {token, cancel} = CancelToken.source()
-
-		assert.strictEqual(never().untilCancel(token).token, token, 'never')
-		assert.strictEqual(future().promise.untilCancel(token).token, token, 'unresolved future')
-		assert.strictEqual(future(token).promise.untilCancel(token).token, token, 'unresolved future with same token')
-		assert.strictEqual(future(CancelToken.empty()).promise.untilCancel(token).token, token, 'unresolved future with other token')
-
 		cancel({})
+		return token
+	})
 
-		assert.strictEqual(fulfill().untilCancel(token).token, token, 'fulfill')
-		assert.strictEqual(reject().untilCancel(token).token, token, 'reject')
-		assert.strictEqual(never().untilCancel(token).token, token, 'never')
-		assert.strictEqual(future().promise.untilCancel(token).token, token, 'unresolved future')
-		const a = future()
-		a.resolve(fulfill())
-		assert.strictEqual(a.promise.untilCancel(token).token, token, 'fulfilled future')
-		const b = future()
-		b.resolve(reject())
-		assert.strictEqual(b.promise.untilCancel(token).token, token, 'rejected future')
-		const c = future(token)
-		assert.strictEqual(c.promise.untilCancel(token).token, token, 'future with token')
+	describe('returns cancellation or promise with token for uncancelled token on', () => {
+		it('never', testUncancelled(() => never()))
+		it('unresolved future', testUncancelled(() => future().promise))
+		it('unresolved future with same token', testUncancelled(token => future(token).promise))
+		it('unresolved future with other token', testUncancelled(() => future(CancelToken.empty()).promise))
+	})
+
+	describe('returns cancellation or promise with token for cancelled token on', () => {
+		it('fulfill', testCancelled(fulfill))
+		it('reject', testCancelled(reject))
+		it('never', testCancelled(never))
+		it('unresolved future', testCancelled(() => future().promise))
+		it('fulfilled future', testCancelled(() => {
+			const f = future()
+			f.resolve(fulfill())
+			return f.promise
+		}))
+		it('rejected future', testCancelled(() => {
+			const f = future()
+			f.resolve(reject())
+			return f.promise
+		}))
+		it('unresolved future with token', testCancelled(token => {
+			const f = future(token)
+			return f.promise
+		}))
 	})
 })
 
@@ -56,7 +75,7 @@ describe('trifurcate', () => {
 
 	const f = x => x + 1
 	const fp = x => fulfill(x + 1)
-	const rp = x => silentReject(x + 1)
+	const rp = x => reject(x + 1)
 	const tr = x => { throw x + 1 }
 
 	describe('on fulfilled future', () => {

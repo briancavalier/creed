@@ -1,12 +1,6 @@
-export default function runPromise (f, thisArg, args, promise) {
+export default function runPromise (f, thisArg, args, resolvers) {
 	/* eslint complexity:[2,5] */
-	function resolve (x) {
-		promise._resolve(x)
-	}
-
-	function reject (e) {
-		promise._reject(e)
-	}
+	const { resolve, reject } = resolvers
 
 	switch (args.length) {
 		case 0:
@@ -25,6 +19,4 @@ export default function runPromise (f, thisArg, args, promise) {
 			args.push(resolve, reject)
 			f.apply(thisArg, args)
 	}
-
-	return promise
 }
