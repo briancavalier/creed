@@ -2,7 +2,7 @@ import { describe, it } from 'mocha'
 import { delay, reject } from '../src/main'
 import assert from 'assert'
 
-describe('map', function () {
+describe('then', function () {
 	it('should not change value when f is not a function', () => {
 		let expected = {}
 		return delay(1, expected).then()

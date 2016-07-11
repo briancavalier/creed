@@ -22,26 +22,32 @@ describe('concat', function () {
 		assert.strictEqual(p2, p1.concat(p2))
 	})
 
-	it('should return earlier future', () => {
+	it('should behave like earlier future', () => {
+		const expected = {}
+		const p = delay(1, expected).concat(delay(10))
+		return assertSame(p, fulfill(expected))
+	})
+
+	it('should behave like other earlier future', () => {
 		const expected = {}
 		const p = delay(10).concat(delay(1, expected))
 		return assertSame(p, fulfill(expected))
 	})
 
-	it('should behave like fulfilled', () => {
+	it('should return other with fulfilled', () => {
 		const expected = {}
 		const p = fulfill(expected)
 		return assert.strictEqual(delay(10).concat(p), p)
 	})
 
-	it('should behave like rejected', () => {
+	it('should return other with rejected', () => {
 		const expected = {}
 		const p = reject(expected)
 		silenceError(p)
 		return assert.strictEqual(delay(10).concat(p), p)
 	})
 
-	it('should behave like never', () => {
+	it('should be identity with never', () => {
 		const p2 = never()
 		const p1 = delay(10)
 		return assert.strictEqual(p1.concat(p2), p1)

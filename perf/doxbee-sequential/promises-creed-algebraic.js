@@ -52,7 +52,7 @@ module.exports = function upload(stream, idOrPath, tag, done) {
     }).chain(function() {
         return File.whereUpdate({id: fileId}, {version: version.id})
             .execWithin(tx);
-    }).map(function() {
+    }).then(function() {
         tx.commit();
         return done();
     }, function(err) {
