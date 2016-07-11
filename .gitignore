@@ -1,5 +1,4 @@
 .idea/
 experiments/
 node_modules/
-build/
 coverage/

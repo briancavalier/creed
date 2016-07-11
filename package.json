@@ -26,9 +26,7 @@
     "async"
   ],
   "scripts": {
-    "compile": "npm run compile-src",
-    "compile-src": "mkdirp build/src && buble -m -i src -o build/src --no modules",
-    "build-dist": "npm run compile && mkdirp dist && rollup -c",
+    "build-dist": "mkdirp dist && rollup -c",
     "build": "npm run build-dist && uglifyjs -c 'warnings=false' -m -o dist/creed.min.js -- dist/creed.js",
     "preversion": "npm run build",
     "check-coverage": "istanbul check-coverage --statements 100 --branches 100 --lines 100 --functions 100 coverage/coverage*.json",
