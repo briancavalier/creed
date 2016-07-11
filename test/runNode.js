@@ -3,7 +3,7 @@ import { runNode, all } from '../src/main'
 import assert from 'assert'
 
 function runFn (...args) {
-	return runNode((...args) => {
+	return runNode(function(...args) {
 		let last = args.length - 1
 		let cb = args[last]
 		let a = args.slice(0, last)
