@@ -1,34 +1,20 @@
-import maybeThenable from './maybeThenable'
+import { isObject } from './util'
+import { CancellableAction } from './Action'
 
-export default function (f, p, promise) {
+export default function chain (f, p, promise) {
+	if (promise.token != null && promise.token.requested) {
+		return promise.token.getCancelled()
+	}
 	p._when(new Chain(f, promise))
 	return promise
 }
 
-class Chain {
-	constructor (f, promise) {
-		this.f = f
-		this.promise = promise
-	}
-
-	fulfilled (p) {
-		try {
-			runChain(this.f, p.value, this.promise)
-		} catch (e) {
-			this.promise._reject(e)
+class Chain extends CancellableAction {
+	handle (y) {
+		if (!(isObject(y) && typeof y.then === 'function')) {
+			this.end()._reject(new TypeError('f must return a promise'))
+		} else {
+			this.promise._resolve(y, this)
 		}
 	}
-
-	rejected (p) {
-		this.promise._become(p)
-	}
-}
-
-function runChain (f, x, p) {
-	const y = f(x)
-	if (!(maybeThenable(y) && typeof y.then === 'function')) {
-		throw new TypeError('f must return a promise')
-	}
-
-	p._resolve(y)
 }

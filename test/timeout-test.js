@@ -1,8 +1,7 @@
 import { describe, it } from 'mocha'
-import { timeout, delay } from '../src/main'
+import { reject, fulfill, timeout, delay } from '../src/main'
 import TimeoutError from '../src/TimeoutError'
-import { Future, reject, fulfill } from '../src/Promise'
-import { silenceError } from '../src/inspect'
+import { Future, silenceError } from '../src/Promise'
 import assert from 'assert'
 
 function delayReject (ms, e) {

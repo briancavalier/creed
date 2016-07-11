@@ -1,6 +1,5 @@
 import { describe, it } from 'mocha'
-import { settle, resolve, reject } from '../src/main'
-import { isFulfilled, isRejected } from '../src/inspect'
+import { settle, resolve, reject, isFulfilled, isRejected } from '../src/main'
 import { throwingIterable } from './lib/test-util'
 import assert from 'assert'
 

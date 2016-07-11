@@ -1,5 +1,6 @@
 import { describe, it } from 'mocha'
-import { Promise, fulfill, reject } from '../src/main'
+import { Promise, fulfill, reject, isCancelled, CancelToken } from '../src/main'
+import { assertSame } from './lib/test-util'
 import assert from 'assert'
 
 describe('Promise', () => {
@@ -13,33 +14,165 @@ describe('Promise', () => {
 		return p
 	})
 
+	it('should not call executor and immediately cancel when token is requested', () => {
+		const {token, cancel} = CancelToken.source()
+		cancel({})
+		let called = false
+		const p = new Promise((resolve, reject) => {
+			called = true
+		}, token)
+		assert(isCancelled(p))
+		assert(!called)
+		return assertSame(token.getCancelled(), p)
+	})
+
 	it('should reject if resolver throws synchronously', () => {
-		let expected = new Error()
+		const expected = new Error()
 		return new Promise(() => { throw expected })
 			.then(assert.ifError, x => assert.strictEqual(expected, x))
 	})
 
-	it('should fulfill with value', () => {
-		let expected = {}
-		return new Promise(resolve => resolve(expected))
-			.then(x => assert.strictEqual(expected, x))
+	describe('resolvers', () => {
+		it('should fulfill with value', () => {
+			const expected = {}
+			return new Promise(resolve => resolve(expected))
+				.then(x => assert.strictEqual(expected, x))
+		})
+
+		it('should resolve to fulfilled promise', () => {
+			const expected = {}
+			return new Promise(resolve => resolve(fulfill(expected)))
+				.then(x => assert.strictEqual(expected, x))
+		})
+
+		it('should resolve to rejected promise', () => {
+			const expected = new Error()
+			return new Promise(resolve => resolve(reject(expected)))
+				.then(assert.ifError, x => assert.strictEqual(expected, x))
+		})
+
+		it('should reject with value', () => {
+			const expected = new Error()
+			return new Promise((resolve, reject) => reject(expected))
+				.then(assert.ifError, x => assert.strictEqual(expected, x))
+		})
+
+		it('should asynchronously fulfill with value', () => {
+			const expected = {}
+			return new Promise(resolve => setTimeout(resolve, 1, expected))
+				.then(x => assert.strictEqual(expected, x))
+		})
+
+		it('should asynchronously resolve to fulfilled promise', () => {
+			const expected = {}
+			return new Promise(resolve => setTimeout(resolve, 1, fulfill(expected)))
+				.then(x => assert.strictEqual(expected, x))
+		})
+
+		it('should asynchronously resolve to rejected promise', () => {
+			const expected = new Error()
+			return new Promise(resolve => setTimeout(resolve, 1, reject(expected)))
+				.then(assert.ifError, x => assert.strictEqual(expected, x))
+		})
+
+		it('should asynchronously reject with value', () => {
+			const expected = new Error()
+			return new Promise((resolve, reject) => setTimeout(reject, 1, reject(expected)))
+				.then(assert.ifError, x => assert.strictEqual(expected, x))
+		})
+
+		it('should not change state when called multiple times', () => {
+			let res, rej
+			const promise = new Promise((resolve, reject) => {
+				res = resolve
+				rej = reject
+			})
+			res(1)
+			const expected = promise.state()
+			res(2)
+			assert.strictEqual(promise.state(), expected)
+			rej(3)
+			assert.strictEqual(promise.state(), expected)
+		})
+
+		it('should not change state with token when called multiple times', () => {
+			let res, rej
+			const promise = new Promise((resolve, reject) => {
+				res = resolve
+				rej = reject
+			}, CancelToken.empty())
+			res(1)
+			const expected = promise.state()
+			res(2)
+			assert.strictEqual(promise.state(), expected)
+			rej(3)
+			assert.strictEqual(promise.state(), expected)
+		})
 	})
 
-	it('should resolve to fulfilled promise', () => {
-		let expected = {}
-		return new Promise(resolve => resolve(fulfill(expected)))
-			.then(x => assert.strictEqual(expected, x))
-	})
+	describe('token', () => {
+		it('should immediately cancel the promise when cancelled', () => {
+			const {token, cancel} = CancelToken.source()
+			const expected = new Error()
+			const p = new Promise(resolve => {}, token)
+			cancel(expected)
+			assert(isCancelled(p))
+			return p.then(assert.ifError, x => assert.strictEqual(expected, x))
+		})
 
-	it('should resolve to rejected promise', () => {
-		let expected = {}
-		return new Promise(resolve => resolve(reject(expected)))
-			.then(assert.ifError, x => assert.strictEqual(expected, x))
-	})
+		it('should prevent otherwise fulfilling the promise after cancellation', () => {
+			const {token, cancel} = CancelToken.source()
+			const expected = new Error()
+			return new Promise(resolve => {
+				setTimeout(() => {
+					cancel(expected)
+					resolve(1)
+				}, 1)
+			}, token).then(assert.ifError, x => assert.strictEqual(expected, x))
+		})
 
-	it('should reject with value', () => {
-		let expected = {}
-		return new Promise((resolve, reject) => reject(expected))
-			.then(assert.ifError, x => assert.strictEqual(expected, x))
+		it('should prevent otherwise rejecting the promise after cancellation', () => {
+			const {token, cancel} = CancelToken.source()
+			const expected = new Error()
+			return new Promise((resolve, reject) => {
+				setTimeout(() => {
+					cancel(expected)
+					reject(1)
+				}, 1)
+			}, token).then(assert.ifError, x => assert.strictEqual(expected, x))
+		})
+
+		it('should have no effect after fulfilling the promise', () => {
+			const {token, cancel} = CancelToken.source()
+			const expected = {}
+			return new Promise(resolve => {
+				setTimeout(() => {
+					resolve(expected)
+					cancel(new Error())
+				}, 1)
+			}, token).then(x => assert.strictEqual(expected, x))
+		})
+
+		it('should have no effect after rejecting the promise', () => {
+			const {token, cancel} = CancelToken.source()
+			const expected = new Error()
+			return new Promise((_, reject) => {
+				setTimeout(() => {
+					reject(expected)
+					cancel(1)
+				}, 1)
+			}, token).then(assert.ifError, x => assert.strictEqual(expected, x))
+		})
+
+		it('should still reject the promise after resolving the promise without settling it', () => {
+			const {token, cancel} = CancelToken.source()
+			const expected = {}
+			return new Promise(resolve => {
+				setTimeout(() => {
+					resolve(new Promise(resolve => setTimeout(resolve, 1)))
+					cancel(expected)
+				}, 1)
+			}, token).then(assert.ifError, x => assert.strictEqual(expected, x))
+		})
 	})
 })

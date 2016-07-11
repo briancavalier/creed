@@ -2,7 +2,7 @@ import { describe, it } from 'mocha'
 import { delay, reject } from '../src/main'
 import assert from 'assert'
 
-describe('map', function () {
+describe('then', function () {
 	it('should not change value when f is not a function', () => {
 		let expected = {}
 		return delay(1, expected).then()
@@ -25,5 +25,10 @@ describe('map', function () {
 		let expected = {}
 		return delay(1).then(reject).then(null, () => { throw expected })
 			.then(assert.ifError, x => assert.strictEqual(x, expected))
+	})
+
+	it('should have cycle detection', () => {
+		const p = delay(1).then(() => p)
+		return p.then(assert.ifError, e => assert(e instanceof TypeError))
 	})
 })

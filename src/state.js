@@ -4,5 +4,6 @@ export const FULFILLED = 1 << 1
 export const REJECTED  = 1 << 2
 export const SETTLED   = FULFILLED | REJECTED
 export const NEVER     = 1 << 3
+export const CANCELLED = 1 << 4
 
-export const HANDLED   = 1 << 4
+export const HANDLED   = 1 << 5

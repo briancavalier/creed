@@ -1,6 +1,5 @@
 import { describe, it } from 'mocha'
-import { race, resolve, reject, never } from '../src/main'
-import { isNever } from '../src/inspect'
+import { race, resolve, reject, never, isNever } from '../src/main'
 import { throwingIterable } from './lib/test-util'
 import assert from 'assert'
 

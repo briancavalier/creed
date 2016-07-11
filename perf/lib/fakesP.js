@@ -83,7 +83,7 @@ else if (global.useNative) {
     };
 }
 else if (global.useCreed) {
-    var lifter = require('../../dist/creed').fromNode;
+    var lifter = require('../..').fromNode;
 }
 else {
     var lifter = require('when/node').lift;

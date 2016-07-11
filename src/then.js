@@ -1,38 +1,40 @@
+import { CancellableAction } from './Action'
+
 export default function then (f, r, p, promise) {
+	if (promise.token != null && promise.token.requested) {
+		return promise.token.getCancelled()
+	}
 	p._when(new Then(f, r, promise))
 	return promise
 }
 
-class Then {
+class Then extends CancellableAction {
 	constructor (f, r, promise) {
-		this.f = f
+		super(f, promise)
 		this.r = r
-		this.promise = promise
+	}
+
+	destroy () {
+		super.destroy()
+		this.r = null
 	}
 
 	fulfilled (p) {
-		runThen(this.f, p, this.promise)
+		this.runThen(this.f, p)
 	}
 
 	rejected (p) {
-		return runThen(this.r, p, this.promise)
-	}
-}
-
-function runThen (f, p, promise) {
-	if (typeof f !== 'function') {
-		promise._become(p)
-		return false
+		return this.runThen(this.r, p)
 	}
 
-	tryMapNext(f, p.value, promise)
-	return true
-}
-
-function tryMapNext (f, x, promise) {
-	try {
-		promise._resolve(f(x))
-	} catch (e) {
-		promise._reject(e)
+	runThen (f, p) {
+		const hasHandler = (this.f != null || this.r != null) && typeof f === 'function'
+		if (hasHandler) {
+			this.r = null
+			this.tryCall(f, p.value)
+		} else {
+			this.put(p)
+		}
+		return hasHandler
 	}
 }

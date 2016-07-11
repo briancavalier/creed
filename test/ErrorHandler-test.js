@@ -1,14 +1,16 @@
 import { describe, it } from 'mocha'
+import '../src/Promise'
+import { isHandled } from '../src/inspect'
 import ErrorHandler from '../src/ErrorHandler'
 import assert from 'assert'
-import { HANDLED } from '../src/state'
 
 function fakeError (value) {
 	return {
-		value: value,
+		value,
 		_state: 0,
+		near () { return this },
 		state () { return this._state },
-		_runAction () { this._state |= HANDLED }
+		_runAction (a) { a.rejected(this) }
 	}
 }
 
@@ -73,7 +75,7 @@ describe('ErrorHandler', () => {
 			const eh = new ErrorHandler(() => true, fail)
 			eh.untrack(expected)
 
-			assert.equal(expected.state(), HANDLED)
+			assert(isHandled(expected))
 		})
 	})
 })

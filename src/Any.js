@@ -1,4 +1,5 @@
-import { silenceError } from './inspect.js'
+import { silenceError } from './Promise' // deferred
+import CancelReason from './CancelReason'
 
 export default class Any {
 	constructor () {
@@ -10,7 +11,9 @@ export default class Any {
 	}
 
 	fulfillAt (p, i, promise) {
+		const token = promise.token
 		promise._become(p)
+		token._cancel(new CancelReason('result is already fulfilled'))
 	}
 
 	rejectAt (p, i, promise) {
