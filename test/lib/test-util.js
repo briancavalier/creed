@@ -3,7 +3,8 @@
 import assert from 'assert'
 
 export function assertSame (ap, bp) {
-	return ap.then(a => bp.then(b => assert(a === b)))
+	return ap.then(a => bp.then(b => assert.strictEqual(a, b)),
+	               a => bp.then(x => { throw x }, b => assert.strictEqual(a, b)))
 }
 
 export function throwingIterable (e) {

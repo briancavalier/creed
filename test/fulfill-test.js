@@ -30,7 +30,7 @@ describe('fulfill', () => {
 		assert.strictEqual(p, p.catch(assert.ifError))
 	})
 
-	it('then should be identity when typeof f !== function', () => {
+	it('then should be identity without f callback', () => {
 		const p = fulfill(true)
 		assert.strictEqual(p, p.then())
 	})
