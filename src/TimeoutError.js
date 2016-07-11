@@ -1,6 +1,3 @@
-// istanbul ignore next
-'use strict'
-
 export default class TimeoutError extends Error {
 	constructor (message) {
 		super()
