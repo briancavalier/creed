@@ -1,34 +1,26 @@
-import maybeThenable from './maybeThenable'
+import { isObject } from './util'
+import Action from './Action'
 
-export default function (f, p, promise) {
+export default function chain (f, p, promise) {
 	p._when(new Chain(f, promise))
 	return promise
 }
 
-class Chain {
+class Chain extends Action {
 	constructor (f, promise) {
+		super(promise)
 		this.f = f
-		this.promise = promise
 	}
 
 	fulfilled (p) {
-		try {
-			runChain(this.f, p.value, this.promise)
-		} catch (e) {
-			this.promise._reject(e)
+		this.tryCall(this.f, p.value)
+	}
+
+	handle (y) {
+		if (!(isObject(y) && typeof y.then === 'function')) {
+			this.promise._reject(new TypeError('f must return a promise'))
 		}
-	}
 
-	rejected (p) {
-		this.promise._become(p)
+		this.promise._resolve(y)
 	}
-}
-
-function runChain (f, x, p) {
-	const y = f(x)
-	if (!(maybeThenable(y) && typeof y.then === 'function')) {
-		throw new TypeError('f must return a promise')
-	}
-
-	p._resolve(y)
 }

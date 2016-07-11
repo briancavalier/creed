@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
-import { fulfill, reject } from '../src/main'
-import { silenceError, getValue } from '../src/inspect'
+import { fulfill, reject, getValue } from '../src/main'
+import { silenceError } from '../src/Promise'
 import assert from 'assert'
 
 describe('fulfill', () => {
@@ -30,7 +30,7 @@ describe('fulfill', () => {
 		assert.strictEqual(p, p.catch(assert.ifError))
 	})
 
-	it('then should be identity when typeof f !== function', () => {
+	it('then should be identity without f callback', () => {
 		const p = fulfill(true)
 		assert.strictEqual(p, p.then())
 	})

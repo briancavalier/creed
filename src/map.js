@@ -1,24 +1,21 @@
-export default function (f, p, promise) {
+import Action from './Action'
+
+export default function map (f, p, promise) {
 	p._when(new Map(f, promise))
 	return promise
 }
 
-class Map {
+class Map extends Action {
 	constructor (f, promise) {
+		super(promise)
 		this.f = f
-		this.promise = promise
 	}
 
 	fulfilled (p) {
-		try {
-			const f = this.f
-			this.promise._fulfill(f(p.value))
-		} catch (e) {
-			this.promise._reject(e)
-		}
+		this.tryCall(this.f, p.value)
 	}
 
-	rejected (p) {
-		this.promise._become(p)
+	handle (result) {
+		this.promise._fulfill(result)
 	}
 }

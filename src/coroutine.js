@@ -1,25 +1,25 @@
-export default function (resolve, iterator, promise) {
-	new Coroutine(resolve, iterator, promise).run()
+import { resolve } from './Promise'
+import Action from './Action'
+
+export default function coroutine (iterator, promise) {
+	new Coroutine(iterator, promise).start()
+	// taskQueue.add(new Coroutine(iterator, promise)) // with start for run
+	// resolve(undefined)._when(new Coroutine(iterator, promise))
 	return promise
 }
 
-class Coroutine {
-	constructor (resolve, iterator, promise) {
-		this.resolve = resolve
+class Coroutine extends Action {
+	constructor (iterator, promise) {
+		super(promise)
 		this.iterator = iterator
-		this.promise = promise
 	}
 
-	run () {
-		this.step(this.iterator.next, void 0)
+	_isReused () {
+		return true
 	}
 
-	step (continuation, x) {
-		try {
-			this.handle(continuation.call(this.iterator, x))
-		} catch (e) {
-			this.promise._reject(e)
-		}
+	start () {
+		this.tryCallContext(this.iterator.next, this.iterator, void 0)
 	}
 
 	handle (result) {
@@ -27,15 +27,15 @@ class Coroutine {
 			return this.promise._resolve(result.value)
 		}
 
-		this.resolve(result.value)._runAction(this)
+		resolve(result.value)._runAction(this)
 	}
 
 	fulfilled (ref) {
-		this.step(this.iterator.next, ref.value)
+		this.tryCallContext(this.iterator.next, this.iterator, ref.value)
 	}
 
 	rejected (ref) {
-		this.step(this.iterator.throw, ref.value)
+		this.tryCallContext(this.iterator.throw, this.iterator, ref.value)
 		return true
 	}
 }

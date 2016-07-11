@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
-import { fulfill, reject, Future, never } from '../src/Promise'
-import { getValue, getReason } from '../src/inspect'
+import { fulfill, reject, never, getValue, getReason } from '../src/main'
+import { Future } from '../src/Promise'
 import assert from 'assert'
 
 describe('toString', () => {

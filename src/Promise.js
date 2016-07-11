@@ -1,23 +1,23 @@
+import { isObject } from './util'
+import { PENDING, FULFILLED, REJECTED, NEVER, HANDLED } from './state'
+import { isNever, isSettled } from './inspect'
+import { ShareHandle } from './Handle'
+
 import TaskQueue from './TaskQueue'
 import ErrorHandler from './ErrorHandler'
-import makeEmitError from './emitError'
-import maybeThenable from './maybeThenable'
-import { PENDING, FULFILLED, REJECTED, NEVER } from './state'
-import { isNever, isSettled } from './inspect'
+import emitError from './emitError'
 
+import Action from './Action'
 import then from './then'
 import map from './map'
 import chain from './chain'
 
-import Race from './Race'
-import Merge from './Merge'
-import { resolveIterable, resultsArray } from './iterable'
+import { race } from './combinators'
 
-const taskQueue = new TaskQueue()
-export { taskQueue }
+export const taskQueue = new TaskQueue()
 
 /* istanbul ignore next */
-const errorHandler = new ErrorHandler(makeEmitError(), e => {
+const errorHandler = new ErrorHandler(emitError, e => {
 	throw e.value
 })
 
@@ -36,6 +36,16 @@ class Core {
 	static of (x) {
 		return fulfill(x)
 	}
+
+	_getRef () {
+		// assert: isNever(this) || !isPending(this)
+		return this
+	}
+
+	_getHandle () {
+		// assert: this is a Fulfilled, Rejected or Never
+		return this
+	}
 }
 
 // data Promise e a where
@@ -49,9 +59,7 @@ class Core {
 export class Future extends Core {
 	constructor () {
 		super()
-		this.ref = void 0
-		this.action = void 0
-		this.length = 0
+		this.handle = void 0 // becomes something with a _getRef() method
 	}
 
 	// then :: Promise e a -> (a -> b) -> Promise e b
@@ -111,40 +119,63 @@ export class Future extends Core {
 
 	// near :: Promise e a -> Promise e a
 	near () {
-		if (!this._isResolved()) {
+		let h = this.handle
+		if (h === void 0) {
 			return this
 		}
-
-		this.ref = this.ref.near()
-		return this.ref
+		let ref = h._getRef()
+		if (ref !== this && ref !== h) {
+			do {
+				h = ref
+				ref = h._getRef()
+			} while (ref !== h)
+			this.handle = ref._getHandle()
+		}
+		return ref
 	}
 
 	// state :: Promise e a -> Int
 	state () {
-		return this._isResolved() ? this.ref.near().state() : PENDING
+		var n = this.near()
+		return n === this ? PENDING : n.state()
+	}
+
+	_getHandle () {
+		return this.handle
 	}
 
 	_isResolved () {
-		return this.ref !== void 0
+		return this.near() !== this
 	}
 
 	_when (action) {
+		// assert: !this._isResolved()
 		this._runAction(action)
 	}
 
 	_runAction (action) {
-		if (this.action === void 0) {
-			this.action = action
+		// assert: this.handle is not a Settled promise
+		if (this.handle) {
+			this.handle = this.handle._concat(action)
 		} else {
-			this[this.length++] = action
+			// assert: action.ref == null || action.ref.handle == action
+			action.ref = this
+			this.handle = action
 		}
 	}
 
 	_resolve (x) {
-		this._become(resolve(x))
+		x = resolve(x)
+		if (this._isResolved()) {
+			return
+		}
+		this._become(x)
 	}
 
 	_fulfill (x) {
+		if (this._isResolved()) {
+			return
+		}
 		this._become(new Fulfilled(x))
 	}
 
@@ -152,36 +183,32 @@ export class Future extends Core {
 		if (this._isResolved()) {
 			return
 		}
-
-		this.__become(new Rejected(e))
+		this._become(new Rejected(e))
 	}
 
 	_become (p) {
-		if (this._isResolved()) {
-			return
+		/* eslint complexity:[2,8] */
+		// assert: p is not a resolved future
+		if (p === this) {
+			p = cycle()
 		}
-
-		this.__become(p)
-	}
-
-	__become (p) {
-		this.ref = p === this ? cycle() : p
-
-		if (this.action === void 0) {
-			return
-		}
-
-		taskQueue.add(this)
-	}
-
-	run () {
-		const p = this.ref.near()
-		p._runAction(this.action)
-		this.action = void 0
-
-		for (let i = 0; i < this.length; ++i) {
-			p._runAction(this[i])
-			this[i] = void 0
+		if (isSettled(p) || isNever(p)) {
+			if (this.handle) {
+				// assert: this.handle.ref === this
+				this.handle.ref = p
+				taskQueue.add(this.handle)
+			}
+			this.handle = p // works well because it has a _getRef() method
+		} else {
+			if (this.handle) {
+				// assert: this.handle.ref === this
+				p._runAction(this.handle)
+			} else if (!p.handle) {
+				p.handle = new ShareHandle(p)
+			} else if (p.handle._isReused()) {
+				p.handle = new ShareHandle(p)._concat(p.handle)
+			}
+			this.handle = p.handle // share handle to avoid reference chain between multiple futures
 		}
 	}
 }
@@ -235,7 +262,9 @@ class Fulfilled extends Core {
 	}
 
 	_when (action) {
-		taskQueue.add(new Continuation(action, this))
+		// assert: action.ref == null || action.ref === this
+		action.ref = this
+		taskQueue.add(action)
 	}
 
 	_runAction (action) {
@@ -249,7 +278,7 @@ class Rejected extends Core {
 	constructor (e) {
 		super()
 		this.value = e
-		this._state = REJECTED
+		this._state = REJECTED // mutated by the silencer
 		errorHandler.track(this)
 	}
 
@@ -294,7 +323,9 @@ class Rejected extends Core {
 	}
 
 	_when (action) {
-		taskQueue.add(new Continuation(action, this))
+		// assert: action.ref == null || action.ref === this
+		action.ref = this
+		taskQueue.add(action)
 	}
 
 	_runAction (action) {
@@ -354,6 +385,16 @@ class Never extends Core {
 	}
 }
 
+const silencer = new Action(never())
+silencer.fulfilled = function fulfilled (p) { }
+silencer.rejected = function setHandled (p) {
+	p._state |= HANDLED
+}
+
+export function silenceError (p) {
+	p._runAction(silencer)
+}
+
 // -------------------------------------------------------------
 // ## Creating promises
 // -------------------------------------------------------------
@@ -362,8 +403,12 @@ class Never extends Core {
 // resolve :: a -> Promise e a
 export function resolve (x) {
 	return isPromise(x) ? x.near()
-		: maybeThenable(x) ? refForMaybeThenable(fulfill, x)
+		: isObject(x) ? refForMaybeThenable(x)
 		: new Fulfilled(x)
+}
+
+export function resolveObject (o) {
+	return isPromise(o) ? o.near() : refForMaybeThenable(o)
 }
 
 // reject :: e -> Promise e a
@@ -389,40 +434,6 @@ export function future () {
 }
 
 // -------------------------------------------------------------
-// ## Iterables
-// -------------------------------------------------------------
-
-// all :: Iterable (Promise e a) -> Promise e [a]
-export function all (promises) {
-	const handler = new Merge(allHandler, resultsArray(promises))
-	return iterablePromise(handler, promises)
-}
-
-const allHandler = {
-	merge (promise, args) {
-		promise._fulfill(args)
-	}
-}
-
-// race :: Iterable (Promise e a) -> Promise e a
-export function race (promises) {
-	return iterablePromise(new Race(never), promises)
-}
-
-function isIterable (x) {
-	return typeof x === 'object' && x !== null
-}
-
-export function iterablePromise (handler, iterable) {
-	if (!isIterable(iterable)) {
-		return reject(new TypeError('expected an iterable'))
-	}
-
-	const p = new Future()
-	return resolveIterable(resolveMaybeThenable, handler, iterable, p)
-}
-
-// -------------------------------------------------------------
 // # Internals
 // -------------------------------------------------------------
 
@@ -431,16 +442,12 @@ function isPromise (x) {
 	return x instanceof Core
 }
 
-function resolveMaybeThenable (x) {
-	return isPromise(x) ? x.near() : refForMaybeThenable(fulfill, x)
-}
-
-function refForMaybeThenable (otherwise, x) {
+function refForMaybeThenable (x) {
 	try {
 		const then = x.then
 		return typeof then === 'function'
 			? extractThenable(then, x)
-			: otherwise(x)
+			: fulfill(x)
 	} catch (e) {
 		return new Rejected(e)
 	}
@@ -461,15 +468,4 @@ function extractThenable (thn, thenable) {
 
 function cycle () {
 	return new Rejected(new TypeError('resolution cycle'))
-}
-
-class Continuation {
-	constructor (action, promise) {
-		this.action = action
-		this.promise = promise
-	}
-
-	run () {
-		this.promise._runAction(this.action)
-	}
 }

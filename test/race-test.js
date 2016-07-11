@@ -1,6 +1,5 @@
 import { describe, it } from 'mocha'
-import { race, resolve, reject, never } from '../src/main'
-import { isNever } from '../src/inspect'
+import { race, resolve, reject, never, isNever } from '../src/main'
 import { throwingIterable } from './lib/test-util'
 import assert from 'assert'
 
@@ -40,6 +39,26 @@ describe('race', () => {
 
 	it('should reject when winner rejects', () => {
 		return race([reject(1), never()])
+			.then(assert.ifError, x => assert.equal(x, 1))
+	})
+
+	it('should fulfill with first value', () => {
+		return race([resolve(2).then(resolve), resolve(1)])
+			.then(x => assert.equal(x, 1))
+	})
+
+	it('should reject with first value', () => {
+		return race([resolve(2).then(resolve), reject(1)])
+			.then(assert.ifError, x => assert.equal(x, 1))
+	})
+
+	it('should fulfill with first value despite rejection', () => {
+		return race([resolve(2).then(reject), resolve(1)])
+			.then(x => assert.equal(x, 1))
+	})
+
+	it('should reject with first value despite rejection', () => {
+		return race([resolve(2).then(reject), reject(1)])
 			.then(assert.ifError, x => assert.equal(x, 1))
 	})
 })

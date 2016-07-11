@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
-import { Future, resolve } from '../src/Promise'
 import { resolveIterable } from '../src/iterable'
+import { Future } from '../src/Promise'
 import { arrayIterable } from './lib/test-util'
 import assert from 'assert'
 
@@ -14,7 +14,7 @@ describe('iterable', () => {
 		}
 
 		const iterable = arrayIterable([1, 2, 3])
-		return resolveIterable(resolve, itemHandler, iterable, new Future())
+		return resolveIterable(itemHandler, iterable, new Future())
 			.then(assert.ifError, e => assert.strictEqual(error, e))
 	})
 
@@ -31,7 +31,7 @@ describe('iterable', () => {
 		const promise = new Future()
 		promise._resolve(expected)
 
-		return resolveIterable(resolve, itemHandler, iterable, promise)
+		return resolveIterable(itemHandler, iterable, promise)
 			.then(x => assert.strictEqual(expected, x))
 	})
 })

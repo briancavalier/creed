@@ -3,3 +3,4 @@ experiments/
 node_modules/
 build/
 coverage/
+perf/logs/

@@ -1,7 +1,6 @@
 import { describe, it } from 'mocha'
-import { delay } from '../src/main'
-import { Future, never, reject, fulfill } from '../src/Promise'
-import { silenceError, isNever, isPending } from '../src/inspect'
+import { delay, never, reject, fulfill, isNever, isPending } from '../src/main'
+import { Future, silenceError } from '../src/Promise'
 import { assertSame } from './lib/test-util'
 import assert from 'assert'
 

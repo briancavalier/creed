@@ -1,6 +1,7 @@
 import { describe, it } from 'mocha'
-import { isFulfilled, isRejected, isSettled, isPending, isHandled, isNever, silenceError, getValue, getReason } from '../src/inspect'
-import { resolve, reject, fulfill, never, Future } from '../src/Promise'
+import { resolve, reject, fulfill, never } from '../src/main'
+import { isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason, isHandled } from '../src/inspect'
+import { Future, silenceError } from '../src/Promise'
 import assert from 'assert'
 
 describe('inspect', () => {

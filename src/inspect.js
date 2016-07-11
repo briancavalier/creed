@@ -1,4 +1,5 @@
 import { PENDING, FULFILLED, REJECTED, SETTLED, NEVER, HANDLED } from './state'
+import { silenceError } from './Promise' // deferred
 
 export function isPending (p) {
 	return (p.state() & PENDING) > 0
@@ -41,17 +42,4 @@ export function getReason (p) {
 
 	silenceError(n)
 	return n.value
-}
-
-export function silenceError (p) {
-	p._runAction(silencer)
-}
-
-const silencer = {
-	fulfilled () {},
-	rejected: setHandled
-}
-
-function setHandled (rejected) {
-	rejected._state |= HANDLED
 }

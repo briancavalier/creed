@@ -1,27 +1,21 @@
-import { isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason } from './inspect'
-import { Future, resolve, reject, future, never, fulfill, all, race, iterablePromise, taskQueue } from './Promise'
-
-import _delay from './delay'
-import _timeout from './timeout'
-
-import Any from './Any'
-import Merge from './Merge'
-import Settle from './Settle'
-import { resultsArray } from './iterable'
-
-import _runPromise from './runPromise'
-import _runNode from './node'
-import _runCoroutine from './coroutine.js'
-
 // -------------------------------------------------------------
 // ## Core promise methods
 // -------------------------------------------------------------
 
-export {
-	resolve, reject, future, never, fulfill, all, race,
-	isFulfilled, isRejected, isSettled, isPending, isNever,
-	getValue, getReason
-}
+/* eslint-disable no-duplicate-imports */
+export { resolve, reject, future, never, fulfill } from './Promise'
+import { Future, resolve, reject } from './Promise'
+export { isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason } from './inspect'
+import { isRejected, isSettled, isNever } from './inspect'
+export { all, race, any, settle, merge } from './combinators'
+import { all, race } from './combinators'
+
+import _delay from './delay'
+import _timeout from './timeout'
+
+import _runPromise from './runPromise'
+import _runNode from './node'
+import _runCoroutine from './coroutine.js'
 
 // -------------------------------------------------------------
 // ## Coroutine
@@ -30,14 +24,14 @@ export {
 // coroutine :: Generator e a -> (...* -> Promise e a)
 // Make a coroutine from a promise-yielding generator
 export function coroutine (generator) {
-	return function (...args) {
+	return function coroutinified (...args) {
 		return runGenerator(generator, this, args)
 	}
 }
 
 function runGenerator (generator, thisArg, args) {
 	const iterator = generator.apply(thisArg, args)
-	return _runCoroutine(resolve, iterator, new Future())
+	return _runCoroutine(iterator, new Future())
 }
 
 // -------------------------------------------------------------
@@ -50,7 +44,7 @@ function runGenerator (generator, thisArg, args) {
 // fromNode :: NodeApi e a -> (...args -> Promise e a)
 // Turn a Node API into a promise API
 export function fromNode (f) {
-	return function (...args) {
+	return function promisified (...args) {
 		return runResolver(_runNode, f, this, args, new Future())
 	}
 }
@@ -85,6 +79,12 @@ function runResolver (run, f, thisArg, args, p) {
 	return p
 }
 
+function checkFunction (f) {
+	if (typeof f !== 'function') {
+		throw new TypeError('must provide a resolver function')
+	}
+}
+
 // -------------------------------------------------------------
 // ## Time
 // -------------------------------------------------------------
@@ -104,64 +104,6 @@ export function timeout (ms, x) {
 }
 
 // -------------------------------------------------------------
-// ## Iterables
-// -------------------------------------------------------------
-
-// any :: Iterable (Promise e a) -> Promise e a
-export function any (promises) {
-	return iterablePromise(new Any(), promises)
-}
-
-// settle :: Iterable (Promise e a) -> Promise e [Promise e a]
-export function settle (promises) {
-	const handler = new Settle(resolve, resultsArray(promises))
-	return iterablePromise(handler, promises)
-}
-
-// -------------------------------------------------------------
-// ## Lifting
-// -------------------------------------------------------------
-
-// merge :: (...* -> b) -> ...Promise e a -> Promise e b
-export function merge (f, ...args) {
-	return runMerge(f, this, args)
-}
-
-function runMerge (f, thisArg, args) {
-	const handler = new Merge(new MergeHandler(f, thisArg), resultsArray(args))
-	return iterablePromise(handler, args)
-}
-
-class MergeHandler {
-	constructor (f, c) {
-		this.f = f
-		this.c = c
-		this.promise = void 0
-		this.args = void 0
-	}
-
-	merge (promise, args) {
-		this.promise = promise
-		this.args = args
-		taskQueue.add(this)
-	}
-
-	run () {
-		try {
-			this.promise._resolve(this.f.apply(this.c, this.args))
-		} catch (e) {
-			this.promise._reject(e)
-		}
-	}
-}
-
-function checkFunction (f) {
-	if (typeof f !== 'function') {
-		throw new TypeError('must provide a resolver function')
-	}
-}
-
-// -------------------------------------------------------------
 // ## ES6 Promise polyfill
 // -------------------------------------------------------------
 
@@ -169,7 +111,7 @@ const NOARGS = []
 
 // type Resolve a = a -> ()
 // type Reject e = e -> ()
-// Promise :: (Resolve a -> Reject e) -> Promise e a
+// Promise :: (Resolve a -> Reject e -> ()) -> Promise e a
 class CreedPromise extends Future {
 	constructor (f) {
 		super()
