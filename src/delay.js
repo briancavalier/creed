@@ -1,5 +1,3 @@
-'use strict'
-
 export default function (ms, p, promise) {
 	p._runAction(new Delay(ms, promise))
 	return promise

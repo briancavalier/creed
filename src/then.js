@@ -1,5 +1,3 @@
-'use strict'
-
 export default function then (f, r, p, promise) {
 	p._when(new Then(f, r, promise))
 	return promise

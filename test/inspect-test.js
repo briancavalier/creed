@@ -105,12 +105,11 @@ describe('inspect', () => {
 
 		it('should be true for handled rejected promise', done => {
 			const p = reject()
-			p.catch(() => {
-				setTimeout((done, p) => {
+			p.catch(() => {})
+				.then(() => {
 					assert(isHandled(p))
 					done()
-				}, 0, done, p)
-			})
+				})
 		})
 
 		it('should be true for silenced rejected promise', () => {

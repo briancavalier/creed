@@ -1,5 +1,3 @@
-'use strict'
-
 import { PENDING, FULFILLED, REJECTED, SETTLED, NEVER, HANDLED } from './state'
 
 export function isPending (p) {

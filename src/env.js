@@ -1,5 +1,3 @@
-'use strict'
-
 /*global process,MutationObserver,WebKitMutationObserver */
 
 const isNode = typeof process !== 'undefined' &&

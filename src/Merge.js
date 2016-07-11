@@ -1,5 +1,3 @@
-'use strict'
-
 export default class Merge {
 	constructor (mergeHandler, results) {
 		this.pending = 0

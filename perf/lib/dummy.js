@@ -3,8 +3,13 @@
 exports.dummy = function dummy(n) {
     return function dummy_n() {
         var cb = arguments[n - 1];
-        if (global.asyncTime)
-            setTimeout(cb, global.asyncTime || 100);
+        if (global.asyncTime) {
+            // Some tests seem not to provide  cb, and node 6 throws
+            // an error.  So, for now, do nothing if it's not a function
+            if (typeof cb === 'function') {
+                setTimeout(cb, global.asyncTime || 100);
+            }
+        }
         else
             process.nextTick(cb);
     }

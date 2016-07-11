@@ -27,9 +27,14 @@ function runArray (resolve, handler, promises, promise) {
 
 function runIterable (resolve, handler, promises, promise) {
 	let i = 0
+	const iter = promises[Symbol.iterator]()
 
-	for (let x of promises) {
-		handleItem(resolve, handler, x, i++, promise)
+	while (true) {
+		const step = iter.next()
+		if (step.done) {
+			break
+		}
+		handleItem(resolve, handler, step.value, i++, promise)
 	}
 
 	handler.complete(i, promise)

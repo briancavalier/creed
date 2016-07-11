@@ -1,5 +1,3 @@
-'use strict'
-
 import { silenceError } from './inspect'
 
 export default class Settle {
