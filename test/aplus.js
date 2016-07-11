@@ -1,4 +1,5 @@
-var lib = require('..')
+require('buba')
+var lib = require('../src/main')
 
 process.addListener('unhandledRejection', function () {})
 
