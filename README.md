@@ -1,10 +1,10 @@
-# creed :: async
+﻿# creed :: async
 
 [![Join the chat at https://gitter.im/briancavalier/creed](https://badges.gitter.im/briancavalier/creed.svg)](https://gitter.im/briancavalier/creed?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, [fantasy-land](https://github.com/fantasyland/fantasy-land).
+Sophisticated and functionally-minded async with advanced features: promises, [cancellation](cancellation.md), coroutines, ES2015 iterables, [fantasy-land](https://github.com/fantasyland/fantasy-land).
 
-Creed simplifies async by letting you write coroutines using ES2015 generators and promises, and encourages functional programming via fantasy-land.  It also makes uncaught errors obvious by default, and supports other ES2015 features such as iterables.
+Creed simplifies async by letting you write coroutines using ES2015 generators and promises, and encourages functional programming via fantasy-land.  It also makes uncaught errors obvious by default, and supports other ES2015 features such as iterables. It empowers you to direct the execution flow in detail through cancellation of callbacks.
 
 You can also use [babel](https://babeljs.io) and the [babel-creed-async](https://github.com/briancavalier/babel-creed-async) plugin to write ES7 `async` functions backed by creed coroutines.
 
@@ -18,8 +18,6 @@ You can also use [babel](https://babeljs.io) and the [babel-creed-async](https:/
 Using creed coroutines, ES2015, and FP to solve the [async-problem](https://github.com/plaid/async-problem):
 
 ```javascript
-'use strict';
-
 import { runNode, all, coroutine } from 'creed';
 import { readFile } from 'fs';
 import { join } from 'path';
@@ -103,7 +101,7 @@ Promise { fulfilled: winner }
 
 # Errors & debugging
 
-By design, uncaught creed promise errors are fatal.  They will crash your program, forcing you to fix or [`.catch`](#catch--promise-e-a--e--bpromise-e-b--promise-e-b) them.  You can override this behavior by [registering your own error event listener](#debug-events).
+By design, uncaught creed promise errors are fatal.  They will crash your program, forcing you to fix or [`.catch`](#catch--promise-e-a--e--bthenable-e-b--canceltoken-e--promise-e-b) them.  You can override this behaviour by [registering your own error event listener](#debug-events).
   
 Consider this small program, which contains a `ReferenceError`.
 
@@ -214,9 +212,9 @@ function reportHandled(promise) {
 
 ## Run async tasks
 
-### coroutine :: Generator a &rarr; (...* &rarr; Promise e a)
+### coroutine :: GeneratorFunction a &rarr; (...* &rarr; Promise e a)
 
-Create an async coroutine from a promise-yielding generator.
+Create an async coroutine from a promise-yielding generator function.
 
 ```js
 import { coroutine } from 'creed';
@@ -226,7 +224,7 @@ function fetchTextFromUrl(url) {
     return promise;
 }
 
-// Make an async coroutine from a generator
+// Make an async coroutine from a generator function
 let getUserProfile = coroutine(function* (userId) {
     try {
         let profileUrl = yield getUserProfileUrlFromDB(userId);
@@ -241,6 +239,8 @@ let getUserProfile = coroutine(function* (userId) {
 getUserProfile(123)
     .then(profile => console.log(profile));
 ```
+
+For cancellation of coroutines see the [cancellation docs](cancellation.md#coroutines).
 
 ### fromNode :: NodeApi e a &rarr; (...* &rarr; Promise e a)
 type NodeApi e a = ...* &rarr; Nodeback e a &rarr; ()<br/>
@@ -283,7 +283,7 @@ Run a function to produce a promised result.
 ```js
 import { runPromise } from 'creed';
 
-/* Run a function, threading in a url parameter */
+/* Run a function, passing in a url parameter */
 let p = runPromise((url, resolve, reject) => {
     var xhr = new XMLHttpRequest;
     xhr.addEventListener("error", reject);
@@ -295,7 +295,7 @@ let p = runPromise((url, resolve, reject) => {
 p.then(result => console.log(result));
 ```
 
-Parameter threading also makes it easy to create reusable tasks
+Parameter passing also makes it easy to create reusable tasks
 that don't rely on closures and scope chain capturing.
 
 ```js
@@ -313,28 +313,21 @@ runPromise(xhrGet, 'http://...')
     .then(result => console.log(result));
 ```
 
-### merge :: (...* &rarr; b) &rarr; ...Promise e a &rarr; Promise e b
+### new Promise :: Producer e a [&rarr; CancelToken e] &rarr; Promise e a
 
-Merge promises by passing their fulfillment values to a merge
-function.  Returns a promise for the result of the merge function.
-Effectively liftN for promises.
-
-```js
-import { merge, resolve } from 'creed';
-
-merge((x, y) => x + y, resolve(123), resolve(1))
-    .then(z => console.log(z)); //=> 124
-```
+ES6-compliant promise constructor. Run an executor function to produce a promised result.
+If the optional cancellation token is passed, it will be associated to the promise.
 
 ## Make promises
 
-### future :: () &rarr; { resolve: Resolve e a, promise: Promise e a }
+### future :: [CancelToken e] &rarr; { resolve :: Resolve e a, promise :: Promise e a }
 type Resolve e a = a|Thenable e a &rarr; ()<br/>
 
 Create a `{ resolve, promise }` pair, where `resolve` is a function that seals the fate of `promise`.
+If the optional cancellation token is passed, it will be associated to the `promise`.
 
 ```js
-import { future, reject } from 'creed';
+import { future, reject, CancelToken } from 'creed';
 
 // Fulfill
 let { resolve, promise } = future();
@@ -350,11 +343,18 @@ resolve(anotherPromise); //=> make promise's fate the same as anotherPromise's
 let { resolve, promise } = future();
 resolve(reject(new Error('oops')));
 promise.catch(e => console.log(e)); //=> [Error: oops]
+
+// Cancel
+let { cancel, token } = CancelToken.source();
+let { resolve, promise } = future(token);
+cancel(new Error('already done'));
+promise.trifurcate(null, null, e => console.log(e)); //=> [Error: already done]
 ```
 
-### resolve :: a|Thenable e a &rarr; Promise e a
+### resolve :: a|Thenable e a [&rarr; CancelToken e] &rarr; Promise e a
 
-Coerce a value or Thenable to a promise.
+Coerce a value or thenable to a promise.
+If the optional cancellation token is passed, it will be associated to the promise.
 
 ```js
 import { resolve } from 'creed';
@@ -387,7 +387,11 @@ resolve(fulfill(123))
     .then(x => console.log(x)); //=> 123
 ```
 
-### reject :: Error e => e &rarr; Promise e a
+### Promise.of :: a &rarr; Promise e a
+
+Alias for `fulfill`, completing the [Fantasy-land Applicative](//github.com/fantasyland/fantasy-land#applicative).
+
+### reject :: Error e &rArr; e &rarr; Promise e a
 
 Make a rejected promise for an error.
 
@@ -398,7 +402,7 @@ reject(new TypeError('oops!'))
     .catch(e => console.log(e.message)); //=> oops!
 ```
 
-### never :: Promise e a
+### never :: () &rarr; Promise e a
 
 Make a promise that remains pending forever.
 
@@ -410,16 +414,23 @@ never()
 ```
 
 Note: `never` consumes virtually no resources.  It does not hold references
-to any functions passed to `then`, `map`, `chain`, etc. 
+to any functions passed to `then`, `map`, `chain`, etc.
+
+### Promise.empty :: () &rarr; Promise e a
+
+Alias for `never`, completing the [Fantasy-land Monoid](//github.com/fantasyland/fantasy-land#monoid).
 
 ## Transform promises
 
-### .then :: Promise e a &rarr; (a &rarr; b|Promise e b) &rarr; Promise e b
+### .then :: Promise e a &rarr; (a &rarr; b|Thenable e b) &rarr; (e &rarr; b|Thenable e b) [&rarr; CancelToken e] &rarr; Promise e b
 
 [Promises/A+ then](http://promisesaplus.com/).
-Transform a promise's value by applying a function to the
-promise's fulfillment value. Returns a new promise for the
-transformed result.
+Transform a promise's value by applying the first function to the
+promise's fulfillment value or the second function to the rejection reason.
+Returns a new promise for the transformed result.
+If the respective argument is no function, the resolution is passed through.
+If the optional cancellation token is passed, it will be associated to the result promise.
+The callbacks will never run after cancellation has been requested.
 
 ```js
 import { resolve } from 'creed';
@@ -433,9 +444,11 @@ resolve(1)
     .then(y => console.log(y)); //=> 2
 ```
 
-### .catch :: Promise e a &rarr; (e &rarr; b|Promise e b) &rarr; Promise e b
+### .catch :: Promise e a &rarr; (e &rarr; b|Thenable e b) [&rarr; CancelToken e] &rarr; Promise e b
 
-Catch and handle a promise error.
+Catch and handle a promise error. Equivalent to `.then(undefined, onRejected)`.
+If the optional cancellation token is passed, it will be associated to the result promise.
+The callback will never run after cancellation has been requested.
 
 ```js
 import { reject, resolve } from 'creed';
@@ -449,12 +462,14 @@ reject(new Error('oops!'))
     .then(x => console.log(x)); //=> 123
 ```
 
-### .map :: Promise e a &rarr; (a &rarr; b) &rarr; Promise e b
+### .map :: Promise e a &rarr; (a &rarr; b) [&rarr; CancelToken e] &rarr; Promise e b
 
 [Fantasy-land Functor](https://github.com/fantasyland/fantasy-land#functor).
 Transform a promise's value by applying a function.  The return
 value of the function will be used verbatim, even if it is a promise.
 Returns a new promise for the transformed value.
+If the optional cancellation token is passed, it will be associated to the result promise.
+The callback will never run after cancellation has been requested.
 
 ```js
 import { resolve } from 'creed';
@@ -464,11 +479,13 @@ resolve(1)
     .then(y => console.log(y)); //=> 2
 ```
 
-### .ap :: Promise e (a &rarr; b) &rarr; Promise e a &rarr; Promise e b
+### .ap :: Promise e (a &rarr; b) &rarr; Promise e a [&rarr; CancelToken e] &rarr; Promise e b
 
 [Fantasy-land Apply](https://github.com/fantasyland/fantasy-land#apply).
 Apply a promised function to a promised value.  Returns a new promise
 for the result.
+If the optional cancellation token is passed, it will be associated to the result promise.
+The callback will never run after cancellation has been requested.
 
 ```js
 import { resolve } from 'creed';
@@ -483,11 +500,13 @@ resolve(x => y => x+y)
     .then(y => console.log(y)); //=> 124
 ```
 
-### .chain :: Promise e a &rarr; (a &rarr; Promise e b) &rarr; Promise e b
+### .chain :: Promise e a &rarr; (a &rarr; Promise e b) [&rarr; CancelToken e] &rarr; Promise e b
 
 [Fantasy-land Chain](https://github.com/fantasyland/fantasy-land#chain).
 Sequence async actions.  When a promise fulfills, run another
 async action and return a promise for its result.
+If the optional cancellation token is passed, it will be associated to the result promise.
+The callback will never run after cancellation has been requested.
 
 ```js
 let profileText = getUserProfileUrlFromDB(userId)
@@ -511,16 +530,72 @@ fulfill(123).concat(fulfill(456))
     .then(x => console.log(x)); //=> 123
 ```
 
+### .untilCancel :: Promise e a &rarr; CancelToken e &rarr; Promise e a
+
+Returns a promise equivalent to the receiver, but with the token associated to it. Equivalent to `.then(null, null, token)`.
+Essentially the cancellation is raced against the resolution.
+Preference is given to the former, it always returns a cancelled promise if the token is already revoked.
+
+### .trifurcate :: Promise e a &rarr; (a &rarr; b|Thenable e b) &rarr; (e &rarr; b|Thenable e b) &rarr; (e &rarr; b|Thenable e b) &rarr; Promise e b
+
+Transform a promise's value by applying the first function to the
+promise's fulfillment value, the second function to the rejection reason
+or the third function to the cancellation reason if the promise was rejected through its associated token.
+Returns a new promise for the transformed result, with no cancellation token associated.
+If the respective argument is no function, the resolution is passed through.
+
+It is guaranteed that at most one of the callbacks is called.
+It can happen that the `onFulfilled` or `onRejected` callbacks run despite the cancellation having been requested.
+
+```
+import { delay, CancelToken } from 'creed';
+
+const { cancel, token } = CancelToken.source();
+setTimeout(() => {
+	cancel(new Error('timeout'));
+}, 2000);
+
+fetch(…).untilCancel(token) // better: fetch(…, token)
+	.trifurcate(x => console.log('result', x), e => console.error(e), e => console.log('cancel', e));
+```
+
+### .finally :: Promise e a &rarr; (Promise e a &rarr; b|Thenable e b) &rarr; Promise e a
+
+Runs the function when the promise settles or its associated token is revoked.
+The resolution is not transformed, the callback result is awaited but ignored, unless it rejects.
+The returned promise has no cancellation token associated to it.
+
+In case of cancellation, the callback is executed synchronously like a token subscription, its return value is yielded to the `cancel()` caller.
+
+### merge :: (...* &rarr; b) &rarr; ...Promise e a &rarr; Promise e b
+
+Merge promises by passing their fulfillment values to a merge
+function.  Returns a promise for the result of the merge function.
+Effectively liftN for promises.
+
+```js
+import { merge, resolve } from 'creed';
+
+merge((x, y) => x + y, resolve(123), resolve(1))
+    .then(z => console.log(z)); //=> 124
+```
+
+## Cancellation
+
+For the `CancelToken` documentation see the separate [cancellation API description](cancellation.md#api).
+
 ## Control time
 
-### delay :: Int &rarr; a|Promise e a &rarr; Promise e a
+### delay :: Int &rarr; a|Promise e a [&rarr; CancelToken e] &rarr; Promise e a
 
 Create a delayed promise for a value, or further delay the fulfillment
 of an existing promise.  Delay only delays fulfillment: it has no
 effect on rejected promises.
+If the optional cancellation token is passed, it will be associated to the result promise.
+When the cancellation is requested, the timeout is cleared.
 
 ```js
-import { delay, reject } from 'creed';
+import { delay, reject, CancelToken } from 'creed';
 
 delay(5000, 'hi')
     .then(x => console.log(x)); //=> 'hi' after 5 seconds
@@ -530,6 +605,11 @@ delay(5000, delay(1000, 'hi'))
 
 delay(5000, reject(new Error('oops')))
     .catch(e => console.log(e.message)); //=> 'oops' immediately
+
+const { cancel, token } = CancelToken.source();
+delay(2000, 'over').then(cancel);
+delay(5000, 'result', token)
+	.catch(e => console.log(e)); //=> 'over' after 2 seconds
 ```
 
 ### timeout :: Int &rarr; Promise e a &rarr; Promise e a
@@ -552,7 +632,7 @@ Creed's iterable functions accept any ES2015 Iterable.  Most of
 the examples in this section show Arrays, but Sets, generators,
 etc. will work as well.
 
-### all :: Iterable (Promise e a) &rarr; Promise e [a]
+### all :: Iterable (Promise e a) &rarr; Promise e (Array a)
 
 Await all promises from an Iterable.  Returns a promise that fulfills
 with an array containing all input promise fulfillment values,
@@ -627,7 +707,7 @@ any([])
     .catch(e => console.log(e)); //=> [RangeError: No fulfilled promises in input]
 ```
 
-### settle :: Iterable (Promise e a) &rarr; Promise e [Promise e a]
+### settle :: Iterable (Promise e a) &rarr; Promise e (Array (Promise e a))
 
 Returns a promise that fulfills with an array of settled promises.
 
@@ -647,12 +727,14 @@ settle([resolve(123), reject(new Error('oops')), resolve(456)])
 Returns true if the promise is fulfilled.
 
 ```js
-import { isFulfilled, resolve, reject, delay, never } from 'creed';
+import { isFulfilled, resolve, reject, delay, never, CancelToken } from 'creed';
+const token = new CancelToken(cancel => cancel());
 
 isFulfilled(resolve(123));        //=> true
 isFulfilled(reject(new Error())); //=> false
 isFulfilled(delay(0, 123));       //=> true
 isFulfilled(delay(1, 123));       //=> false
+isFulfilled(token.getCancelled());//=> false
 isFulfilled(never());             //=> false
 ```
 
@@ -667,6 +749,7 @@ isRejected(resolve(123));        //=> false
 isRejected(reject(new Error())); //=> true
 isRejected(delay(0, 123));       //=> false
 isRejected(delay(1, 123));       //=> false
+isRejected(token.getCancelled());//=> true
 isRejected(never());             //=> false
 ```
 
@@ -681,6 +764,7 @@ isSettled(resolve(123));        //=> true
 isSettled(reject(new Error())); //=> true
 isSettled(delay(0, 123));       //=> true
 isSettled(delay(1, 123));       //=> false
+isSettled(token.getCancelled());//=> true
 isSettled(never());             //=> false
 ```
 
@@ -698,6 +782,26 @@ isPending(delay(1, 123));       //=> true
 isPending(never());             //=> true
 ```
 
+### isCancelled :: Promise e a &rarr; boolean
+
+Returns true if the promise is rejected because cancellation was requested through its associated token.
+
+```
+import { isFulfilled, resolve, reject, delay, never, CancelToken } from 'creed';
+const cancelledToken = new CancelToken(cancel => cancel());
+const { cancel, token } = CancelToken.source()
+const p = future(token).promise
+
+isCancelled(resolve(123));                   //=> false
+isCancelled(reject(new Error()));            //=> false
+isCancelled(delay(1, 123));                  //=> false
+isCancelled(future(cancelledToken).promise); //=> true
+isCancelled(delay(0, 123, cancelledToken));  //=> true
+isCancelled(p);                              //=> false
+cancel();
+isCancelled(p);                              //=> true
+```
+
 ### isNever :: Promise e a &rarr; boolean
 
 Returns true if it is known that the promise will remain pending
@@ -711,6 +815,7 @@ isNever(resolve(123));         //=> false
 isNever(reject(new Error()));  //=> false
 isNever(delay(0, 123));        //=> false
 isNever(delay(1, 123));        //=> false
+isNever(token.getCancelled()); //=> false
 isNever(never());              //=> true
 isNever(resolve(never()));     //=> true
 isNever(delay(1000, never())); //=> true
@@ -747,8 +852,8 @@ getReason(never());           //=> throws TypeError
 
 ### shim :: () &rarr; PromiseConstructor|undefined
 
-Polyfill the global `Promise` constructor with an ES6-compliant
-creed `Promise`.  If there was a pre-existing global `Promise`,
+Polyfill the global `Promise` constructor with the [creed `Promise` constructor](#new-promise--producer-e-a--canceltoken-e--promise-e-a).
+If there was a pre-existing global `Promise`,
 it is returned.
 
 ```js
