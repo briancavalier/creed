@@ -1,10 +1,10 @@
 Latest results, using latest versions of modules:
 
-├── async@2.0.0
-├── bluebird@3.4.1
-├── co@4.6.0
-├── rsvp@3.2.1
-└── when@3.7.7
+	├── async@2.0.0
+	├── bluebird@3.4.1
+	├── co@4.6.0
+	├── rsvp@3.2.1
+	└── when@3.7.7
 
 bench doxbee-sequential
 
