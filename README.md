@@ -534,7 +534,7 @@ fulfill(123).concat(fulfill(456))
 
 Returns a promise equivalent to the receiver, but with the token associated to it. Equivalent to `.then(null, null, token)`.
 Essentially the cancellation is raced against the resolution.
-Preference is given to the former, it always returns a cancelled promise if the token is already revoked.
+Preference is given to the former, it always returns a cancelled promise if the token is already cancelled.
 
 ### .trifurcate :: Promise e a &rarr; (a &rarr; b|Thenable e b) &rarr; (e &rarr; b|Thenable e b) &rarr; (e &rarr; b|Thenable e b) &rarr; Promise e b
 
@@ -561,7 +561,7 @@ fetch(…).untilCancel(token) // better: fetch(…, token)
 
 ### .finally :: Promise e a &rarr; (Promise e a &rarr; b|Thenable e b) &rarr; Promise e a
 
-Runs the function when the promise settles or its associated token is revoked.
+Runs the function when the promise settles or its associated token is cancelled.
 The resolution is not transformed, the callback result is awaited but ignored, unless it rejects.
 The returned promise has no cancellation token associated to it.
 

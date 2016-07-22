@@ -1,20 +1,26 @@
 ﻿Creed features cancellation with a cancellation token based approach.
 
+It is modelled after [this promise cancellation proposal](https://github.com/bergus/promise-cancellation),
+altough minor discrepancies might be possible (if you find anything, please report a bug).
+
 # Terminology
 
 1. A **cancellation token** (**`CancelToken`**) is an object with methods for determining whether and when an operation should be cancelled.
-2. A **revoked token** is a `CancelToken` that is in the cancelled state, denoting that the result of an operation is no longer of interest.
-3. The cancellation can be **requested** by the issuer of the `CancelToken`, thereby revoking it.
+2. The cancellation can be **requested** by the issuer of the `CancelToken`, denoting that the result of an operation is no longer of interest
+   and that the operation should be terminated if applicable.
+3. A **cancelled token** is a `CancelToken` that represents a requested cancellation
 4. A **cancellation reason** is a value used to request a cancellation and reject the respective promises.
 5. One `CancelToken` might be **associated** with a promise.
-6. A **cancelled promise** is a promise that got rejected because its associated token has been revoked.
-7. A **cancelled callback** is an `onFulfilled` or `onRejected` handler whose corresponding cancellation token has been revoked. It might be considered an **unregistered** or **ignored** callback.
+6. A **cancelled promise** is a promise that got rejected because its cancellation was requested through its associated token
+7. The **corresponding** cancellation token of a handler is the associated token of the promise that the handler is meant to resolve
+8. A **cancelled callback** is an `onFulfilled` or `onRejected` handler whose corresponding cancellation token has been cancelled.
+   It might be considered an **unregistered** or **ignored** callback.
 
 # Cancelling…
 
 Cancellation allows you to stop asynchronous operations built with promises. Use cases might both be in programmatical cancellation, where your program stops doing things after e.g. a timeout has expired or another operation has finished earlier, and in interactive cancellation, where a user triggers the stop through input methods.
 
-Operations that are supposed to be stoppable must support this explicitly. It is not desired that anyone who holds a promise can cancel the operation that computes the result, therefore the invoker of the operation has to pass in a cancellation token that only he can revoke to request the cancellation.
+Operations that are supposed to be stoppable must support this explicitly. It is not desired that anyone who holds a promise can cancel the operation that computes the result, therefore the invoker of the operation has to pass in a cancellation token that only he can request the cancellation.
 Passing around this capability explicitly can be a bit verbose at times, but everything else is done by Creed for you.
 
 ## …Promises
@@ -69,7 +75,7 @@ const q = delay(4000).chain(x => {
 	console.log('never executed');
 	return delay(1000, 'result');
 }, token);
-// the token being revoked prevents the inner delay from ever being created, and we get
+// the token being cancelled prevents the inner delay from ever being created, and we get
 q.then(x => console.log(x), e => console.log(e)); //=> 'over' after 3 seconds
 ```
 
@@ -186,7 +192,7 @@ try {
 	conn.close();
 }
 ```
-where the connection is always closed, even when the `token` is revoked during the query.
+where the connection is always closed, even when the `token` is cancelled during the query.
 
 It does also make it possible to react specifically to cancellation during a strand of execution in a coroutine:
 ```javascript
@@ -240,7 +246,7 @@ Creates a cancellation token that is never requested, completing the [Fantasy-la
 
 ### .requested :: CancelToken r &rarr; boolean
 
-Synchronously determines whether the token is revoked.
+Synchronously determines whether the cancellation has been requested.
 ```javascript
 const { token, cancel } = CancelToken.source();
 console.log(token.requested); //=> false
@@ -265,7 +271,7 @@ cancel('reason');
 Transforms the token's cancellation reason by applying the function to it.
 Returns a promise for the transformed result.
 The callback is invoked synchronously from a cancellation request, returning the promise also to the canceller.
-If the token is already revoked, the callback is invoked asynchronously.
+If the token is already cancelled, the callback is invoked asynchronously.
 ```javascript
 const { token, cancel } = CancelToken.source();
 const p = token.subscribe(r => r + ' accepted');
@@ -276,7 +282,7 @@ p.then(x => console.log(x)); //=> reason accepted
 
 ### .subscribeOrCall :: CancelToken r &rarr; (r &rarr; a|Thenable e a) [&rarr; (...* &rarr; b)] &rarr; (...* &rarr; [b])
 
-Subscribes the callback to be cancelled synchronously from a cancellation request or asynchronously when the token is already revoked.
+Subscribes the callback to be cancelled synchronously from a cancellation request or asynchronously when the token is already cancelled.
 Returns a function that unsubscribes the callback.
 
 Unless the callback has already been executed, if the optional second parameter is a function it will be invoked at most once with the unsubscription arguments.
@@ -326,7 +332,7 @@ type Race r = { add :: CancelToken r &rarr; ... &rarr; (), get :: () &rarr; Canc
 The function returns a `Race` object populated with the tokens from the iterable.
 
 * The `add` method appends one or more tokens to the collection
-* The `get` method returns a `CancelToken` that is revoked with the reason of the first requested cancellation in the collection
+* The `get` method returns a `CancelToken` that is cancelled with the reason of the first requested cancellation in the collection
 
 Once the resulting token is cancelled, further `add` calls don't have any effect.
 
@@ -337,7 +343,7 @@ type Pool r = { add :: CancelToken r &rarr; ... &rarr; (), get :: () &rarr; Canc
 The function returns a `Pool` object populated with the tokens from the iterable.
 
 * The `add` method appends one or more tokens to the collection
-* The `get` method returns a `CancelToken` that is revoked with an array of the reasons once all (but at least one) tokens in the collection have requested cancellation
+* The `get` method returns a `CancelToken` that is cancelled with an array of the reasons once all (but at least one) tokens in the collection have requested cancellation
 
 Once the resulting token is cancelled, further `add` calls don't have any effect.
 
@@ -348,6 +354,6 @@ type Reference r = { set :: [CancelToken r] &rarr; (), get :: () &rarr; CancelTo
 The function returns a `Reference` object storing the token (or nothing) from the argument
 
 * The `set` method puts a token or nothing (`null`, `undefined`) in the reference
-* The `get` method returns a `CancelToken` that is revoked with the reason of the current reference once cancellation is requested
+* The `get` method returns a `CancelToken` that is cancelled with the reason of the current reference once cancellation is requested
 
 Once the resulting token is cancelled, further `set` calls are forbidden.
