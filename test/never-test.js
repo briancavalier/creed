@@ -18,6 +18,11 @@ describe('never', () => {
 		assert.strictEqual(p, p.map(assert.ifError))
 	})
 
+	it('bimap should be identity', () => {
+		var p = never()
+		assert.strictEqual(p, p.bimap(assert.ifError, assert.ifError))
+	})
+
 	it('ap should be identity', () => {
 		var p = never()
 		assert.strictEqual(p, p.ap(fulfill()))

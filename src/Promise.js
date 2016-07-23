@@ -7,6 +7,7 @@ import { isNever, isSettled } from './inspect'
 
 import then from './then'
 import map from './map'
+import bimap from './bimap'
 import chain from './chain'
 
 import Race from './Race'
@@ -112,6 +113,13 @@ export class Future extends Core {
 	map (f) {
 		const n = this.near()
 		return n === this ? map(f, n, new Future()) : n.map(f)
+	}
+
+	bimap (f, r) {
+		const n = this.near()
+		return n === this
+			? bimap(f, r, n, new Future())
+			: n.bimap(f, r)
 	}
 
 	// ap :: Promise e (a -> b) -> Promise e a -> Promise e b
@@ -246,6 +254,10 @@ class Fulfilled extends Core {
 		return map(f, this, new Future())
 	}
 
+	bimap (f) {
+		return this.map(f)
+	}
+
 	ap (p) {
 		return p.map(this.value)
 	}
@@ -305,6 +317,10 @@ class Rejected extends Core {
 		return this
 	}
 
+	bimap (_, r) {
+		return bimap(void 0, r, this, new Future())
+	}
+
 	ap () {
 		return this
 	}
@@ -356,6 +372,10 @@ class Never extends Core {
 	}
 
 	map () {
+		return this
+	}
+
+	bimap () {
 		return this
 	}
 

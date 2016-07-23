@@ -3,7 +3,7 @@ import { fulfill, delay, reject } from '../src/main'
 import { assertSame } from './lib/test-util'
 import assert from 'assert'
 
-describe('map', function () {
+describe('map', () => {
 	it('should satisfy identity', () => {
 		const u = fulfill({})
 		return assertSame(u.map(x => x), u)

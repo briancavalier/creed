@@ -7,6 +7,11 @@ export function assertSame (ap, bp) {
 	               a => bp.then(x => { throw x }, b => assert.strictEqual(a, b)))
 }
 
+export function assertSameRejected (ap, bp) {
+	return ap.then(assert.ifError,
+		a => bp.then(assert.ifError, b => assert(a === b)))
+}
+
 export function throwingIterable (e) {
 	return new FakeIterable(new ThrowingIterator(e))
 }
