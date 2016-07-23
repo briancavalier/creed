@@ -33,7 +33,7 @@ class Coroutine extends Action {
 			return this.promise._resolve(result.value)
 		}
 
-		this.resolve(result.value)._runAction(this)
+		this.resolve(result.value)._when(this)
 	}
 
 	fulfilled (ref) {
