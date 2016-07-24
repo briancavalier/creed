@@ -8,4 +8,5 @@ node_js:
 branches:
   only:
     - master
+    - /^greenkeeper-.*$/
 after_script: "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
