@@ -1,17 +1,11 @@
 import { noop } from './util'
-import { Future, reject } from './Promise'
+import { reject } from './Promise'
 
 export default class Action {
 	constructor (promise) {
 		// the Future which this Action tries to resolve
 		// when null, the action is cancelled and won't be executed
 		this.promise = promise
-
-		const token = promise.token
-		if (token != null) {
-			// assert: !token.requested
-			token._subscribe(this)
-		}
 	}
 
 	destroy () {
@@ -38,7 +32,7 @@ export default class Action {
 
 	// default onCancelled action
 	cancelled (p) {
-		reject(p.value)._runAction(this)
+		reject(p.near().value)._runAction(this)
 	}
 
 	// when this.promise is to be settled (possible having awaited the result)
@@ -58,7 +52,6 @@ export default class Action {
 }
 
 const sentinel = noop // Symbol('currently executing')
-const empty = []
 
 export class CancellableAction extends Action {
 	constructor (f, promise) {
@@ -73,17 +66,16 @@ export class CancellableAction extends Action {
 		this.f = null
 	}
 
-	cancel (p) {
+	cancel (results) {
 		if (this.promise._isResolved()) { // promise checks for cancellation itself
-			if (this.f === sentinel) {
+			if (this.f !== sentinel) { // not currently running
 				this.destroy()
-				this.promise = new Future() // allow to relay feedback to the cancel() call
-				return this.promise // TODO: really useful? leaking callback results is weird
-			} else {
-				this.destroy()
-				return empty
 			}
+			// otherwise keep the cancelled .promise so that it stays usable in handle()
+			// and ignores whatever is done with the f() result
+			return true
 		}
+		return false
 	}
 
 	fulfilled (p) {
@@ -95,20 +87,17 @@ export class CancellableAction extends Action {
 	}
 
 	tryCall (f, x) {
-		const original = this.promise
 		this.f = sentinel
 		let result
 		try {
 			result = f(x)
 		} catch (e) {
 			this.f = null
-			const uncancelled = this.promise === original
 			this.end()._reject(e)
-			return uncancelled
+			return
 		}
 		this.f = null
-		this.handle(result)
-		return this.promise === original
+		return this.handle(result)
 	}
 
 	handle (p) {

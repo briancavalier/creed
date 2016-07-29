@@ -44,6 +44,10 @@ class Core {
 	toString () {
 		return '[object ' + this.inspect() + ']'
 	}
+
+	_whenToken (action) {
+		return action
+	}
 }
 
 // data Promise e a where
@@ -120,14 +124,16 @@ export class Future extends Core {
 		if (p.token.requested) {
 			return p.token.getCancelled()
 		}
-		this._runAction(new Action(p))
+		const put = new Action(p)
+		token._subscribe(put)
+		this._runAction(put)
 		return p
 	}
 
 	// finally :: Promise e a -> (Promise e a -> ()) -> Promise e a
 	finally (f) {
 		const n = this.near()
-		return n === this ? fin(f, this, new Future()) : n.finally(f)
+		return n === this ? fin(f, this, new Future(this.token)) : n.finally(f)
 	}
 
 	// trifurcate :: Promise e a -> (a -> b) -> (e -> b) -> (e -> b) -> Promise e b
@@ -176,6 +182,14 @@ export class Future extends Core {
 		}
 	}
 
+	_whenToken (action) {
+		if (this.token != null) {
+			// assert: !this.token.requested
+			this.token._subscribe(action)
+		}
+		return action
+	}
+
 	_resolve (x, cancelAction) {
 		if (this._isResolved()) {
 			return // TODO: still resolve thenables when cancelled?
@@ -204,7 +218,7 @@ export class Future extends Core {
 			} else if ((state & PENDING) > 0 && this.token !== p.token) {
 				this.ref = this
 				// reuse cancelAction - do not .end() it here
-				p._runAction(cancelAction || new Action(this))
+				p._runAction(cancelAction || this._whenToken(new Action(this)))
 				return
 			}
 		}
@@ -405,6 +419,10 @@ class Rejected extends Core {
 // Cancelled :: Error e => e -> Promise e a
 // A promise whose value was invalidated and cannot be known
 class Cancelled extends Rejected {
+	finally (f) {
+		return fin(f, this, this)
+	}
+
 	trifurcate (f, r, c) {
 		return trifurcate(undefined, undefined, c, this, new Future())
 	}
@@ -423,9 +441,25 @@ class Cancelled extends Rejected {
 		return token != null && token.requested ? token.getCancelled() : reject(this.value)
 	}
 
+	_isResolved () {
+		// called by Final::cancel
+		return true
+	}
+
 	_runAction (action) {
 		// assert: action.promise != null
-		action.cancelled(this)
+		action.rejected(this)
+	}
+
+	_whenToken (action) {
+		// behaves as if there was a .token
+		action.cancel(null, this)
+		taskQueue.add(new Continuation(action, {
+			_runAction: action => {
+				action.cancelled(this)
+			}
+		}))
+		return action
 	}
 }
 
@@ -559,6 +593,7 @@ export function future (token) {
 		}
 	}
 	let put = new Action(promise)
+	promise.token._subscribe(put)
 	return {
 		promise,
 		resolve (x) {
@@ -573,6 +608,7 @@ export function future (token) {
 export function makeResolvers (promise) {
 	if (promise.token != null) {
 		let put = new Action(promise)
+		promise.token._subscribe(put)
 		return {
 			resolve (x) {
 				if (put == null || put.promise == null) return

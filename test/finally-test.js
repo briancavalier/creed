@@ -59,7 +59,7 @@ describe('finally', () => {
 		const {promise, resolve} = future(CancelToken.empty())
 		const p = promise.finally(() => {
 			called = true
-		}).then(assert.ifError, () => {
+		}).then(() => {
 			assert(called)
 		})
 		resolve(fulfill())
@@ -72,24 +72,35 @@ describe('finally', () => {
 		resolve(fulfill())
 		return promise.finally(() => {
 			called = true
-		}).then(assert.ifError, () => {
+		}).then(() => {
+			assert(called)
+		})
+	})
+
+	it('should call f for already cancelled future', () => {
+		let called = false
+		const {token, cancel} = CancelToken.source()
+		cancel()
+		const {promise} = future(token)
+		return promise.finally(() => {
+			called = true
+		}).trifurcate(assert.ifError, assert.ifError, () => {
 			assert(called)
 		})
 	})
 
 	describe('cancel', () => {
-		it('should call f synchronously', () => {
+		it('should call f asynchronously', () => {
 			let called = false
 			const {token, cancel} = CancelToken.source()
 			const p = delay(1, null, token).finally(() => {
 				called = true
-			}).then(assert.ifError, () => {
+			})
+			cancel()
+			assert(!called)
+			return p.trifurcate(assert.ifError, assert.ifError, () => {
 				assert(called)
 			})
-			assert(!called)
-			cancel()
-			assert(called)
-			return p
 		})
 
 		it('should return fulfilled callback result', () => {
@@ -98,7 +109,7 @@ describe('finally', () => {
 			const {token, cancel} = CancelToken.source()
 			const p = delay(1, null, token).finally(() => {
 				return expected
-			}).then(assert.ifError, e => {
+			}).trifurcate(assert.ifError, assert.ifError, e => {
 				assert.strictEqual(e, reason)
 				return assertSame(c[0], expected)
 			})
@@ -111,23 +122,22 @@ describe('finally', () => {
 			const {token, cancel} = CancelToken.source()
 			const p = delay(1, null, token).finally(() => {
 				throw expected
-			}).then(assert.ifError, e => {
-				assert.strictEqual(e, expected)
+			}).trifurcate(assert.ifError, assert.ifError, () => {
 				return assertSame(c[0], reject(expected))
 			})
 			const c = cancel()
 			return p
 		})
 
-		it('should do nothing during f call for fulfilled future', () => {
-			const expected = {}
+		it('should cancel result during f call for fulfilled future', () => {
+			const reason = {}
 			const {token, cancel} = CancelToken.source()
 			let c
-			return delay(1, fulfill(expected), token).finally(() => {
-				c = cancel({})
-			}).then(x => {
-				assert.strictEqual(x, expected)
-				assert.strictEqual(c.length, 0)
+			return delay(1, null, token).finally(() => {
+				c = cancel(reason)
+			}).trifurcate(assert.ifError, assert.ifError, e => {
+				assert.strictEqual(e, reason)
+				assert.strictEqual(c.length, 1)
 			})
 		})
 	})

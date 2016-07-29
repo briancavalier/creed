@@ -74,7 +74,7 @@ function handleItem (handler, x, i, promise) {
 	} else if (isRejected(p)) {
 		handler.rejectAt(p, i, promise)
 	} else {
-		p._runAction(new Indexed(handler, i, promise))
+		p._runAction(promise._whenToken(new Indexed(handler, i, promise)))
 	}
 }
 

@@ -1,35 +1,29 @@
-import { resolve } from './Promise'
-import { isRejected, isFulfilled } from './inspect'
+import { resolve, Future } from './Promise'
+// import { isFulfilled, isRejected } from './inspect'
 import { CancellableAction } from './Action'
 
 export default function _finally (f, p, promise) {
-	// assert: promise.token == null
+	// assert: promise.token == p.token
 	if (typeof f !== 'function') throw new TypeError('finally does require a callback function')
-	p._when(new Final(f, p.token, promise))
+	p._when(p._whenToken(new Final(f, promise)))
 	return promise
 }
 
 class Final extends CancellableAction {
-	constructor (f, t, promise) {
-		super(f, promise)
-		this.token = t
-		if (t != null) {
-			t._subscribe(this)
+	destroy () {
+		this.promise = null
+		// don't destroy f
+	}
+
+	cancel (results) {
+		super.cancel(null) // cancel the final promise
+		if (typeof this.f === 'function') { // yet to be run or currently running
+			// assert: this.f === sentinel || this.promise = null
+			this.promise = new Future() // create new promise for the cancel result
+			if (results) results.push(this.promise)
+		} else { // f already ran, .f holds the original now, .promise was the final promise
+			// do anything to the f() result?
 		}
-	}
-
-	/* istanbul ignore next */
-	destroy () { // possibly called when unsubscribed from the token
-		this.token = null
-	}
-
-	cancel (p) {
-		/* istanbul ignore if */
-		if (this.token == null) return
-		this.token = null
-		const promise = this.tryFin(p)
-		this.promise = null // prevent cancelled from running
-		return promise
 	}
 
 	fulfilled (p) {
@@ -37,53 +31,38 @@ class Final extends CancellableAction {
 	}
 
 	rejected (p) {
-		return this.settled(p, p)
+		return this.settled(p, null)
 	}
 
-	settled (p, res) {
+	cancelled (p) {
+		this.runFin(p.near(), null)
+	}
+
+	settled (p, orig) {
 		if (typeof this.f === 'function') { // f is the callback
-			const token = this.token
-			if (token) {
-				token._unsubscribe(this)
-				this.token = null
-			}
-			this.tryFin(p)
+			this.runFin(p, p)
 			return true
 		} else { // f held the original result
-			this.promise.__become(res)
-			this.promise = this.f = null
+			this.put(orig == null ? p : orig)
+			this.f = null
 			return false
 		}
 	}
 
-	tryFin (p) {
-		/* eslint complexity:[2,5] */
-		const orig = this.promise
-		if (!this.tryCall(this.f, p)) {
-			// assert: orig !== this.promise
-			// assert: !isRejeced(this.promise)
-			if (isFulfilled(this.promise)) {
-				orig._become(p)
-			} else {
-				this.f = p
-				this.promise._runAction(this)
-				this.promise = orig
-			}
-			return this.promise
+	runFin (p, orig) {
+		const res = this.tryCall(this.f, p)
+		if (res !== undefined) { // f returned a promise to wait for
+			// if (isFulfilled(res)) return this.put(p)
+			// if (isRejected(res)) return this.put(res)
+			this.f = orig // reuse property to store eventual result
+			res._runAction(this)
+		} else if (this.promise) { // f returned nothing and didn't throw
+			this.put(p)
 		}
-		return orig
 	}
 
 	handle (result) {
-		const p = resolve(result)
-		if (isRejected(p)) {
-			this.promise._become(p)
-		} else {
-			this.promise = p
-		}
-	}
-
-	end () {
-		return this.promise
+		if (result == null) return
+		return resolve(result)
 	}
 }

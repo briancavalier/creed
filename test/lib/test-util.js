@@ -61,7 +61,6 @@ class ThrowingIterator {
 export class FakeCancelAction {
 	constructor (promise, cb) {
 		this.promise = promise
-		this.cb = cb
 		this.isCancelled = 0
 		this.isDestroyed = 0
 		const token = promise.token
@@ -77,7 +76,6 @@ export class FakeCancelAction {
 
 	cancel (p) {
 		this.isCancelled++
-		if (typeof this.cb === 'function') this.cb(p)
 		if (typeof this.promise._isResolved !== 'function' || this.promise._isResolved()) {
 			this.destroy()
 		}

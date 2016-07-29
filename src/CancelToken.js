@@ -23,21 +23,38 @@ export default class CancelToken {
 	}
 	__cancel (p) {
 		this._cancelled = true
+		if (this.length) {
+			taskQueue.add(this) // needs to be called before __become
+		}
 		if (this.promise !== void 0) {
 			this.promise.__become(p)
 		} else {
-			p.token = this // TODO ugly but necessary?
+			// p.token = this no more necessary
 			this.promise = p
 		}
-		return this.run()
+		return this._runSync([])
+	}
+	_runSync (results) {
+		// let j = 0;
+		for (let i = 0; i < this.length; ++i) {
+			if (this[i] && this[i].promise) { // not already destroyed
+				this[i].cancel(results, this.promise)
+				// if (this[i].promise) {
+					// this[j++] = this[i]
+				// }
+			}
+			// if (j < i)
+				// this[i] = void 0
+			// }
+		}
+		// this.length = j;
+		return results
 	}
 	run () {
-		/* eslint complexity:[2,4] */
-		const result = []
 		const l = this.length
 		for (let i = 0; i < l; ++i) {
 			if (this[i] && this[i].promise) { // not already destroyed
-				this._runAction(this[i], result)
+				this[i].cancelled(this.promise)
 			}
 			this[i] = void 0
 		}
@@ -46,23 +63,13 @@ export default class CancelToken {
 		} else {
 			taskQueue.add(this)
 		}
-		return result
-	}
-	_runAction (action, results) {
-		const res = action.cancel(this.promise)
-		if (res != null) {
-			if (Array.isArray(res)) {
-				if (res.length > 0) {
-					results.push(...res)
-				}
-			} else {
-				results.push(res)
-			}
-		}
 	}
 	_subscribe (action) {
-		if (this.requested && this.length === 0) {
-			taskQueue.add(this)
+		if (this.requested) {
+			action.cancel(null, this)
+			if (this.length === 0) {
+				taskQueue.add(this)
+			}
 		}
 		this[this.length++] = action
 	}
@@ -87,7 +94,7 @@ export default class CancelToken {
 			}
 		}
 		if (action) { // when not found
-			action.destroy() // at least mark explictly as empty
+			action.destroy() // at least mark explicitly as empty
 		}
 	}
 	subscribe (fn, token) {
@@ -169,7 +176,8 @@ class CancelTokenCombinator { // implements cancel parts of Action
 	destroy () {
 		// possibly called when unsubscribed from a token
 	}
-	// abstract cancel (p) {}
+	cancelled (p) {}
+	// abstract cancel (res, p) {}
 	// abstract _testRequested () {}
 	get () {
 		return this.promise
@@ -182,7 +190,7 @@ class CancelTokenRace extends CancelTokenCombinator {
 		this.tokens = []
 		if (tokens) this.add(...tokens)
 	}
-	cancel (p) {
+	cancel (results, p) {
 		/* istanbul ignore if */
 		if (this.tokens == null) return // when called after been unsubscribed but not destroyed
 		// assert: !this.promise._cancelled
@@ -191,7 +199,8 @@ class CancelTokenRace extends CancelTokenCombinator {
 			t._unsubscribe(this)
 		}
 		this.tokens = null
-		return this.promise.__cancel(p)
+		const res = this.promise.__cancel(p)
+		if (results) results.push(...res)
 	}
 	_testRequested () {
 		return this.tokens.some(t => t.requested)
@@ -205,7 +214,7 @@ class CancelTokenRace extends CancelTokenCombinator {
 				continue
 			}
 			if (t.requested) {
-				this.cancel(t.getCancelled())
+				this.cancel(null, t.getCancelled())
 				break
 			} else {
 				this.tokens.push(t)
@@ -222,10 +231,11 @@ class CancelTokenPool extends CancelTokenCombinator {
 		this.count = 0
 		if (tokens) this.add(...tokens)
 	}
-	cancel (p) {
+	cancel (results, p) {
 		// assert: !this.promise._cancelled
 		this.count--
-		return this._check()
+		const res = this._check()
+		if (results && res) results.push(...res)
 	}
 	_testRequested () {
 		return this.tokens.length > 0 && this.tokens.every(t => t.requested)
@@ -265,11 +275,12 @@ export class CancelTokenReference extends CancelTokenCombinator {
 		super()
 		this.curToken = cur
 	}
-	cancel (p) {
+	cancel (results, p) {
 		/* istanbul ignore if */
 		if (this.curToken == null || this.curToken.getCancelled() !== p) return // when called from an oldToken
 		// assert: !this.promise._cancelled
-		return this.promise.__cancel(p)
+		const res = this.promise.__cancel(p)
+		if (results) results.push(...res)
 	}
 	_testRequested () {
 		return this.curToken != null && this.curToken.requested

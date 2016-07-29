@@ -26,16 +26,19 @@ export function subscribeOrCall (f, g, t, promise) {
 }
 
 class Subscription extends CancellableAction {
-	cancel (p) {
+	cancel (results) {
 		/* eslint complexity:[2,4] */
 		const promise = this.promise
-		if (promise.token != null) {
-			const res = super.cancel(p)
-			if (res != null) {
-				return res
+		if (promise.token != null) { // possibly called from promise.token
+			if (super.cancel()) { // if promise is cancelled
+				return
 			}
 		}
+		// otherwise called from standalone token
+		if (results) results.push(this.promise)
+	}
+
+	cancelled (p) {
 		this.tryCall(this.f, p.near().value)
-		return promise
 	}
 }

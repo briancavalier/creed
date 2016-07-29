@@ -1,7 +1,7 @@
 import Action from './Action'
 
 export default function delay (ms, p, promise) {
-	p._runAction(new Delay(ms, promise))
+	p._runAction(promise._whenToken(new Delay(ms, promise)))
 	return promise
 }
 

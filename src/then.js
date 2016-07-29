@@ -4,7 +4,7 @@ export default function then (f, r, p, promise) {
 	if (promise.token != null && promise.token.requested) {
 		return promise.token.getCancelled()
 	}
-	p._when(new Then(f, r, promise))
+	p._when(promise._whenToken(new Then(f, r, promise)))
 	return promise
 }
 

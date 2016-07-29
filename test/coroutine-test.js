@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import { coroutine, fulfill, reject, delay, isCancelled, CancelToken } from '../src/main'
+import { coroutine, fulfill, reject, delay, all, isCancelled, CancelToken } from '../src/main'
 import { assertSame } from './lib/test-util'
 import assert from 'assert'
 
@@ -81,7 +81,10 @@ describe('coroutine', function () {
 			})
 			const {token, cancel} = CancelToken.source()
 			f(token)
-			return delay(3, {}).then(cancel).then(() => {
+			return delay(3, {})
+			.then(cancel)
+			.then(all)
+			.then(() => {
 				assert(!executedT, 'after yield')
 				assert(!executedC, 'catch block')
 				assert(executedF, 'finally block')
@@ -172,8 +175,10 @@ describe('coroutine', function () {
 			const {token, cancel} = CancelToken.source()
 			const p = f(token)
 			return delay(15).then(() => {
-				cancel({})
+				const res = cancel({})
 				assert(isCancelled(p))
+				return all(res)
+			}).then(() => {
 				assert.strictEqual(counter, 0)
 			})
 		})
@@ -217,8 +222,8 @@ describe('coroutine', function () {
 				} finally {
 					try {
 						assert(isCancelled(p))
-						assert.throws(() => coroutine.cancel, SyntaxError)
-						assert.throws(() => { coroutine.cancel = null }, SyntaxError)
+						assert.throws(() => coroutine.cancel, ReferenceError)
+						assert.throws(() => { coroutine.cancel = null }, ReferenceError)
 					} catch (e) {
 						err = e
 					}

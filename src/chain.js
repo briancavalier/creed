@@ -5,7 +5,7 @@ export default function chain (f, p, promise) {
 	if (promise.token != null && promise.token.requested) {
 		return promise.token.getCancelled()
 	}
-	p._when(new Chain(f, promise))
+	p._when(promise._whenToken(new Chain(f, promise)))
 	return promise
 }
 

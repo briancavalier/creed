@@ -2,7 +2,7 @@ import { CancellableAction } from './Action'
 
 export default function trifurcate (f, r, c, p, promise) {
 	// assert: promise.token == null
-	p._when(new Trifurcation(f, r, c, promise))
+	p._when(p._whenToken(new Trifurcation(f, r, c, promise)))
 	return promise
 }
 
@@ -11,6 +11,10 @@ class Trifurcation extends CancellableAction {
 		super(f, promise)
 		this.r = r
 		this.c = c
+	}
+
+	cancel (res) {
+		// assert: cancelled() is called later, before rejected() is called
 	}
 
 	fulfilled (p) {
@@ -23,10 +27,11 @@ class Trifurcation extends CancellableAction {
 
 	cancelled (p) {
 		if (typeof this.c !== 'function') {
-			this.end()._reject(p.value)
+			this.end()._reject(p.near().value)
 		} else {
-			this.runTee(this.c, p)
+			this.runTee(this.c, p.near())
 		}
+		// assert: this.promise == null, so that rejected won't run
 	}
 
 	runTee (f, p) {

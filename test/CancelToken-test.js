@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import { CancelToken, isCancelled, isPending, getReason, future } from '../src/main'
+import { CancelToken, isCancelled, isPending, getReason, future, all } from '../src/main'
 import { assertSame, FakeCancelAction } from './lib/test-util'
 import assert from 'assert'
 
@@ -106,7 +106,7 @@ describe('CancelToken', function () {
 		it('should synchronously run subscriptions', () => {
 			const {token, cancel} = CancelToken.source()
 			const r = {}
-			const action = new FakeCancelAction({}, p => assert.strictEqual(getReason(p), r))
+			const action = new FakeCancelAction({})
 			token._subscribe(action)
 			assert(!action.isCancelled)
 			cancel(r)
@@ -172,47 +172,66 @@ describe('CancelToken', function () {
 		it('should run subscriptions when already requested', () => {
 			const {token, cancel} = CancelToken.source()
 			const {resolve, promise} = future()
-			cancel()
-			token._subscribe(new FakeCancelAction({}, p => resolve(getReason(p))))
-			return promise
+			const r = {}
+			const action = new FakeCancelAction({})
+			cancel(r)
+			token._subscribe(action)
+			assert(action.isCancelled)
 		})
 	})
 
 	describe('subscribe()', () => {
-		it('should synchronously call subscriptions', () => {
+		it('should asynchronously call subscriptions', () => {
+			const {token, cancel} = CancelToken.source()
+			const {resolve, promise} = future()
+			token.subscribe(resolve)
+			cancel()
+			assert(isPending(promise))
+			return promise
+		})
+
+		it('should return a promise for the result', () => {
+			const {token, cancel} = CancelToken.source()
+			const expected = {}
+			const p = token.subscribe(() => expected)
+			assert.strictEqual(cancel()[0], p)
+			return p.then(x => {
+				assert.strictEqual(x, expected)
+			})
+		})
+
+		it('should call subscriptions with the reason', () => {
 			const {token, cancel} = CancelToken.source()
 			const r = {}
-			let isCalled = false
-			token.subscribe(e => {
-				isCalled = true
+			const p = token.subscribe(e => {
 				assert.strictEqual(e, r)
 			})
-			assert(!isCalled)
 			cancel(r)
-			assert(isCalled)
+			return p
 		})
 
 		it('should not call subscriptions multiple times', () => {
 			const {token, cancel} = CancelToken.source()
 			let calls = 0
-			token.subscribe(() => {
+			const p = token.subscribe(() => {
 				calls++
+				assert.strictEqual(calls, 1)
 			})
 			assert.strictEqual(calls, 0)
 			cancel()
 			cancel()
-			assert.strictEqual(calls, 1)
+			return p
 		})
 
 		it('should ignore exceptions thrown by subscriptions', () => {
 			const {token, cancel} = CancelToken.source()
 			let isCalled = false
 			token.subscribe(() => { throw new Error() })
-			token.subscribe(e => {
+			const p = token.subscribe(e => {
 				isCalled = true
 			})
 			cancel()
-			assert(isCalled)
+			return p.then(() => assert(isCalled))
 		})
 
 		it('should call subscriptions when already requested', () => {
@@ -226,26 +245,17 @@ describe('CancelToken', function () {
 		it('should call subscriptions in order', () => {
 			const {token, cancel} = CancelToken.source()
 			let s = 0
-			token.subscribe(() => {
+			const a = token.subscribe(() => {
 				assert.strictEqual(s, 0)
 				s = 1
 			})
-			token.subscribe(() => {
+			const b = token.subscribe(() => {
 				assert.strictEqual(s, 1)
 				s = 2
 			})
 			cancel()
-			assert.strictEqual(s, 2)
-		})
-
-		it('should return a promise for the result', () => {
-			const {token, cancel} = CancelToken.source()
-			const expected = {}
-			const p = token.subscribe(() => expected)
-			assert.strictEqual(cancel()[0], p)
-			return p.then(x => {
-				assert.strictEqual(x, expected)
-			})
+			assert.strictEqual(s, 0)
+			return all([a, b]).then(() => assert.strictEqual(s, 2))
 		})
 
 		it('should behave nearly like getCancelled().catch()', () => {
@@ -263,9 +273,7 @@ describe('CancelToken', function () {
 			const expected = {}
 			const p = token.subscribe(() => { throw expected })
 			assert.strictEqual(cancel()[0], p)
-			return p.then(assert.ifError, x => {
-				assert.strictEqual(x, expected)
-			})
+			return p.then(assert.ifError, x => assert.strictEqual(x, expected))
 		})
 
 		it('should call subscriptions before the token is cancelled', () => {
@@ -273,23 +281,18 @@ describe('CancelToken', function () {
 			const expected = {}
 			const p = token.subscribe(() => expected, CancelToken.empty())
 			cancel()
-			return p.then(x => {
-				assert.strictEqual(x, expected)
-			})
+			return p.then(x => assert.strictEqual(x, expected))
 		})
 
 		it('should not call subscriptions when the token is cancelled', () => {
 			const a = CancelToken.source()
 			const b = CancelToken.source()
-			let called = false
 			const p = a.token.subscribe(() => {
-				called = true
+				throw new Error("should not be called")
 			}, b.token)
 			assert.strictEqual(p.token, b.token)
 			b.cancel()
-			assert(!called)
 			a.cancel()
-			assert(!called)
 			return assertSame(p, b.token.getCancelled())
 		})
 
@@ -316,25 +319,26 @@ describe('CancelToken', function () {
 			const expected = {}
 			const p = token.subscribe(() => token.subscribe(() => expected))
 			assert.strictEqual(cancel().length, 1)
-			return p.then(x => {
-				assert.strictEqual(x, expected)
-			})
+			return p.then(x => assert.strictEqual(x, expected))
 		})
 	})
 
 	describe('subscribeOrCall()', () => {
 		it('should invoke f if the token is cancelled before the call', () => {
 			const {token, cancel} = CancelToken.source()
+			const {resolve, promise} = future()
 			let called = 0
-			const call = token.subscribeOrCall(() => { called |= 1 }, () => { called |= 2 })
+			const call = token.subscribeOrCall(() => { called |= 1; resolve() }, () => { called |= 2 })
 			assert.strictEqual(called, 0)
 			cancel()
-			assert.strictEqual(called, 1)
-			call()
-			assert.strictEqual(called, 1)
+			return promise.then(() => {
+				assert.strictEqual(called, 1)
+				call()
+				assert.strictEqual(called, 1)
+			})
 		})
 
-		it('should invoke g if the call happens before the cancellation', () => {
+		it('should invoke g immediately if the call happens before the cancellation', () => {
 			const {token, cancel} = CancelToken.source()
 			let called = 0
 			const call = token.subscribeOrCall(() => { called |= 1 }, () => { called |= 2 })
@@ -342,16 +346,17 @@ describe('CancelToken', function () {
 			call()
 			assert.strictEqual(called, 2)
 			cancel()
-			assert.strictEqual(called, 2)
+			return token.subscribe(() => assert.strictEqual(called, 2))
 		})
 
 		it('should only invoke f if the call happens during the cancellation', () => {
 			const {token, cancel} = CancelToken.source()
+			const {resolve, promise} = future()
 			let called = 0
-			const call = token.subscribeOrCall(() => { called |= 1; call() }, () => { called |= 2 })
+			const call = token.subscribeOrCall(() => { called |= 1; call(); resolve() }, () => { called |= 2 })
 			assert.strictEqual(called, 0)
 			cancel()
-			assert.strictEqual(called, 1)
+			return promise.then(() => assert.strictEqual(called, 1))
 		})
 
 		it('should only invoke g if the token is cancelled during the call', () => {
@@ -361,17 +366,18 @@ describe('CancelToken', function () {
 			assert.strictEqual(called, 0)
 			call()
 			assert.strictEqual(called, 2)
+			return token.subscribe(() => assert.strictEqual(called, 2))
 		})
 
 		it('should cope with undefined g', () => {
 			const {token, cancel} = CancelToken.source()
 			let called = 0
-			const call = token.subscribeOrCall(() => { called = 0 })
+			const call = token.subscribeOrCall(() => { called |= 1 })
 			assert.strictEqual(called, 0)
 			call()
 			assert.strictEqual(called, 0)
 			cancel()
-			assert.strictEqual(called, 0)
+			return token.subscribe(() => assert.strictEqual(called, 0))
 		})
 
 		it('should throw exceptions from g', () => {

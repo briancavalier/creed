@@ -31,7 +31,7 @@ Object.defineProperty(coroutine, 'cancel', {
 function runGenerator (generator) {
 	const swappable = CancelToken.reference(null)
 	const promise = new Future(swappable.get())
-	new Coroutine(generator, promise, swappable).run()
+	promise._whenToken(new Coroutine(generator, promise, swappable)).run()
 	// taskQueue.add(new Coroutine(generator, promise, swappable))
 	return promise
 }
@@ -39,7 +39,7 @@ function runGenerator (generator) {
 class Coroutine extends Action {
 	constructor (generator, promise, ref) {
 		super(promise)
-		// the generator that is driven. After cancellation, reference to cleanup coroutine
+		// the generator that is driven. Empty after cancellation
 		this.generator = generator
 		// a CancelTokenReference
 		this.tokenref = ref
@@ -50,26 +50,32 @@ class Coroutine extends Action {
 	}
 
 	fulfilled (ref) {
+		if (this.generator == null) return
 		this.step(this.generator.next, ref.value)
 	}
 
 	rejected (ref) {
+		if (this.generator == null) return false
 		this.step(this.generator.throw, ref.value)
 		return true
 	}
 
-	cancel (p) {
+	cancel (results) {
 		/* istanbul ignore else */
 		if (this.promise._isResolved()) { // promise checks for cancellation itself
-			// assert: p === this.promise.token.getCancelled()
-			this.promise = null
 			const res = new Future()
-			this.generator = new Coroutine(this.generator, res, p.near().value)
-			if (stack.indexOf(this) < 0) {
-				this.resumeCancel()
-			}
-			return res
+			this.promise = new Coroutine(this.generator, res, null) // not cancellable
+			this.generator = null
+			this.tokenref = null
+			if (results) results.push(res)
 		}
+	}
+
+	cancelled (p) {
+		const cancelRoutine = this.promise
+		this.promise = null
+		const reason = p.near().value
+		cancelRoutine.step(cancelRoutine.generator.return, reason)
 	}
 
 	step (f, x) {
@@ -83,37 +89,23 @@ class Coroutine extends Action {
 		} finally {
 			stack.pop() // assert: === this
 		}
-		if (this.promise) {
+		if (this.generator) { // not cancelled during execution
 			const res = resolve(result.value, this.promise.token) // TODO optimise token?
 			if (result.done) {
 				this.put(res)
 			} else {
 				res._runAction(this)
 			}
-		} else { // cancelled during execution
-			// ignoring result.done and result.value
-			// if done, one would only need to resolve the initialised promise and not call return()
-			this.resumeCancel()
 		}
 	}
 
-	resumeCancel () {
-		const cancelRoutine = this.generator
-		this.generator = null
-		const reason = cancelRoutine.tokenref
-		cancelRoutine.tokenref = null // not cancellable
-		// assert: reason === this.tokenref.get().getCancelled().value
-		this.tokenref = null
-		cancelRoutine.step(cancelRoutine.generator.return, reason)
-	}
-
 	setToken (t) {
-		if (this.tokenref == null) throw new SyntaxError('coroutine.cancel is only available until cancellation')
+		if (this.tokenref == null) throw new ReferenceError('coroutine.cancel is only available until cancellation')
 		this.tokenref.set(t)
 	}
 
 	getToken () {
-		if (this.tokenref == null) throw new SyntaxError('coroutine.cancel is only available until cancellation')
+		if (this.tokenref == null) throw new ReferenceError('coroutine.cancel is only available until cancellation')
 		return this.tokenref.get()
 	}
 }
