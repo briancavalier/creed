@@ -1,7 +1,7 @@
 global.useBluebird = false;
 global.useQ = false;
 global.useCreed = true;
-var creed = require('../../dist/creed');
+var creed = require('../..');
 require('../lib/fakesP');
 
 module.exports = creed.coroutine(function* upload(stream, idOrPath, tag, done) {

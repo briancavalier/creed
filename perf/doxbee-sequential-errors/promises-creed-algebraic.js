@@ -2,7 +2,7 @@ global.useCreed = true;
 global.useQ = false;
 global.useBluebird = false;
 
-var creed = require('../../dist/creed');
+var creed = require('../..');
 
 require('../lib/fakesP');
 

@@ -27,12 +27,13 @@
   ],
   "scripts": {
     "build-dist": "mkdirp dist && rollup -c",
-    "build": "npm run build-dist && uglifyjs -c 'warnings=false' -m -o dist/creed.min.js -- dist/creed.js",
+    "build-es6": "mkdirp dist && rollup -f cjs -o dist/creed.js src/main.js",
+    "build": "npm run build-dist && uglifyjs -c \"warnings=false\" -m -o dist/creed.min.js -- dist/creed.js",
     "preversion": "npm run build",
     "check-coverage": "istanbul check-coverage --statements 100 --branches 100 --lines 100 --functions 100 coverage/coverage*.json",
     "lint": "jsinspect src && eslint src",
     "pretest": "npm run lint",
-    "test": "istanbul cover _mocha",
+    "test": "istanbul cover node_modules/mocha/bin/_mocha",
     "posttest": "npm run test-aplus",
     "test-aplus": "promises-aplus-tests test/aplus.js --reporter dot"
   },

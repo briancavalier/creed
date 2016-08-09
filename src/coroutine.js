@@ -1,25 +1,31 @@
+import Action from './Action'
+
 export default function (resolve, iterator, promise) {
 	new Coroutine(resolve, iterator, promise).run()
 	return promise
 }
 
-class Coroutine {
+class Coroutine extends Action {
 	constructor (resolve, iterator, promise) {
+		super(promise)
 		this.resolve = resolve
-		this.iterator = iterator
-		this.promise = promise
+		this.generator = iterator
 	}
 
 	run () {
-		this.step(this.iterator.next, void 0)
+		this.tryStep(this.generator.next, void 0)
 	}
 
-	step (continuation, x) {
+	tryStep (resume, x) {
+		let result
+		// test if `resume` (and only it) throws
 		try {
-			this.handle(continuation.call(this.iterator, x))
+			result = resume.call(this.generator, x)
 		} catch (e) {
 			this.promise._reject(e)
-		}
+			return
+		} // else
+		this.handle(result)
 	}
 
 	handle (result) {
@@ -27,15 +33,15 @@ class Coroutine {
 			return this.promise._resolve(result.value)
 		}
 
-		this.resolve(result.value)._runAction(this)
+		this.resolve(result.value)._when(this)
 	}
 
 	fulfilled (ref) {
-		this.step(this.iterator.next, ref.value)
+		this.tryStep(this.generator.next, ref.value)
 	}
 
 	rejected (ref) {
-		this.step(this.iterator.throw, ref.value)
+		this.tryStep(this.generator.throw, ref.value)
 		return true
 	}
 }

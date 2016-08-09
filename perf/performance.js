@@ -1,6 +1,5 @@
 
 var args = require('optimist').argv;
-
 var path = require('path');
 
 global.LIKELIHOOD_OF_REJECTION = args.e || 0.1;
@@ -138,7 +137,7 @@ function measure(files, requests, time, parg, callback) {
     async.mapSeries(files, function(f, done) {
         console.log("benchmarking", f);
         var logFile = path.basename(f) + ".log";
-        var profileFlags = ["--prof", "--logfile=C:/etc/v8/" + logFile];
+        var profileFlags = ["--prof", "--logfile=logs/" + logFile];
 
         var argsFork = [__filename,
             '--n', requests,

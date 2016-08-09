@@ -1,4 +1,5 @@
 import { isFulfilled, isRejected, silenceError } from './inspect'
+import Action from './Action'
 import maybeThenable from './maybeThenable'
 
 export function resultsArray (iterable) {
@@ -58,18 +59,22 @@ function handleItem (resolve, handler, x, i, promise) {
 	} else if (isRejected(p)) {
 		handler.rejectAt(p, i, promise)
 	} else {
-		settleAt(p, handler, i, promise)
+		p._runAction(new Indexed(handler, i, promise))
 	}
 }
 
-function settleAt (p, handler, i, promise) {
-	p._runAction({handler, i, promise, fulfilled, rejected})
-}
+class Indexed extends Action {
+	constructor (handler, i, promise) {
+		super(promise)
+		this.i = i
+		this.handler = handler
+	}
 
-function fulfilled (p) {
-	this.handler.fulfillAt(p, this.i, this.promise)
-}
+	fulfilled (p) {
+		this.handler.fulfillAt(p, this.i, this.promise)
+	}
 
-function rejected (p) {
-	return this.handler.rejectAt(p, this.i, this.promise)
+	rejected (p) {
+		return this.handler.rejectAt(p, this.i, this.promise)
+	}
 }
