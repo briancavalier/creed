@@ -1,2 +1,2 @@
---require buba
+--require buba/register
 --reporter dot
