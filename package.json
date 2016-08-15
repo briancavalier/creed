@@ -1,6 +1,6 @@
 {
   "name": "creed",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, fantasy-land",
   "main": "dist/creed.js",
   "jsnext:main": "dist/creed.es.js",

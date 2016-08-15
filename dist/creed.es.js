@@ -54,6 +54,7 @@ function silenceError (p) {
 	p._runAction(silencer)
 }
 
+// implements Action
 var silencer = {
 	fulfilled: function fulfilled () {},
 	rejected: setHandled
@@ -216,96 +217,129 @@ function maybeThenable (x) {
 	return (typeof x === 'object' || typeof x === 'function') && x !== null
 }
 
+var Action = function Action (promise) {
+	this.promise = promise
+};
+
+// default onFulfilled action
+/* istanbul ignore next */
+Action.prototype.fulfilled = function fulfilled (p) {
+	this.promise._become(p)
+};
+
+// default onRejected action
+Action.prototype.rejected = function rejected (p) {
+	this.promise._become(p)
+	return false
+};
+
+Action.prototype.tryCall = function tryCall (f, x) {
+	var result
+	// test if `f` (and only it) throws
+	try {
+		result = f(x)
+	} catch (e) {
+		this.promise._reject(e)
+		return
+	} // else
+	this.handle(result)
+};
+
 function then (f, r, p, promise) {
 	p._when(new Then(f, r, promise))
 	return promise
 }
 
-var Then = function Then (f, r, promise) {
-	this.f = f
-	this.r = r
-	this.promise = promise
-};
-
-Then.prototype.fulfilled = function fulfilled (p) {
-	runThen(this.f, p, this.promise)
-};
-
-Then.prototype.rejected = function rejected (p) {
-	return runThen(this.r, p, this.promise)
-};
-
-function runThen (f, p, promise) {
-	if (typeof f !== 'function') {
-		promise._become(p)
-		return false
+var Then = (function (Action) {
+	function Then (f, r, promise) {
+		Action.call(this, promise)
+		this.f = f
+		this.r = r
 	}
 
-	tryMapNext(f, p.value, promise)
-	return true
-}
+	if ( Action ) Then.__proto__ = Action;
+	Then.prototype = Object.create( Action && Action.prototype );
+	Then.prototype.constructor = Then;
 
-function tryMapNext (f, x, promise) {
-	try {
-		promise._resolve(f(x))
-	} catch (e) {
-		promise._reject(e)
-	}
-}
+	Then.prototype.fulfilled = function fulfilled (p) {
+		this.runThen(this.f, p)
+	};
+
+	Then.prototype.rejected = function rejected (p) {
+		return this.runThen(this.r, p)
+	};
+
+	Then.prototype.runThen = function runThen (f, p) {
+		if (typeof f !== 'function') {
+			this.promise._become(p)
+			return false
+		}
+		this.tryCall(f, p.value)
+		return true
+	};
+
+	Then.prototype.handle = function handle (result) {
+		this.promise._resolve(result)
+	};
+
+	return Then;
+}(Action));
 
 function map (f, p, promise) {
 	p._when(new Map(f, promise))
 	return promise
 }
 
-var Map = function Map (f, promise) {
-	this.f = f
-	this.promise = promise
-};
-
-Map.prototype.fulfilled = function fulfilled (p) {
-	try {
-		var f = this.f
-		this.promise._fulfill(f(p.value))
-	} catch (e) {
-		this.promise._reject(e)
+var Map = (function (Action) {
+	function Map (f, promise) {
+		Action.call(this, promise)
+		this.f = f
 	}
-};
 
-Map.prototype.rejected = function rejected (p) {
-	this.promise._become(p)
-};
+	if ( Action ) Map.__proto__ = Action;
+	Map.prototype = Object.create( Action && Action.prototype );
+	Map.prototype.constructor = Map;
+
+	Map.prototype.fulfilled = function fulfilled (p) {
+		this.tryCall(this.f, p.value)
+	};
+
+	Map.prototype.handle = function handle (result) {
+		this.promise._fulfill(result)
+	};
+
+	return Map;
+}(Action));
 
 function chain (f, p, promise) {
 	p._when(new Chain(f, promise))
 	return promise
 }
 
-var Chain = function Chain (f, promise) {
-	this.f = f
-	this.promise = promise
-};
-
-Chain.prototype.fulfilled = function fulfilled (p) {
-	try {
-		runChain(this.f, p.value, this.promise)
-	} catch (e) {
-		this.promise._reject(e)
-	}
-};
-
-Chain.prototype.rejected = function rejected (p) {
-	this.promise._become(p)
-};
-
-function runChain (f, x, p) {
-	var y = f(x)
-	if (!(maybeThenable(y) && typeof y.then === 'function')) {
-		throw new TypeError('f must return a promise')
+var Chain = (function (Action) {
+	function Chain (f, promise) {
+		Action.call(this, promise)
+		this.f = f
 	}
 
-	p._resolve(y)
-}
+	if ( Action ) Chain.__proto__ = Action;
+	Chain.prototype = Object.create( Action && Action.prototype );
+	Chain.prototype.constructor = Chain;
+
+	Chain.prototype.fulfilled = function fulfilled (p) {
+		this.tryCall(this.f, p.value)
+	};
+
+	Chain.prototype.handle = function handle (y) {
+		if (!(maybeThenable(y) && typeof y.then === 'function')) {
+			this.promise._reject(new TypeError('f must return a promise'))
+		}
+
+		this.promise._resolve(y)
+	};
+
+	return Chain;
+}(Action));
 
 var Race = function Race (never) {
 	this.never = never
@@ -416,21 +450,31 @@ function handleItem (resolve, handler, x, i, promise) {
 	} else if (isRejected(p)) {
 		handler.rejectAt(p, i, promise)
 	} else {
-		settleAt(p, handler, i, promise)
+		p._runAction(new Indexed(handler, i, promise))
 	}
 }
 
-function settleAt (p, handler, i, promise) {
-	p._runAction({handler: handler, i: i, promise: promise, fulfilled: fulfilled, rejected: rejected})
-}
+var Indexed = (function (Action) {
+	function Indexed (handler, i, promise) {
+		Action.call(this, promise)
+		this.i = i
+		this.handler = handler
+	}
 
-function fulfilled (p) {
-	this.handler.fulfillAt(p, this.i, this.promise)
-}
+	if ( Action ) Indexed.__proto__ = Action;
+	Indexed.prototype = Object.create( Action && Action.prototype );
+	Indexed.prototype.constructor = Indexed;
 
-function rejected (p) {
-	return this.handler.rejectAt(p, this.i, this.promise)
-}
+	Indexed.prototype.fulfilled = function fulfilled (p) {
+		this.handler.fulfillAt(p, this.i, this.promise)
+	};
+
+	Indexed.prototype.rejected = function rejected (p) {
+		return this.handler.rejectAt(p, this.i, this.promise)
+	};
+
+	return Indexed;
+}(Action));
 
 var taskQueue = new TaskQueue()
 /* istanbul ignore next */
@@ -923,19 +967,23 @@ function _delay (ms, p, promise) {
 	return promise
 }
 
-var Delay = function Delay (time, promise) {
-	this.time = time
-	this.promise = promise
-};
+var Delay = (function (Action) {
+	function Delay (time, promise) {
+		Action.call(this, promise)
+		this.time = time
+	}
 
-Delay.prototype.fulfilled = function fulfilled (p) {
-	/*global setTimeout*/
-	setTimeout(become, this.time, p, this.promise)
-};
+	if ( Action ) Delay.__proto__ = Action;
+	Delay.prototype = Object.create( Action && Action.prototype );
+	Delay.prototype.constructor = Delay;
 
-Delay.prototype.rejected = function rejected (p) {
-	this.promise._become(p)
-};
+	Delay.prototype.fulfilled = function fulfilled (p) {
+		/*global setTimeout*/
+		setTimeout(become, this.time, p, this.promise)
+	};
+
+	return Delay;
+}(Action));
 
 function become (p, promise) {
 	promise._become(p)
@@ -965,21 +1013,28 @@ function _timeout (ms, p, promise) {
 	return promise
 }
 
-var Timeout = function Timeout (timer, promise) {
-	this.timer = timer
-	this.promise = promise
-};
+var Timeout = (function (Action) {
+	function Timeout (timer, promise) {
+		Action.call(this, promise)
+		this.timer = timer
+	}
 
-Timeout.prototype.fulfilled = function fulfilled (p) {
-	clearTimeout(this.timer)
-	this.promise._become(p)
-};
+	if ( Action ) Timeout.__proto__ = Action;
+	Timeout.prototype = Object.create( Action && Action.prototype );
+	Timeout.prototype.constructor = Timeout;
 
-Timeout.prototype.rejected = function rejected (p) {
-	clearTimeout(this.timer)
-	this.promise._become(p)
-	return false
-};
+	Timeout.prototype.fulfilled = function fulfilled (p) {
+		clearTimeout(this.timer)
+		this.promise._become(p)
+	};
+
+	Timeout.prototype.rejected = function rejected (p) {
+		clearTimeout(this.timer)
+		return Action.prototype.rejected.call(this, p)
+	};
+
+	return Timeout;
+}(Action));
 
 function rejectOnTimeout (promise) {
 	promise._reject(new TimeoutError('promise timeout'))
@@ -1115,40 +1170,52 @@ function _runCoroutine (resolve, iterator, promise) {
 	return promise
 }
 
-var Coroutine = function Coroutine (resolve, iterator, promise) {
-	this.resolve = resolve
-	this.iterator = iterator
-	this.promise = promise
-};
-
-Coroutine.prototype.run = function run () {
-	this.step(this.iterator.next, void 0)
-};
-
-Coroutine.prototype.step = function step (continuation, x) {
-	try {
-		this.handle(continuation.call(this.iterator, x))
-	} catch (e) {
-		this.promise._reject(e)
-	}
-};
-
-Coroutine.prototype.handle = function handle (result) {
-	if (result.done) {
-		return this.promise._resolve(result.value)
+var Coroutine = (function (Action) {
+	function Coroutine (resolve, iterator, promise) {
+		Action.call(this, promise)
+		this.resolve = resolve
+		this.generator = iterator
 	}
 
-	this.resolve(result.value)._runAction(this)
-};
+	if ( Action ) Coroutine.__proto__ = Action;
+	Coroutine.prototype = Object.create( Action && Action.prototype );
+	Coroutine.prototype.constructor = Coroutine;
 
-Coroutine.prototype.fulfilled = function fulfilled (ref) {
-	this.step(this.iterator.next, ref.value)
-};
+	Coroutine.prototype.run = function run () {
+		this.tryStep(this.generator.next, void 0)
+	};
 
-Coroutine.prototype.rejected = function rejected (ref) {
-	this.step(this.iterator.throw, ref.value)
-	return true
-};
+	Coroutine.prototype.tryStep = function tryStep (resume, x) {
+		var result
+		// test if `resume` (and only it) throws
+		try {
+			result = resume.call(this.generator, x)
+		} catch (e) {
+			this.promise._reject(e)
+			return
+		} // else
+		this.handle(result)
+	};
+
+	Coroutine.prototype.handle = function handle (result) {
+		if (result.done) {
+			return this.promise._resolve(result.value)
+		}
+
+		this.resolve(result.value)._when(this)
+	};
+
+	Coroutine.prototype.fulfilled = function fulfilled (ref) {
+		this.tryStep(this.generator.next, ref.value)
+	};
+
+	Coroutine.prototype.rejected = function rejected (ref) {
+		this.tryStep(this.generator.throw, ref.value)
+		return true
+	};
+
+	return Coroutine;
+}(Action));
 
 // -------------------------------------------------------------
 // ## Coroutine
@@ -1157,7 +1224,7 @@ Coroutine.prototype.rejected = function rejected (ref) {
 // coroutine :: Generator e a -> (...* -> Promise e a)
 // Make a coroutine from a promise-yielding generator
 function coroutine (generator) {
-	return function () {
+	return function coroutinified () {
 		var args = [], len = arguments.length;
 		while ( len-- ) args[ len ] = arguments[ len ];
 
@@ -1180,7 +1247,7 @@ function runGenerator (generator, thisArg, args) {
 // fromNode :: NodeApi e a -> (...args -> Promise e a)
 // Turn a Node API into a promise API
 function fromNode (f) {
-	return function () {
+	return function promisified () {
 		var args = [], len = arguments.length;
 		while ( len-- ) args[ len ] = arguments[ len ];
 
