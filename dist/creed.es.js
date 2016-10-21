@@ -1,11 +1,11 @@
-/*eslint no-multi-spaces: 0*/
-var PENDING   = 1 << 0
-var FULFILLED = 1 << 1
-var REJECTED  = 1 << 2
-var SETTLED   = FULFILLED | REJECTED
-var NEVER     = 1 << 3
+/* eslint no-multi-spaces: 0 */
+var PENDING   = 1 << 0;
+var FULFILLED = 1 << 1;
+var REJECTED  = 1 << 2;
+var SETTLED   = FULFILLED | REJECTED;
+var NEVER     = 1 << 3;
 
-var HANDLED   = 1 << 4
+var HANDLED   = 1 << 4;
 
 function isPending (p) {
 	return (p.state() & PENDING) > 0
@@ -32,7 +32,7 @@ function isHandled (p) {
 }
 
 function getValue (p) {
-	var n = p.near()
+	var n = p.near();
 	if (!isFulfilled(n)) {
 		throw new TypeError('getValue called on ' + p)
 	}
@@ -41,45 +41,43 @@ function getValue (p) {
 }
 
 function getReason (p) {
-	var n = p.near()
+	var n = p.near();
 	if (!isRejected(n)) {
 		throw new TypeError('getReason called on ' + p)
 	}
 
-	silenceError(n)
+	silenceError(n);
 	return n.value
 }
 
 function silenceError (p) {
-	p._runAction(silencer)
+	p._runAction(silencer);
 }
 
 // implements Action
 var silencer = {
 	fulfilled: function fulfilled () {},
-	rejected: setHandled
-}
+	rejected: function rejected (p) {
+		p._state |= HANDLED;
+	}
+};
 
-function setHandled (rejected) {
-	rejected._state |= HANDLED
-}
-
-/*global process,MutationObserver,WebKitMutationObserver */
+/* global process,MutationObserver,WebKitMutationObserver */
 
 var isNode = typeof process !== 'undefined' &&
-    Object.prototype.toString.call(process) === '[object process]'
+    Object.prototype.toString.call(process) === '[object process]';
 
 /* istanbul ignore next */
 var MutationObs = (typeof MutationObserver === 'function' && MutationObserver) ||
-    (typeof WebKitMutationObserver === 'function' && WebKitMutationObserver)
+    (typeof WebKitMutationObserver === 'function' && WebKitMutationObserver);
 
 /* global process,document */
 
-function makeAsync (f) {
+var makeAsync = function (f) {
 	return isNode ? createNodeScheduler(f) /* istanbul ignore next */
 		: MutationObs ? createBrowserScheduler(f)
 		: createFallbackScheduler(f)
-}
+};
 
 /* istanbul ignore next */
 function createFallbackScheduler (f) {
@@ -92,84 +90,84 @@ function createNodeScheduler (f) {
 
 /* istanbul ignore next */
 function createBrowserScheduler (f) {
-	var node = document.createTextNode('')
-	new MutationObs(f).observe(node, { characterData: true })
+	var node = document.createTextNode('');
+	new MutationObs(f).observe(node, { characterData: true });
 
-	var i = 0
-	return function () { node.data = (i ^= 1) }
+	var i = 0;
+	return function () { node.data = (i ^= 1); }
 }
 
 var TaskQueue = function TaskQueue () {
 	var this$1 = this;
 
-	this.tasks = new Array(2 << 15)
-	this.length = 0
-	this.drain = makeAsync(function () { return this$1._drain(); })
+	this.tasks = new Array(2 << 15);
+	this.length = 0;
+	this.drain = makeAsync(function () { return this$1._drain(); });
 };
 
 TaskQueue.prototype.add = function add (task) {
 	if (this.length === 0) {
-		this.drain()
+		this.drain();
 	}
 
-	this.tasks[this.length++] = task
+	this.tasks[this.length++] = task;
 };
 
 TaskQueue.prototype._drain = function _drain () {
-	var q = this.tasks
+	var q = this.tasks;
 	for (var i = 0; i < this.length; ++i) {
-		q[i].run()
-		q[i] = void 0
+		q[i].run();
+		q[i] = void 0;
 	}
-	this.length = 0
+	this.length = 0;
 };
 
-var UNHANDLED_REJECTION = 'unhandledRejection'
-var HANDLED_REJECTION = 'rejectionHandled'
+var UNHANDLED_REJECTION = 'unhandledRejection';
+var HANDLED_REJECTION = 'rejectionHandled';
 
 var ErrorHandler = function ErrorHandler (emitEvent, reportError) {
-	this.errors = []
-	this.emit = emitEvent
-	this.reportError = reportError
+	this.rejections = [];
+	this.emit = emitEvent;
+	this.reportError = reportError;
 };
 
-ErrorHandler.prototype.track = function track (e) {
-	if (!this.emit(UNHANDLED_REJECTION, e, e.value)) {
+ErrorHandler.prototype.track = function track (rejected) {
+	if (!this.emit(UNHANDLED_REJECTION, rejected, rejected.value)) {
 		/* istanbul ignore else */
-		if (this.errors.length === 0) {
-			setTimeout(reportErrors, 1, this.reportError, this.errors)
+		if (this.rejections.length === 0) {
+			setTimeout(reportErrors, 1, this.reportError, this.rejections);
 		}
-		this.errors.push(e)
+		this.rejections.push(rejected);
 	}
 };
 
-ErrorHandler.prototype.untrack = function untrack (e) {
-	silenceError(e)
-	this.emit(HANDLED_REJECTION, e)
+ErrorHandler.prototype.untrack = function untrack (rejected) {
+	silenceError(rejected);
+	this.emit(HANDLED_REJECTION, rejected);
 };
 
-function reportErrors (report, errors) {
+function reportErrors (report, rejections) {
 	try {
-		reportAll(errors, report)
+		reportAll(rejections, report);
 	} finally {
-		errors.length = 0
+		rejections.length = 0;
 	}
 }
 
-function reportAll (errors, report) {
-	for (var i = 0; i < errors.length; ++i) {
-		var e = errors[i]
+function reportAll (rejections, report) {
+	for (var i = 0; i < rejections.length; ++i) {
+		var rejected = rejections[i];
 		/* istanbul ignore else */
-		if (!isHandled(e)) {
-			report(e)
+		if (!isHandled(rejected)) {
+			report(rejected);
 		}
 	}
 }
 
-var UNHANDLED_REJECTION$1 = 'unhandledRejection'
+var UNHANDLED_REJECTION$1 = 'unhandledRejection';
 
-function makeEmitError () {
-	/*global process, self, CustomEvent*/
+var makeEmitError = function () {
+	/* global process, self, CustomEvent */
 	// istanbul ignore else */
 	if (isNode && typeof process.emit === 'function') {
 		// Returning falsy here means to call the default reportRejection API.
@@ -183,11 +181,11 @@ function makeEmitError () {
 		}
 	} else if (typeof self !== 'undefined' && typeof CustomEvent === 'function') {
 		return (function (noop, self, CustomEvent) {
-			var hasCustomEvent
+			var hasCustomEvent;
 			try {
-				hasCustomEvent = new CustomEvent(UNHANDLED_REJECTION$1) instanceof CustomEvent
+				hasCustomEvent = new CustomEvent(UNHANDLED_REJECTION$1) instanceof CustomEvent;
 			} catch (e) {
-				hasCustomEvent = false
+				hasCustomEvent = false;
 			}
 
 			return !hasCustomEvent ? noop : function (type, error) {
@@ -198,7 +196,7 @@ function makeEmitError () {
 					},
 					bubbles: false,
 					cancelable: true
-				})
+				});
 
 				return !self.dispatchEvent(ev)
 			}
@@ -207,7 +205,7 @@ function makeEmitError () {
 
 	// istanbul ignore next */
 	return noop
-}
+};
 
 // istanbul ignore next */
 function noop () {}
@@ -218,51 +216,51 @@ function maybeThenable (x) {
 }
 
 var Action = function Action (promise) {
-	this.promise = promise
+	this.promise = promise;
 };
 
 // default onFulfilled action
 /* istanbul ignore next */
 Action.prototype.fulfilled = function fulfilled (p) {
-	this.promise._become(p)
+	this.promise._become(p);
 };
 
 // default onRejected action
 Action.prototype.rejected = function rejected (p) {
-	this.promise._become(p)
+	this.promise._become(p);
 	return false
 };
 
 Action.prototype.tryCall = function tryCall (f, x) {
-	var result
+	var result;
 	// test if `f` (and only it) throws
 	try {
-		result = f(x)
+		result = f(x);
 	} catch (e) {
-		this.promise._reject(e)
+		this.promise._reject(e);
 		return
 	} // else
-	this.handle(result)
+	this.handle(result);
 };
 
 function then (f, r, p, promise) {
-	p._when(new Then(f, r, promise))
+	p._when(new Then(f, r, promise));
 	return promise
 }
 
-var Then = (function (Action) {
+var Then = (function (Action$$1) {
 	function Then (f, r, promise) {
-		Action.call(this, promise)
-		this.f = f
-		this.r = r
+		Action$$1.call(this, promise);
+		this.f = f;
+		this.r = r;
 	}
 
-	if ( Action ) Then.__proto__ = Action;
-	Then.prototype = Object.create( Action && Action.prototype );
+	if ( Action$$1 ) Then.__proto__ = Action$$1;
+	Then.prototype = Object.create( Action$$1 && Action$$1.prototype );
 	Then.prototype.constructor = Then;
 
 	Then.prototype.fulfilled = function fulfilled (p) {
-		this.runThen(this.f, p)
+		this.runThen(this.f, p);
 	};
 
 	Then.prototype.rejected = function rejected (p) {
@@ -271,125 +269,129 @@ var Then = (function (Action) {
 
 	Then.prototype.runThen = function runThen (f, p) {
 		if (typeof f !== 'function') {
-			this.promise._become(p)
+			this.promise._become(p);
 			return false
 		}
-		this.tryCall(f, p.value)
+		this.tryCall(f, p.value);
 		return true
 	};
 
 	Then.prototype.handle = function handle (result) {
-		this.promise._resolve(result)
+		this.promise._resolve(result);
 	};
 
 	return Then;
 }(Action));
 
-function map (f, p, promise) {
-	p._when(new Map(f, promise))
+var map = function (f, p, promise) {
+	p._when(new Map(f, promise));
 	return promise
-}
+};
 
-var Map = (function (Action) {
+var Map = (function (Action$$1) {
 	function Map (f, promise) {
-		Action.call(this, promise)
-		this.f = f
+		Action$$1.call(this, promise);
+		this.f = f;
 	}
 
-	if ( Action ) Map.__proto__ = Action;
-	Map.prototype = Object.create( Action && Action.prototype );
+	if ( Action$$1 ) Map.__proto__ = Action$$1;
+	Map.prototype = Object.create( Action$$1 && Action$$1.prototype );
 	Map.prototype.constructor = Map;
 
 	Map.prototype.fulfilled = function fulfilled (p) {
-		this.tryCall(this.f, p.value)
+		this.tryCall(this.f, p.value);
 	};
 
 	Map.prototype.handle = function handle (result) {
-		this.promise._fulfill(result)
+		this.promise._fulfill(result);
 	};
 
 	return Map;
 }(Action));
 
-function chain (f, p, promise) {
-	p._when(new Chain(f, promise))
+var chain = function (f, p, promise) {
+	p._when(new Chain(f, promise));
 	return promise
-}
+};
 
-var Chain = (function (Action) {
+var Chain = (function (Action$$1) {
 	function Chain (f, promise) {
-		Action.call(this, promise)
-		this.f = f
+		Action$$1.call(this, promise);
+		this.f = f;
 	}
 
-	if ( Action ) Chain.__proto__ = Action;
-	Chain.prototype = Object.create( Action && Action.prototype );
+	if ( Action$$1 ) Chain.__proto__ = Action$$1;
+	Chain.prototype = Object.create( Action$$1 && Action$$1.prototype );
 	Chain.prototype.constructor = Chain;
 
 	Chain.prototype.fulfilled = function fulfilled (p) {
-		this.tryCall(this.f, p.value)
+		this.tryCall(this.f, p.value);
 	};
 
 	Chain.prototype.handle = function handle (y) {
 		if (!(maybeThenable(y) && typeof y.then === 'function')) {
-			this.promise._reject(new TypeError('f must return a promise'))
+			this.promise._reject(new TypeError('f must return a promise'));
 		}
 
-		this.promise._resolve(y)
+		this.promise._resolve(y);
 	};
 
 	return Chain;
 }(Action));
 
 var Race = function Race (never) {
-	this.never = never
+	this.never = never;
 };
 
 Race.prototype.valueAt = function valueAt (x, i, promise) {
-	promise._fulfill(x)
+	promise._fulfill(x);
 };
 
 Race.prototype.fulfillAt = function fulfillAt (p, i, promise) {
-	promise._become(p)
+	promise._become(p);
 };
 
 Race.prototype.rejectAt = function rejectAt (p, i, promise) {
-	promise._become(p)
+	// In the case where the result promise has been resolved
+	// need to silence all subsequently seen rejections
+	promise._isResolved() ? silenceError(p) : promise._become(p);
 };
 
 Race.prototype.complete = function complete (total, promise) {
 	if (total === 0) {
-		promise._become(this.never())
+		promise._become(this.never());
 	}
 };
 
 var Merge = function Merge (mergeHandler, results) {
-	this.pending = 0
-	this.results = results
-	this.mergeHandler = mergeHandler
+	this.pending = 0;
+	this.results = results;
+	this.mergeHandler = mergeHandler;
 };
 
 Merge.prototype.valueAt = function valueAt (x, i, promise) {
-	this.results[i] = x
-	this.check(this.pending - 1, promise)
+	this.results[i] = x;
+	this.check(this.pending - 1, promise);
 };
 
 Merge.prototype.fulfillAt = function fulfillAt (p, i, promise) {
-	this.valueAt(p.value, i, promise)
+	this.valueAt(p.value, i, promise);
 };
 
 Merge.prototype.rejectAt = function rejectAt (p, i, promise) {
-	promise._become(p)
+	// In the case where the result promise has been resolved
+	// need to silence all subsequently seen rejections
+	promise._isResolved() ? silenceError(p) : promise._become(p);
 };
 
 Merge.prototype.complete = function complete (total, promise) {
-	this.check(this.pending + total, promise)
+	this.check(this.pending + total, promise);
 };
 
 Merge.prototype.check = function check (pending, promise) {
-	this.pending = pending
+	this.pending = pending;
 	if (pending === 0) {
-		this.mergeHandler.merge(promise, this.results)
+		this.mergeHandler.merge(promise, this.results);
 	}
 };
 
@@ -398,75 +400,75 @@ function resultsArray (iterable) {
 }
 
 function resolveIterable (resolve, handler, promises, promise) {
-	var run = Array.isArray(promises) ? runArray : runIterable
+	var run = Array.isArray(promises) ? runArray : runIterable;
 	try {
-		run(resolve, handler, promises, promise)
+		run(resolve, handler, promises, promise);
 	} catch (e) {
-		promise._reject(e)
+		promise._reject(e);
 	}
 	return promise.near()
 }
 
 function runArray (resolve, handler, promises, promise) {
-	var i = 0
+	var i = 0;
 
 	for (; i < promises.length; ++i) {
-		handleItem(resolve, handler, promises[i], i, promise)
+		handleItem(resolve, handler, promises[i], i, promise);
 	}
 
-	handler.complete(i, promise)
+	handler.complete(i, promise);
 }
 
 function runIterable (resolve, handler, promises, promise) {
-	var i = 0
-	var iter = promises[Symbol.iterator]()
+	var i = 0;
+	var iter = promises[Symbol.iterator]();
 
 	while (true) {
-		var step = iter.next()
+		var step = iter.next();
 		if (step.done) {
 			break
 		}
-		handleItem(resolve, handler, step.value, i++, promise)
+		handleItem(resolve, handler, step.value, i++, promise);
 	}
 
-	handler.complete(i, promise)
+	handler.complete(i, promise);
 }
 
 function handleItem (resolve, handler, x, i, promise) {
-	/*eslint complexity:[1,6]*/
+	/* eslint complexity:[1,6] */
 	if (!maybeThenable(x)) {
-		handler.valueAt(x, i, promise)
+		handler.valueAt(x, i, promise);
 		return
 	}
 
-	var p = resolve(x)
+	var p = resolve(x);
 
 	if (promise._isResolved()) {
 		if (!isFulfilled(p)) {
-			silenceError(p)
+			silenceError(p);
 		}
 	} else if (isFulfilled(p)) {
-		handler.fulfillAt(p, i, promise)
+		handler.fulfillAt(p, i, promise);
 	} else if (isRejected(p)) {
-		handler.rejectAt(p, i, promise)
+		handler.rejectAt(p, i, promise);
 	} else {
-		p._runAction(new Indexed(handler, i, promise))
+		p._runAction(new Indexed(handler, i, promise));
 	}
 }
 
-var Indexed = (function (Action) {
+var Indexed = (function (Action$$1) {
 	function Indexed (handler, i, promise) {
-		Action.call(this, promise)
-		this.i = i
-		this.handler = handler
+		Action$$1.call(this, promise);
+		this.i = i;
+		this.handler = handler;
 	}
 
-	if ( Action ) Indexed.__proto__ = Action;
-	Indexed.prototype = Object.create( Action && Action.prototype );
+	if ( Action$$1 ) Indexed.__proto__ = Action$$1;
+	Indexed.prototype = Object.create( Action$$1 && Action$$1.prototype );
 	Indexed.prototype.constructor = Indexed;
 
 	Indexed.prototype.fulfilled = function fulfilled (p) {
-		this.handler.fulfillAt(p, this.i, this.promise)
+		this.handler.fulfillAt(p, this.i, this.promise);
 	};
 
 	Indexed.prototype.rejected = function rejected (p) {
@@ -476,11 +478,11 @@ var Indexed = (function (Action) {
 	return Indexed;
 }(Action));
 
-var taskQueue = new TaskQueue()
+var taskQueue = new TaskQueue();
 /* istanbul ignore next */
 var errorHandler = new ErrorHandler(makeEmitError(), function (e) {
 	throw e.value
-})
+});
 
 // -------------------------------------------------------------
 // ## Types
@@ -508,10 +510,10 @@ Core.of = function of (x) {
 // A promise whose value cannot be known until some future time
 var Future = (function (Core) {
 	function Future () {
-		Core.call(this)
-		this.ref = void 0
-		this.action = void 0
-		this.length = 0
+		Core.call(this);
+		this.ref = void 0;
+		this.action = void 0;
+		this.length = 0;
 	}
 
 	if ( Core ) Future.__proto__ = Core;
@@ -522,40 +524,40 @@ var Future = (function (Core) {
 	// then :: Promise e a -> () -> (e -> b) -> Promise e b
 	// then :: Promise e a -> (a -> b) -> (e -> b) -> Promise e b
 	Future.prototype.then = function then$1 (f, r) {
-		var n = this.near()
+		var n = this.near();
 		return n === this ? then(f, r, n, new Future()) : n.then(f, r)
 	};
 
 	// catch :: Promise e a -> (e -> b) -> Promise e b
 	Future.prototype.catch = function catch$1 (r) {
-		var n = this.near()
+		var n = this.near();
 		return n === this ? then(void 0, r, n, new Future()) : n.catch(r)
 	};
 
 	// map :: Promise e a -> (a -> b) -> Promise e b
 	Future.prototype.map = function map$1 (f) {
-		var n = this.near()
+		var n = this.near();
 		return n === this ? map(f, n, new Future()) : n.map(f)
 	};
 
 	// ap :: Promise e (a -> b) -> Promise e a -> Promise e b
 	Future.prototype.ap = function ap (p) {
-		var n = this.near()
-		var pp = p.near()
+		var n = this.near();
+		var pp = p.near();
 		return n === this ? this.chain(function (f) { return pp.map(f); }) : n.ap(pp)
 	};
 
 	// chain :: Promise e a -> (a -> Promise e b) -> Promise e b
 	Future.prototype.chain = function chain$1 (f) {
-		var n = this.near()
+		var n = this.near();
 		return n === this ? chain(f, n, new Future()) : n.chain(f)
 	};
 
 	// concat :: Promise e a -> Promise e a -> Promise e a
 	Future.prototype.concat = function concat (b) {
 		/* eslint complexity:[2,5] */
-		var n = this.near()
-		var bp = b.near()
+		var n = this.near();
+		var bp = b.near();
 
 		return isSettled(n) || isNever(bp) ? n
 			: isSettled(bp) || isNever(n) ? bp
@@ -569,7 +571,7 @@ var Future = (function (Core) {
 
 	// inspect :: Promise e a -> String
 	Future.prototype.inspect = function inspect () {
-		var n = this.near()
+		var n = this.near();
 		return n === this ? 'Promise { pending }' : n.inspect()
 	};
 
@@ -579,7 +581,7 @@ var Future = (function (Core) {
 			return this
 		}
 
-		this.ref = this.ref.near()
+		this.ref = this.ref.near();
 		return this.ref
 	};
 
@@ -593,23 +595,23 @@ var Future = (function (Core) {
 	};
 
 	Future.prototype._when = function _when (action) {
-		this._runAction(action)
+		this._runAction(action);
 	};
 
 	Future.prototype._runAction = function _runAction (action) {
 		if (this.action === void 0) {
-			this.action = action
+			this.action = action;
 		} else {
-			this[this.length++] = action
+			this[this.length++] = action;
 		}
 	};
 
 	Future.prototype._resolve = function _resolve (x) {
-		this._become(resolve(x))
+		this._become(resolve(x));
 	};
 
 	Future.prototype._fulfill = function _fulfill (x) {
-		this._become(new Fulfilled(x))
+		this._become(new Fulfilled(x));
 	};
 
 	Future.prototype._reject = function _reject (e) {
@@ -617,7 +619,7 @@ var Future = (function (Core) {
 			return
 		}
 
-		this.__become(new Rejected(e))
+		this.__become(new Rejected(e));
 	};
 
 	Future.prototype._become = function _become (p) {
@@ -625,29 +627,29 @@ var Future = (function (Core) {
 			return
 		}
 
-		this.__become(p)
+		this.__become(p);
 	};
 
 	Future.prototype.__become = function __become (p) {
-		this.ref = p === this ? cycle() : p
+		this.ref = p === this ? cycle() : p;
 
 		if (this.action === void 0) {
 			return
 		}
 
-		taskQueue.add(this)
+		taskQueue.add(this);
 	};
 
 	Future.prototype.run = function run () {
 		var this$1 = this;
 
-		var p = this.ref.near()
-		p._runAction(this.action)
-		this.action = void 0
+		var p = this.ref.near();
+		p._runAction(this.action);
+		this.action = void 0;
 
 		for (var i = 0; i < this.length; ++i) {
-			p._runAction(this$1[i])
-			this$1[i] = void 0
+			p._runAction(this$1[i]);
+			this$1[i] = void 0;
 		}
 	};
 
@@ -658,8 +660,8 @@ var Future = (function (Core) {
 // A promise whose value is already known
 var Fulfilled = (function (Core) {
 	function Fulfilled (x) {
-		Core.call(this)
-		this.value = x
+		Core.call(this);
+		this.value = x;
 	}
 
 	if ( Core ) Fulfilled.__proto__ = Core;
@@ -707,11 +709,11 @@ var Fulfilled = (function (Core) {
 	};
 
 	Fulfilled.prototype._when = function _when (action) {
-		taskQueue.add(new Continuation(action, this))
+		taskQueue.add(new Continuation(action, this));
 	};
 
 	Fulfilled.prototype._runAction = function _runAction (action) {
-		action.fulfilled(this)
+		action.fulfilled(this);
 	};
 
 	return Fulfilled;
@@ -721,10 +723,10 @@ var Fulfilled = (function (Core) {
 // A promise whose value cannot be known due to some reason/error
 var Rejected = (function (Core) {
 	function Rejected (e) {
-		Core.call(this)
-		this.value = e
-		this._state = REJECTED
-		errorHandler.track(this)
+		Core.call(this);
+		this.value = e;
+		this._state = REJECTED;
+		errorHandler.track(this);
 	}
 
 	if ( Core ) Rejected.__proto__ = Core;
@@ -772,12 +774,12 @@ var Rejected = (function (Core) {
 	};
 
 	Rejected.prototype._when = function _when (action) {
-		taskQueue.add(new Continuation(action, this))
+		taskQueue.add(new Continuation(action, this));
 	};
 
 	Rejected.prototype._runAction = function _runAction (action) {
 		if (action.rejected(this)) {
-			errorHandler.untrack(this)
+			errorHandler.untrack(this);
 		}
 	};
 
@@ -874,7 +876,7 @@ function fulfill (x) {
 // future :: () -> { resolve: Resolve e a, promise: Promise e a }
 // type Resolve e a = a|Thenable e a -> ()
 function future () {
-	var promise = new Future()
+	var promise = new Future();
 	return {resolve: function (x) { return promise._resolve(x); }, promise: promise}
 }
 
@@ -884,15 +886,15 @@ function future () {
 
 // all :: Iterable (Promise e a) -> Promise e [a]
 function all (promises) {
-	var handler = new Merge(allHandler, resultsArray(promises))
+	var handler = new Merge(allHandler, resultsArray(promises));
 	return iterablePromise(handler, promises)
 }
 
 var allHandler = {
 	merge: function merge (promise, args) {
-		promise._fulfill(args)
+		promise._fulfill(args);
 	}
-}
+};
 
 // race :: Iterable (Promise e a) -> Promise e a
 function race (promises) {
@@ -908,7 +910,7 @@ function iterablePromise (handler, iterable) {
 		return reject(new TypeError('expected an iterable'))
 	}
 
-	var p = new Future()
+	var p = new Future();
 	return resolveIterable(resolveMaybeThenable, handler, iterable, p)
 }
 
@@ -927,9 +929,9 @@ function resolveMaybeThenable (x) {
 
 function refForMaybeThenable (otherwise, x) {
 	try {
-		var then = x.then
-		return typeof then === 'function'
-			? extractThenable(then, x)
+		var then$$1 = x.then;
+		return typeof then$$1 === 'function'
+			? extractThenable(then$$1, x)
 			: otherwise(x)
 	} catch (e) {
 		return new Rejected(e)
@@ -938,12 +940,12 @@ function refForMaybeThenable (otherwise, x) {
 
 // WARNING: Naming the first arg "then" triggers babel compilation bug
 function extractThenable (thn, thenable) {
-	var p = new Future()
+	var p = new Future();
 
 	try {
-		thn.call(thenable, function (x) { return p._resolve(x); }, function (e) { return p._reject(e); })
+		thn.call(thenable, function (x) { return p._resolve(x); }, function (e) { return p._reject(e); });
 	} catch (e) {
-		p._reject(e)
+		p._reject(e);
 	}
 
 	return p.near()
@@ -954,49 +956,49 @@ function cycle () {
 }
 
 var Continuation = function Continuation (action, promise) {
-	this.action = action
-	this.promise = promise
+	this.action = action;
+	this.promise = promise;
 };
 
 Continuation.prototype.run = function run () {
-	this.promise._runAction(this.action)
+	this.promise._runAction(this.action);
 };
 
-function _delay (ms, p, promise) {
-	p._runAction(new Delay(ms, promise))
+var _delay = function (ms, p, promise) {
+	p._runAction(new Delay(ms, promise));
 	return promise
-}
+};
 
-var Delay = (function (Action) {
+var Delay = (function (Action$$1) {
 	function Delay (time, promise) {
-		Action.call(this, promise)
-		this.time = time
+		Action$$1.call(this, promise);
+		this.time = time;
 	}
 
-	if ( Action ) Delay.__proto__ = Action;
-	Delay.prototype = Object.create( Action && Action.prototype );
+	if ( Action$$1 ) Delay.__proto__ = Action$$1;
+	Delay.prototype = Object.create( Action$$1 && Action$$1.prototype );
 	Delay.prototype.constructor = Delay;
 
 	Delay.prototype.fulfilled = function fulfilled (p) {
-		/*global setTimeout*/
-		setTimeout(become, this.time, p, this.promise)
+		/* global setTimeout */
+		setTimeout(become, this.time, p, this.promise);
 	};
 
 	return Delay;
 }(Action));
 
 function become (p, promise) {
-	promise._become(p)
+	promise._become(p);
 }
 
 var TimeoutError = (function (Error) {
 	function TimeoutError (message) {
-		Error.call(this)
-		this.message = message
-		this.name = TimeoutError.name
+		Error.call(this);
+		this.message = message;
+		this.name = TimeoutError.name;
 		/* istanbul ignore else */
 		if (typeof Error.captureStackTrace === 'function') {
-			Error.captureStackTrace(this, TimeoutError)
+			Error.captureStackTrace(this, TimeoutError);
 		}
 	}
 
@@ -1007,128 +1009,128 @@ var TimeoutError = (function (Error) {
 	return TimeoutError;
 }(Error));
 
-function _timeout (ms, p, promise) {
-	var timer = setTimeout(rejectOnTimeout, ms, promise)
-	p._runAction(new Timeout(timer, promise))
+var _timeout = function (ms, p, promise) {
+	var timer = setTimeout(rejectOnTimeout, ms, promise);
+	p._runAction(new Timeout(timer, promise));
 	return promise
-}
+};
 
-var Timeout = (function (Action) {
+var Timeout = (function (Action$$1) {
 	function Timeout (timer, promise) {
-		Action.call(this, promise)
-		this.timer = timer
+		Action$$1.call(this, promise);
+		this.timer = timer;
 	}
 
-	if ( Action ) Timeout.__proto__ = Action;
-	Timeout.prototype = Object.create( Action && Action.prototype );
+	if ( Action$$1 ) Timeout.__proto__ = Action$$1;
+	Timeout.prototype = Object.create( Action$$1 && Action$$1.prototype );
 	Timeout.prototype.constructor = Timeout;
 
 	Timeout.prototype.fulfilled = function fulfilled (p) {
-		clearTimeout(this.timer)
-		this.promise._become(p)
+		clearTimeout(this.timer);
+		this.promise._become(p);
 	};
 
 	Timeout.prototype.rejected = function rejected (p) {
-		clearTimeout(this.timer)
-		return Action.prototype.rejected.call(this, p)
+		clearTimeout(this.timer);
+		return Action$$1.prototype.rejected.call(this, p)
 	};
 
 	return Timeout;
 }(Action));
 
 function rejectOnTimeout (promise) {
-	promise._reject(new TimeoutError('promise timeout'))
+	promise._reject(new TimeoutError('promise timeout'));
 }
 
 var Any = function Any () {
-	this.pending = 0
+	this.pending = 0;
 };
 
 Any.prototype.valueAt = function valueAt (x, i, promise) {
-	promise._fulfill(x)
+	promise._fulfill(x);
 };
 
 Any.prototype.fulfillAt = function fulfillAt (p, i, promise) {
-	promise._become(p)
+	promise._become(p);
 };
 
 Any.prototype.rejectAt = function rejectAt (p, i, promise) {
-	silenceError(p)
-	this.check(this.pending - 1, promise)
+	silenceError(p);
+	this.check(this.pending - 1, promise);
 };
 
 Any.prototype.complete = function complete (total, promise) {
-	this.check(this.pending + total, promise)
+	this.check(this.pending + total, promise);
 };
 
 Any.prototype.check = function check (pending, promise) {
-	this.pending = pending
+	this.pending = pending;
 	if (pending === 0) {
-		promise._reject(new RangeError('No fulfilled promises in input'))
+		promise._reject(new RangeError('No fulfilled promises in input'));
 	}
 };
 
 var Settle = function Settle (resolve, results) {
-	this.pending = 0
-	this.results = results
-	this.resolve = resolve
+	this.pending = 0;
+	this.results = results;
+	this.resolve = resolve;
 };
 
 Settle.prototype.valueAt = function valueAt (x, i, promise) {
-	this.settleAt(this.resolve(x), i, promise)
+	this.settleAt(this.resolve(x), i, promise);
 };
 
 Settle.prototype.fulfillAt = function fulfillAt (p, i, promise) {
-	this.settleAt(p, i, promise)
+	this.settleAt(p, i, promise);
 };
 
 Settle.prototype.rejectAt = function rejectAt (p, i, promise) {
-	silenceError(p)
-	this.settleAt(p, i, promise)
+	silenceError(p);
+	this.settleAt(p, i, promise);
 };
 
 Settle.prototype.settleAt = function settleAt (p, i, promise) {
-	this.results[i] = p
-	this.check(this.pending - 1, promise)
+	this.results[i] = p;
+	this.check(this.pending - 1, promise);
 };
 
 Settle.prototype.complete = function complete (total, promise) {
-	this.check(this.pending + total, promise)
+	this.check(this.pending + total, promise);
 };
 
 Settle.prototype.check = function check (pending, promise) {
-	this.pending = pending
+	this.pending = pending;
 	if (pending === 0) {
-		promise._fulfill(this.results)
+		promise._fulfill(this.results);
 	}
 };
 
 function runPromise$1 (f, thisArg, args, promise) {
 	/* eslint complexity:[2,5] */
 	function resolve (x) {
-		promise._resolve(x)
+		promise._resolve(x);
 	}
 
 	function reject (e) {
-		promise._reject(e)
+		promise._reject(e);
 	}
 
 	switch (args.length) {
 		case 0:
-			f.call(thisArg, resolve, reject)
+			f.call(thisArg, resolve, reject);
 			break
 		case 1:
-			f.call(thisArg, args[0], resolve, reject)
+			f.call(thisArg, args[0], resolve, reject);
 			break
 		case 2:
-			f.call(thisArg, args[0], args[1], resolve, reject)
+			f.call(thisArg, args[0], args[1], resolve, reject);
 			break
 		case 3:
-			f.call(thisArg, args[0], args[1], args[2], resolve, reject)
+			f.call(thisArg, args[0], args[1], args[2], resolve, reject);
 			break
 		default:
-			args.push(resolve, reject)
-			f.apply(thisArg, args)
+			args.push(resolve, reject);
+			f.apply(thisArg, args);
 	}
 
 	return promise
@@ -1138,63 +1140,63 @@ function runNode$1 (f, thisArg, args, promise) {
 	/* eslint complexity:[2,5] */
 	function settleNode (e, x) {
 		if (e) {
-			promise._reject(e)
+			promise._reject(e);
 		} else {
-			promise._fulfill(x)
+			promise._fulfill(x);
 		}
 	}
 
 	switch (args.length) {
 		case 0:
-			f.call(thisArg, settleNode)
+			f.call(thisArg, settleNode);
 			break
 		case 1:
-			f.call(thisArg, args[0], settleNode)
+			f.call(thisArg, args[0], settleNode);
 			break
 		case 2:
-			f.call(thisArg, args[0], args[1], settleNode)
+			f.call(thisArg, args[0], args[1], settleNode);
 			break
 		case 3:
-			f.call(thisArg, args[0], args[1], args[2], settleNode)
+			f.call(thisArg, args[0], args[1], args[2], settleNode);
 			break
 		default:
-			args.push(settleNode)
-			f.apply(thisArg, args)
+			args.push(settleNode);
+			f.apply(thisArg, args);
 	}
 
 	return promise
 }
 
-function _runCoroutine (resolve, iterator, promise) {
-	new Coroutine(resolve, iterator, promise).run()
+var _runCoroutine = function (resolve, iterator, promise) {
+	new Coroutine(resolve, iterator, promise).run();
 	return promise
-}
+};
 
-var Coroutine = (function (Action) {
+var Coroutine = (function (Action$$1) {
 	function Coroutine (resolve, iterator, promise) {
-		Action.call(this, promise)
-		this.resolve = resolve
-		this.generator = iterator
+		Action$$1.call(this, promise);
+		this.resolve = resolve;
+		this.generator = iterator;
 	}
 
-	if ( Action ) Coroutine.__proto__ = Action;
-	Coroutine.prototype = Object.create( Action && Action.prototype );
+	if ( Action$$1 ) Coroutine.__proto__ = Action$$1;
+	Coroutine.prototype = Object.create( Action$$1 && Action$$1.prototype );
 	Coroutine.prototype.constructor = Coroutine;
 
 	Coroutine.prototype.run = function run () {
-		this.tryStep(this.generator.next, void 0)
+		this.tryStep(this.generator.next, void 0);
 	};
 
 	Coroutine.prototype.tryStep = function tryStep (resume, x) {
-		var result
+		var result;
 		// test if `resume` (and only it) throws
 		try {
-			result = resume.call(this.generator, x)
+			result = resume.call(this.generator, x);
 		} catch (e) {
-			this.promise._reject(e)
+			this.promise._reject(e);
 			return
 		} // else
-		this.handle(result)
+		this.handle(result);
 	};
 
 	Coroutine.prototype.handle = function handle (result) {
@@ -1202,15 +1204,15 @@ var Coroutine = (function (Action) {
 			return this.promise._resolve(result.value)
 		}
 
-		this.resolve(result.value)._when(this)
+		this.resolve(result.value)._when(this);
 	};
 
 	Coroutine.prototype.fulfilled = function fulfilled (ref) {
-		this.tryStep(this.generator.next, ref.value)
+		this.tryStep(this.generator.next, ref.value);
 	};
 
 	Coroutine.prototype.rejected = function rejected (ref) {
-		this.tryStep(this.generator.throw, ref.value)
+		this.tryStep(this.generator.throw, ref.value);
 		return true
 	};
 
@@ -1233,7 +1235,7 @@ function coroutine (generator) {
 }
 
 function runGenerator (generator, thisArg, args) {
-	var iterator = generator.apply(thisArg, args)
+	var iterator = generator.apply(thisArg, args);
 	return _runCoroutine(resolve, iterator, new Future())
 }
 
@@ -1280,12 +1282,12 @@ function runPromise (f) {
 }
 
 function runResolver (run, f, thisArg, args, p) {
-	checkFunction(f)
+	checkFunction(f);
 
 	try {
-		run(f, thisArg, args, p)
+		run(f, thisArg, args, p);
 	} catch (e) {
-		p._reject(e)
+		p._reject(e);
 	}
 
 	return p
@@ -1298,14 +1300,14 @@ function runResolver (run, f, thisArg, args, p) {
 // delay :: number -> Promise e a -> Promise e a
 function delay (ms, x) {
 	/* eslint complexity:[2,4] */
-	var p = resolve(x)
+	var p = resolve(x);
 	return ms <= 0 || isRejected(p) || isNever(p) ? p
 		: _delay(ms, p, new Future())
 }
 
 // timeout :: number -> Promise e a -> Promise (e|TimeoutError) a
 function timeout (ms, x) {
-	var p = resolve(x)
+	var p = resolve(x);
 	return isSettled(p) ? p : _timeout(ms, p, new Future())
 }
 
@@ -1320,7 +1322,7 @@ function any (promises) {
 
 // settle :: Iterable (Promise e a) -> Promise e [Promise e a]
 function settle (promises) {
-	var handler = new Settle(resolve, resultsArray(promises))
+	var handler = new Settle(resolve, resultsArray(promises));
 	return iterablePromise(handler, promises)
 }
 
@@ -1329,7 +1331,7 @@ function settle (promises) {
 // -------------------------------------------------------------
 
 // merge :: (...* -> b) -> ...Promise e a -> Promise e b
-function merge (f) {
+function merge$1$1 (f) {
 	var args = [], len = arguments.length - 1;
 	while ( len-- > 0 ) args[ len ] = arguments[ len + 1 ];
 
@@ -1337,28 +1339,28 @@ function merge (f) {
 }
 
 function runMerge (f, thisArg, args) {
-	var handler = new Merge(new MergeHandler(f, thisArg), resultsArray(args))
+	var handler = new Merge(new MergeHandler(f, thisArg), resultsArray(args));
 	return iterablePromise(handler, args)
 }
 
 var MergeHandler = function MergeHandler (f, c) {
-	this.f = f
-	this.c = c
-	this.promise = void 0
-	this.args = void 0
+	this.f = f;
+	this.c = c;
+	this.promise = void 0;
+	this.args = void 0;
 };
 
 MergeHandler.prototype.merge = function merge$1 (promise, args) {
-	this.promise = promise
-	this.args = args
-	taskQueue.add(this)
+	this.promise = promise;
+	this.args = args;
+	taskQueue.add(this);
 };
 
 MergeHandler.prototype.run = function run () {
 	try {
-		this.promise._resolve(this.f.apply(this.c, this.args))
+		this.promise._resolve(this.f.apply(this.c, this.args));
 	} catch (e) {
-		this.promise._reject(e)
+		this.promise._reject(e);
 	}
 };
 
@@ -1372,39 +1374,39 @@ function checkFunction (f) {
 // ## ES6 Promise polyfill
 // -------------------------------------------------------------
 
-var NOARGS = []
+var NOARGS = [];
 
 // type Resolve a = a -> ()
 // type Reject e = e -> ()
 // Promise :: (Resolve a -> Reject e) -> Promise e a
-var CreedPromise = (function (Future) {
+var CreedPromise = (function (Future$$1) {
 	function CreedPromise (f) {
-		Future.call(this)
-		runResolver(runPromise$1, f, void 0, NOARGS, this)
+		Future$$1.call(this);
+		runResolver(runPromise$1, f, void 0, NOARGS, this);
 	}
 
-	if ( Future ) CreedPromise.__proto__ = Future;
-	CreedPromise.prototype = Object.create( Future && Future.prototype );
+	if ( Future$$1 ) CreedPromise.__proto__ = Future$$1;
+	CreedPromise.prototype = Object.create( Future$$1 && Future$$1.prototype );
 	CreedPromise.prototype.constructor = CreedPromise;
 
 	return CreedPromise;
 }(Future));
 
-CreedPromise.resolve = resolve
-CreedPromise.reject = reject
-CreedPromise.all = all
-CreedPromise.race = race
+CreedPromise.resolve = resolve;
+CreedPromise.reject = reject;
+CreedPromise.all = all;
+CreedPromise.race = race;
 
 function shim () {
 	/* global self */
-	var orig = typeof Promise === 'function' && Promise
+	var orig = typeof Promise === 'function' && Promise;
 
 	/* istanbul ignore if */
 	if (typeof self !== 'undefined') {
-		self.Promise = CreedPromise
+		self.Promise = CreedPromise;
 		/* istanbul ignore else */
 	} else if (typeof global !== 'undefined') {
-		global.Promise = CreedPromise
+		global.Promise = CreedPromise;
 	}
 
 	return orig
@@ -1412,7 +1414,7 @@ function shim () {
 
 /* istanbul ignore if */
 if (typeof Promise !== 'function') {
-	shim()
+	shim();
 }
 
-export { resolve, reject, future, never, fulfill, all, race, isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason, coroutine, fromNode, runNode, runPromise, delay, timeout, any, settle, merge, shim, CreedPromise as Promise };
+export { resolve, reject, future, never, fulfill, all, race, isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason, coroutine, fromNode, runNode, runPromise, delay, timeout, any, settle, merge$1$1 as merge, shim, CreedPromise as Promise };
