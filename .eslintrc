@@ -8,7 +8,7 @@
   },
   "rules": {
     "complexity": [2, 3],
-    "indent": [2, "tab", {SwitchCase: 1}],
-    "arrow-parens": [2, "as-needed"]
+    "indent": [2, "tab", {"SwitchCase": 1}],
+    "no-tabs": 0
   }
 }

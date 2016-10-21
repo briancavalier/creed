@@ -42,7 +42,7 @@ function runIterable (resolve, handler, promises, promise) {
 }
 
 function handleItem (resolve, handler, x, i, promise) {
-	/*eslint complexity:[1,6]*/
+	/* eslint complexity:[1,6] */
 	if (!maybeThenable(x)) {
 		handler.valueAt(x, i, promise)
 		return

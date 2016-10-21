@@ -1,4 +1,4 @@
-/*global process,MutationObserver,WebKitMutationObserver */
+/* global process,MutationObserver,WebKitMutationObserver */
 
 const isNode = typeof process !== 'undefined' &&
     Object.prototype.toString.call(process) === '[object process]'

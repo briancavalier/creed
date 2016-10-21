@@ -12,7 +12,7 @@ class Delay extends Action {
 	}
 
 	fulfilled (p) {
-		/*global setTimeout*/
+		/* global setTimeout */
 		setTimeout(become, this.time, p, this.promise)
 	}
 }

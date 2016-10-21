@@ -3,7 +3,7 @@ import { isNode } from './env'
 const UNHANDLED_REJECTION = 'unhandledRejection'
 
 export default function () {
-	/*global process, self, CustomEvent*/
+	/* global process, self, CustomEvent */
 	// istanbul ignore else */
 	if (isNode && typeof process.emit === 'function') {
 		// Returning falsy here means to call the default reportRejection API.
