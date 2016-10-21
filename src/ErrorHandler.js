@@ -5,41 +5,41 @@ const HANDLED_REJECTION = 'rejectionHandled'
 
 export default class ErrorHandler {
 	constructor (emitEvent, reportError) {
-		this.errors = []
+		this.rejections = []
 		this.emit = emitEvent
 		this.reportError = reportError
 	}
 
-	track (e) {
-		if (!this.emit(UNHANDLED_REJECTION, e, e.value)) {
+	track (rejected) {
+		if (!this.emit(UNHANDLED_REJECTION, rejected, rejected.value)) {
 			/* istanbul ignore else */
-			if (this.errors.length === 0) {
-				setTimeout(reportErrors, 1, this.reportError, this.errors)
+			if (this.rejections.length === 0) {
+				setTimeout(reportErrors, 1, this.reportError, this.rejections)
 			}
-			this.errors.push(e)
+			this.rejections.push(rejected)
 		}
 	}
 
-	untrack (e) {
-		silenceError(e)
-		this.emit(HANDLED_REJECTION, e)
+	untrack (rejected) {
+		silenceError(rejected)
+		this.emit(HANDLED_REJECTION, rejected)
 	}
 }
 
-function reportErrors (report, errors) {
+function reportErrors (report, rejections) {
 	try {
-		reportAll(errors, report)
+		reportAll(rejections, report)
 	} finally {
-		errors.length = 0
+		rejections.length = 0
 	}
 }
 
-function reportAll (errors, report) {
-	for (let i = 0; i < errors.length; ++i) {
-		const e = errors[i]
+function reportAll (rejections, report) {
+	for (let i = 0; i < rejections.length; ++i) {
+		const rejected = rejections[i]
 		/* istanbul ignore else */
-		if (!isHandled(e)) {
-			report(e)
+		if (!isHandled(rejected)) {
+			report(rejected)
 		}
 	}
 }

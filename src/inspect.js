@@ -50,9 +50,7 @@ export function silenceError (p) {
 // implements Action
 const silencer = {
 	fulfilled () {},
-	rejected: setHandled
-}
-
-function setHandled (rejected) {
-	rejected._state |= HANDLED
+	rejected (p) {
+		p._state |= HANDLED
+	}
 }
