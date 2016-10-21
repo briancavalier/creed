@@ -1,4 +1,5 @@
 import { Map } from './map'
+import tryCall from './tryCall'
 
 export default function (f, g, p, promise) {
 	p._when(new Bimap(f, g, promise))
@@ -12,11 +13,10 @@ class Bimap extends Map {
 	}
 
 	rejected (p) {
-		try {
-			const g = this.g
-			this.promise._reject(g(p.value))
-		} catch (e) {
-			this.promise._reject(e)
-		}
+		tryCall(this.g, p.value, handleMapRejected, this.promise)
 	}
+}
+
+function handleMapRejected (promise, result) {
+	promise._reject(result)
 }

@@ -1,4 +1,5 @@
 import Action from './Action'
+import tryCall from './tryCall'
 
 export default function then (f, r, p, promise) {
 	p._when(new Then(f, r, promise))
@@ -25,11 +26,12 @@ class Then extends Action {
 			this.promise._become(p)
 			return false
 		}
-		this.tryCall(f, p.value)
+		tryCall(f, p.value, handleThen, this.promise)
 		return true
 	}
-
-	handle (result) {
-		this.promise._resolve(result)
-	}
 }
+
+function handleThen (promise, result) {
+	promise._resolve(result)
+}
+
