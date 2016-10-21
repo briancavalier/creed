@@ -29,5 +29,4 @@ describe('bimap', () => {
     const p = reject('e')
     return assertSameRejected(p.bimap(a => f(g(a)), b => h(i(b))), p.bimap(g, i).bimap(f, h))
   })
-
 })
