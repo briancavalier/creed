@@ -19,7 +19,7 @@ describe('reject', () => {
 	it('ap should be identity', () => {
 		const p = reject(assert.ifError)
 		silenceError(p)
-		assert.strictEqual(p, p.ap(fulfill(true)))
+		assert.strictEqual(p, p.ap(fulfill()))
 	})
 
 	it('chain should be identity', () => {

@@ -228,22 +228,22 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const p = fulfill(f)
 				const q = fulfill(1)
-				resolve(p)
-				return assertSame(p.ap(q), promise.ap(q))
+				resolve(q)
+				return assertSame(q.ap(p), promise.ap(p))
 			})
 
 			it('should be identity for reject', () => {
 				const { resolve, promise } = future()
-				const p = silenced(reject(f))
+				const p = silenced(reject(1))
 				resolve(p)
-				assert.strictEqual(p, promise.ap(fulfill(1)))
+				assert.strictEqual(p, promise.ap(fulfill(f)))
 			})
 
 			it('should be identity for never', () => {
 				const { resolve, promise } = future()
 				const p = never()
 				resolve(p)
-				return assert.strictEqual(p, promise.ap(fulfill(1)))
+				return assert.strictEqual(p, promise.ap(fulfill(f)))
 			})
 		})
 
@@ -414,15 +414,15 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const p = fulfill(f)
 				const q = fulfill(1)
-				const res = promise.ap(q)
-				resolve(p)
-				return assertSame(p.ap(q), res)
+				const res = promise.ap(p)
+				resolve(q)
+				return assertSame(q.ap(p), res)
 			})
 
 			it('should behave like rejected for reject', () => {
 				const { resolve, promise } = future()
-				const p = silenced(reject(f))
-				const res = promise.ap(fulfill(1))
+				const p = silenced(reject(1))
+				const res = promise.ap(fulfill(f))
 				resolve(p)
 				return assertSame(p, res)
 			})

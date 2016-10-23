@@ -74,11 +74,10 @@ export class Future extends Core {
 		return n === this ? map(f, n, new Future()) : n.map(f)
 	}
 
-	// ap :: Promise e (a -> b) -> Promise e a -> Promise e b
-	ap (p) {
-		const n = this.near()
-		const pp = p.near()
-		return n === this ? this.chain(f => pp.map(f)) : n.ap(pp)
+	// ap :: Promise e a -> Promise e (a -> b) -> Promise e b
+	ap (pf) {
+		const npa = this.near()
+		return npa === this ? pf.chain(f => npa.map(f)) : npa.ap(pf)
 	}
 
 	// chain :: Promise e a -> (a -> Promise e b) -> Promise e b
@@ -206,8 +205,9 @@ class Fulfilled extends Core {
 		return map(f, this, new Future())
 	}
 
-	ap (p) {
-		return p.map(this.value)
+	ap (pf) {
+		const npf = pf.near()
+		return npf === pf ? pf.chain(f => this.map(f)) : this.ap(npf)
 	}
 
 	chain (f) {
