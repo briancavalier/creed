@@ -473,13 +473,13 @@ for the result.
 ```js
 import { resolve } from 'creed';
 
-resolve(x => x + 1)
-    .ap(resolve(123))
+resolve(123)
+    .ap(resolve(x => x + 1))
     .then(y => console.log(y)); //=> 124
 
-resolve(x => y => x+y)
-    .ap(resolve(1))
-    .ap(resolve(123))
+resolve(1)
+    .ap(resolve(123)
+        .ap(resolve(x => y => x + y)))
     .then(y => console.log(y)); //=> 124
 ```
 
