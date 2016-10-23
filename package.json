@@ -33,7 +33,8 @@
     "check-coverage": "istanbul check-coverage --statements 100 --branches 100 --lines 100 --functions 100 coverage/coverage*.json",
     "lint": "jsinspect src && eslint src",
     "pretest": "npm run lint",
-    "test": "istanbul cover node_modules/mocha/bin/_mocha",
+    "unit-test": "istanbul cover node_modules/mocha/bin/_mocha",
+    "test": "npm run unit-test",
     "posttest": "npm run test-aplus",
     "test-aplus": "promises-aplus-tests test/aplus.js --reporter dot"
   },
