@@ -1,19 +1,19 @@
 import { Map } from './map'
 import tryCall from './tryCall'
 
-export default function (f, g, p, promise) {
-	p._when(new Bimap(f, g, promise))
+export default function (r, f, p, promise) {
+	p._when(new Bimap(r, f, promise))
 	return promise
 }
 
 class Bimap extends Map {
-	constructor (f, g, promise) {
+	constructor (r, f, promise) {
 		super(f, promise)
-		this.g = g
+		this.r = r
 	}
 
 	rejected (p) {
-		tryCall(this.g, p.value, handleMapRejected, this.promise)
+		tryCall(this.r, p.value, handleMapRejected, this.promise)
 	}
 }
 

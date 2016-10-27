@@ -115,11 +115,11 @@ export class Future extends Core {
 		return n === this ? map(f, n, new Future()) : n.map(f)
 	}
 
-	bimap (f, r) {
+	bimap (r, f) {
 		const n = this.near()
 		return n === this
-			? bimap(f, r, n, new Future())
-			: n.bimap(f, r)
+			? bimap(r, f, n, new Future())
+			: n.bimap(r, f)
 	}
 
 	// ap :: Promise e (a -> b) -> Promise e a -> Promise e b
@@ -254,7 +254,7 @@ class Fulfilled extends Core {
 		return map(f, this, new Future())
 	}
 
-	bimap (f) {
+	bimap (_, f) {
 		return this.map(f)
 	}
 
@@ -317,8 +317,8 @@ class Rejected extends Core {
 		return this
 	}
 
-	bimap (_, r) {
-		return bimap(void 0, r, this, new Future())
+	bimap (r) {
+		return bimap(r, void 0, this, new Future())
 	}
 
 	ap () {
