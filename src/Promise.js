@@ -100,25 +100,25 @@ export class Future extends Core {
 	// then :: Promise e a -> (a -> b) -> (e -> b) -> Promise e b
 	then (f, r) {
 		const n = this.near()
-		return n === this ? then(f, r, n, new Future()) : n.then(f, r)
+		return n === this ? then(f, r, this, new Future()) : n.then(f, r)
 	}
 
 	// catch :: Promise e a -> (e -> b) -> Promise e b
 	catch (r) {
 		const n = this.near()
-		return n === this ? then(void 0, r, n, new Future()) : n.catch(r)
+		return n === this ? then(void 0, r, this, new Future()) : n.catch(r)
 	}
 
 	// map :: Promise e a -> (a -> b) -> Promise e b
 	map (f) {
 		const n = this.near()
-		return n === this ? map(f, n, new Future()) : n.map(f)
+		return n === this ? map(f, this, new Future()) : n.map(f)
 	}
 
 	bimap (r, f) {
 		const n = this.near()
 		return n === this
-			? bimap(r, f, n, new Future())
+			? bimap(r, f, this, new Future())
 			: n.bimap(r, f)
 	}
 
@@ -132,7 +132,7 @@ export class Future extends Core {
 	// chain :: Promise e a -> (a -> Promise e b) -> Promise e b
 	chain (f) {
 		const n = this.near()
-		return n === this ? chain(f, n, new Future()) : n.chain(f)
+		return n === this ? chain(f, this, new Future()) : n.chain(f)
 	}
 
 	// or :: Promise e a -> Promise e a -> Promise e a
