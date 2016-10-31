@@ -17,7 +17,7 @@ describe('fantasyland laws', () => {
     it('should satisfy composition', () => {
       const f = x => x + 'f'
       const g = x => x + 'g'
-      return Functor.composition(fulfill, assertSame, f, g, {})
+      return Functor.composition(fulfill, assertSame, f, g, 'x')
     })
   })
 
