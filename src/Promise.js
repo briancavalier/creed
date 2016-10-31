@@ -40,6 +40,14 @@ class Core {
 		return fulfill(x)
 	}
 
+	static [fl.empty] () {
+		return never()
+	}
+
+	static [fl.of] (x) {
+		return fulfill(x)
+	}
+
 	[fl.map] (f) {
 		return this.map(f)
 	}
