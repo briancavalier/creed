@@ -7,6 +7,9 @@ import * as Apply from 'fantasy-land/laws/apply'
 import * as Applicative from 'fantasy-land/laws/applicative'
 import * as Semigroup from 'fantasy-land/laws/semigroup'
 import * as Monoid from 'fantasy-land/laws/monoid'
+import fl from 'fantasy-land'
+
+const id = x => x
 
 describe('fantasyland laws', () => {
   describe('functor', () => {
@@ -19,11 +22,19 @@ describe('fantasyland laws', () => {
       const g = x => x + 'g'
       return Functor.composition(fulfill, assertSame, f, g, 'x')
     })
+
+    it('should be covered', () => {
+      return fulfill()[fl.map](id)
+    })
   })
 
   describe('apply', () => {
     it('should satisfy composition', () => {
       return Apply.composition(fulfill, assertSame, {})
+    })
+
+    it('should be covered', () => {
+      return fulfill()[fl.ap](fulfill(id))
     })
   })
 
@@ -39,17 +50,29 @@ describe('fantasyland laws', () => {
     it('should satisfy interchange', () => {
       return Applicative.interchange(Promise, assertSame, {})
     })
+
+    it('should be covered', () => {
+      return Promise[fl.of](undefined)
+    })
   })
 
   describe('chain', () => {
     it('should satisfy associativity', () => {
       return Chain.associativity(fulfill, assertSame, {})
     })
+
+    it('should be covered', () => {
+      return fulfill()[fl.chain](fulfill)
+    })
   })
 
   describe('semigroup', () => {
     it('should satisfy associativity', () => {
       return Semigroup.associativity(fulfill, assertSame, {})
+    })
+
+    it('should be covered', () => {
+      return fulfill()[fl.concat](fulfill())
     })
   })
 
@@ -60,6 +83,10 @@ describe('fantasyland laws', () => {
 
     it('should satisfy leftIdentity', () => {
       return Monoid.leftIdentity(Promise, assertSame, {})
+    })
+
+    it('should be covered', () => {
+      return Promise[fl.empty]().concat(fulfill())
     })
   })
 })
