@@ -3,10 +3,8 @@ env:
   - CXX=g++-4.8
 node_js:
   - '6'
-  - '5'
-  - '4'
 branches:
   only:
     - master
     - /^greenkeeper-.*$/
-after_script: "cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
+after_script: "npm run coverage"
