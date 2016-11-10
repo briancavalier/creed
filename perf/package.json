@@ -10,7 +10,8 @@
     "optimist": "~0.6.0",
     "rsvp": "^3.2.1",
     "text-table": "~0.2.0",
-    "when": "^3.7.7"
+    "when": "^3.7.7",
+    "zousan-plus": "^2.2.0"
   },
   "devDependencies": {},
   "scripts": {

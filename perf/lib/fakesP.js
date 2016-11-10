@@ -85,6 +85,9 @@ else if (global.useNative) {
 else if (global.useCreed) {
     var lifter = require('../..').fromNode;
 }
+else if (global.useZousan) {
+    var lifter = require('zousan-plus').promisifyFn;
+}
 else {
     var lifter = require('when/node').lift;
 }
