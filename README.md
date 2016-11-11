@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/briancavalier/creed](https://badges.gitter.im/briancavalier/creed.svg)](https://gitter.im/briancavalier/creed?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, [fantasy-land](https://github.com/fantasyland/fantasy-land).
+Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, [fantasy-land](#fantasy-land).
 
 Creed simplifies async by letting you write coroutines using ES2015 generators and promises, and encourages functional programming via fantasy-land.  It also makes uncaught errors obvious by default, and supports other ES2015 features such as iterables.
 
@@ -451,7 +451,6 @@ reject(new Error('oops!'))
 
 ### .map :: Promise e a &rarr; (a &rarr; b) &rarr; Promise e b
 
-[Fantasy-land Functor](https://github.com/fantasyland/fantasy-land#functor).
 Transform a promise's value by applying a function.  The return
 value of the function will be used verbatim, even if it is a promise.
 Returns a new promise for the transformed value.
@@ -466,7 +465,6 @@ resolve(1)
 
 ### .ap :: Promise e (a &rarr; b) &rarr; Promise e a &rarr; Promise e b
 
-[Fantasy-land Apply](https://github.com/fantasyland/fantasy-land#apply).
 Apply a promised function to a promised value.  Returns a new promise
 for the result.
 
@@ -485,7 +483,6 @@ resolve(x => y => x+y)
 
 ### .chain :: Promise e a &rarr; (a &rarr; Promise e b) &rarr; Promise e b
 
-[Fantasy-land Chain](https://github.com/fantasyland/fantasy-land#chain).
 Sequence async actions.  When a promise fulfills, run another
 async action and return a promise for its result.
 
@@ -498,7 +495,6 @@ profileText.then(text => console.log(text)); //=> <user profile text>
 
 ### .concat :: Promise e a &rarr; Promise e a &rarr; Promise e a
 
-[Fantasy-land Semigroup](https://github.com/fantasyland/fantasy-land#semigroup).
 Returns a promise equivalent to the *earlier* of two promises. Preference is given to the callee promise in the case that both promises have already settled.
 
 ```js
@@ -760,3 +756,16 @@ let NativePromise = shim();
 // Create a creed promise
 Promise.resolve(123);
 ```
+
+## Fantasy Land
+
+Creed implements Fantasy Land 2.0:
+
+* [Functor](https://github.com/fantasyland/fantasy-land#functor)
+* [Apply](https://github.com/fantasyland/fantasy-land#apply)
+* [Applicative](https://github.com/fantasyland/fantasy-land#applicative)
+* [Chain](https://github.com/fantasyland/fantasy-land#chain)
+* [Monad](https://github.com/fantasyland/fantasy-land#monad)
+* [Semigroup](https://github.com/fantasyland/fantasy-land#semigroup)
+* [Monoid](https://github.com/fantasyland/fantasy-land#monoid)
+
