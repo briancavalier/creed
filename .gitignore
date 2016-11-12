@@ -3,3 +3,4 @@ experiments/
 node_modules/
 coverage/
 perf/logs/
+.nyc_output/

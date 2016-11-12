@@ -13,6 +13,8 @@ import Race from './Race'
 import Merge from './Merge'
 import { resolveIterable, resultsArray } from './iterable'
 
+import fl from 'fantasy-land'
+
 const taskQueue = new TaskQueue()
 export { taskQueue }
 
@@ -25,7 +27,8 @@ const errorHandler = new ErrorHandler(makeEmitError(), e => {
 // ## Types
 // -------------------------------------------------------------
 
-// Internal base type to hold fantasy-land static constructors
+// Internal base type, provides fantasy-land namespace
+// and type representative
 class Core {
 	// empty :: Promise e a
 	static empty () {
@@ -35,6 +38,30 @@ class Core {
 	// of :: a -> Promise e a
 	static of (x) {
 		return fulfill(x)
+	}
+
+	static [fl.empty] () {
+		return never()
+	}
+
+	static [fl.of] (x) {
+		return fulfill(x)
+	}
+
+	[fl.map] (f) {
+		return this.map(f)
+	}
+
+	[fl.ap] (pf) {
+		return pf.ap(this)
+	}
+
+	[fl.chain] (f) {
+		return this.chain(f)
+	}
+
+	[fl.concat] (p) {
+		return this.concat(p)
 	}
 }
 
