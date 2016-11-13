@@ -493,17 +493,20 @@ let profileText = getUserProfileUrlFromDB(userId)
 profileText.then(text => console.log(text)); //=> <user profile text>
 ```
 
-### .concat :: Promise e a &rarr; Promise e a &rarr; Promise e a
+### .or :: Promise e a &rarr; Promise e a &rarr; Promise e a
+### (deprecated) .concat :: Promise e a &rarr; Promise e a &rarr; Promise e a
+
+**Note:** The name `concat` is deprecated, use `or` instead.
 
 Returns a promise equivalent to the *earlier* of two promises. Preference is given to the callee promise in the case that both promises have already settled.
 
 ```js
 import { delay, fulfill } from 'creed';
 
-delay(200, 'bar').concat(delay(100, 'foo'))
+delay(200, 'bar').or(delay(100, 'foo'))
     .then(x => console.log(x)); //=> 'foo'
 
-fulfill(123).concat(fulfill(456))
+fulfill(123).or(fulfill(456))
     .then(x => console.log(x)); //=> 123
 ```
 
