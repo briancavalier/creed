@@ -50,7 +50,7 @@
     "jsinspect": "^0.8.0",
     "mkdirp": "^0.5.1",
     "mocha": "^3.1.2",
-    "nyc": "^8.4.0",
+    "nyc": "^9.0.1",
     "promises-aplus-tests": "^2.1.1",
     "rollup": "^0.36.3",
     "rollup-plugin-buble": "^0.14.0",
