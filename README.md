@@ -609,7 +609,7 @@ Returns a promise equivalent to the input promise that *fulfills*
 earliest.  If all input promises reject, the returned promise rejects.
 
 If there are input promises that are already fulfilled or fulfill
-simultaneously, race prefers the one encountered first in the
+simultaneously, any prefers the one encountered first in the
 iteration order.
 
 Note the differences from `race()`.
