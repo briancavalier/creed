@@ -579,9 +579,12 @@ all(generator())
 ### race :: Iterable (Promise e a) &rarr; Promise e a
 
 Returns a promise equivalent to the input promise that *settles* earliest.
+
 If there are input promises that are already settled or settle
 simultaneously, race prefers the one encountered first in the
 iteration order.
+
+Note the differences from `any()`.
 
 **Note:** As per the ES6-spec, racing an empty iterable returns `never()`
 
@@ -605,16 +608,26 @@ isNever(race([])); //=> true
 Returns a promise equivalent to the input promise that *fulfills*
 earliest.  If all input promises reject, the returned promise rejects.
 
+If there are input promises that are already fulfilled or fulfill
+simultaneously, any prefers the one encountered first in the
+iteration order.
+
 Note the differences from `race()`.
 
 ```js
 import { any, resolve, reject, delay, isNever } from 'creed';
 
 any([delay(100, 123), resolve(456)])
-    .then(x => console.log(x)); //=> 123
+    .then(x => console.log(x)); //=> 456
 
 any([resolve(123), reject(456)])
     .then(x => console.log(x)); //=> 123
+
+any([reject(456), resolve(123)])
+    .then(x => console.log(x)); //=> 123
+
+any([delay(100, 123), reject(new Error('oops'))])
+    .catch(e => console.log(e)); //=> 123
 
 any([reject(new Error('foo')), reject(new Error('bar'))])
     .catch(e => console.log(e)); //=> [RangeError: No fulfilled promises in input]
