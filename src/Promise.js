@@ -63,6 +63,11 @@ class Core {
 	[fl.concat] (p) {
 		return this.concat(p)
 	}
+
+	// @deprecated The name concat is deprecated, use or() instead.
+	concat (b) {
+		return this.or(b)
+	}
 }
 
 // data Promise e a where
@@ -104,8 +109,8 @@ export class Future extends Core {
 	// ap :: Promise e (a -> b) -> Promise e a -> Promise e b
 	ap (p) {
 		const n = this.near()
-		const pp = p.near()
-		return n === this ? this.chain(f => pp.map(f)) : n.ap(pp)
+		const pn = p.near()
+		return n === this ? this.chain(f => pn.map(f)) : n.ap(pn)
 	}
 
 	// chain :: Promise e a -> (a -> Promise e b) -> Promise e b
@@ -114,15 +119,15 @@ export class Future extends Core {
 		return n === this ? chain(f, n, new Future()) : n.chain(f)
 	}
 
-	// concat :: Promise e a -> Promise e a -> Promise e a
-	concat (b) {
+	// or :: Promise e a -> Promise e a -> Promise e a
+	or (b) {
 		/* eslint complexity:[2,5] */
 		const n = this.near()
-		const bp = b.near()
+		const bn = b.near()
 
-		return isSettled(n) || isNever(bp) ? n
-			: isSettled(bp) || isNever(n) ? bp
-			: race([n, bp])
+		return isSettled(n) || isNever(bn) ? n
+			: isSettled(bn) || isNever(n) ? bn
+			: race([n, bn])
 	}
 
 	// toString :: Promise e a -> String
@@ -241,7 +246,7 @@ class Fulfilled extends Core {
 		return chain(f, this, new Future())
 	}
 
-	concat () {
+	or () {
 		return this
 	}
 
@@ -300,7 +305,7 @@ class Rejected extends Core {
 		return this
 	}
 
-	concat () {
+	or () {
 		return this
 	}
 
@@ -354,7 +359,7 @@ class Never extends Core {
 		return this
 	}
 
-	concat (b) {
+	or (b) {
 		return b
 	}
 
