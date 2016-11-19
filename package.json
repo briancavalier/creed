@@ -57,6 +57,6 @@
     "uglify-js": "^2.7.3"
   },
   "dependencies": {
-    "fantasy-land": "^2.0.0"
+    "fantasy-land": "^2.1.0"
   }
 }

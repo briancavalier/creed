@@ -1,5 +1,7 @@
 import { describe, it } from 'mocha'
+import assert from 'assert'
 import { fulfill, Promise } from '../src/main'
+import { isNever } from '../src/inspect'
 import { assertSame } from './lib/test-util'
 import * as Functor from 'fantasy-land/laws/functor'
 import * as Chain from 'fantasy-land/laws/chain'
@@ -7,86 +9,98 @@ import * as Apply from 'fantasy-land/laws/apply'
 import * as Applicative from 'fantasy-land/laws/applicative'
 import * as Semigroup from 'fantasy-land/laws/semigroup'
 import * as Monoid from 'fantasy-land/laws/monoid'
-import fl from 'fantasy-land'
+import * as Alt from 'fantasy-land/laws/alt'
+import * as Plus from 'fantasy-land/laws/plus'
+import * as Alternative from 'fantasy-land/laws/alternative'
 
-const id = x => x
+const assertIsNever = x => assert(isNever(x))
 
 describe('fantasyland laws', () => {
   describe('functor', () => {
     it('should satisfy identity', () => {
-      return Functor.identity(fulfill, assertSame, {})
+      return Functor.identity(fulfill)(assertSame)({})
     })
 
     it('should satisfy composition', () => {
       const f = x => x + 'f'
       const g = x => x + 'g'
-      return Functor.composition(fulfill, assertSame, f, g, 'x')
-    })
-
-    it('should be covered', () => {
-      return fulfill()[fl.map](id)
+      return Functor.composition(fulfill)(assertSame)(f)(g)('x')
     })
   })
 
   describe('apply', () => {
     it('should satisfy composition', () => {
-      return Apply.composition(fulfill, assertSame, {})
-    })
-
-    it('should be covered', () => {
-      return fulfill()[fl.ap](fulfill(id))
+      return Apply.composition(Promise)(assertSame)({})
     })
   })
 
   describe('applicative', () => {
     it('should satisfy identity', () => {
-      return Applicative.identity(Promise, assertSame, {})
+      return Applicative.identity(Promise)(assertSame)({})
     })
 
     it('should satisfy homomorphism', () => {
-      return Applicative.homomorphism(Promise, assertSame, {})
+      return Applicative.homomorphism(Promise)(assertSame)({})
     })
 
     it('should satisfy interchange', () => {
-      return Applicative.interchange(Promise, assertSame, {})
-    })
-
-    it('should be covered', () => {
-      return Promise[fl.of](undefined)
+      return Applicative.interchange(Promise)(assertSame)({})
     })
   })
 
   describe('chain', () => {
     it('should satisfy associativity', () => {
-      return Chain.associativity(fulfill, assertSame, {})
-    })
-
-    it('should be covered', () => {
-      return fulfill()[fl.chain](fulfill)
+      return Chain.associativity(Promise)(assertSame)({})
     })
   })
 
   describe('semigroup', () => {
     it('should satisfy associativity', () => {
-      return Semigroup.associativity(fulfill, assertSame, {})
-    })
-
-    it('should be covered', () => {
-      return fulfill()[fl.concat](fulfill())
+      return Semigroup.associativity(fulfill)(assertSame)({})
     })
   })
 
   describe('monoid', () => {
     it('should satisfy rightIdentity', () => {
-      return Monoid.rightIdentity(Promise, assertSame, {})
+      return Monoid.rightIdentity(Promise)(assertSame)({})
     })
 
     it('should satisfy leftIdentity', () => {
-      return Monoid.leftIdentity(Promise, assertSame, {})
+      return Monoid.leftIdentity(Promise)(assertSame)({})
+    })
+  })
+
+  describe('alt', () => {
+    it('should satisfy associativity', () => {
+      return Alt.associativity(assertSame)(fulfill(1))(fulfill(2))(fulfill(3))
     })
 
-    it('should be covered', () => {
-      return Promise[fl.empty]().concat(fulfill())
+    it('should satisfy distributivity', () => {
+      return Alt.distributivity(assertSame)(fulfill(1))(fulfill(-1))(x => x + 1)
+    })
+  })
+
+  describe('plus', () => {
+    it('should satisfy leftIdentity', () => {
+      return Plus.leftIdentity(Promise)(assertSame)(fulfill({}))
+    })
+
+    it('should satisfy rightIdentity', () => {
+      return Plus.rightIdentity(Promise)(assertSame)(fulfill({}))
+    })
+
+    it('should satisfy annihilation', () => {
+      return Plus.annihilation(Promise)(assertIsNever)(x => x + 1)
+    })
+  })
+
+  describe('alternative', () => {
+    it('should satisfy distributivity', () => {
+      return Alternative.distributivity(p => p.then(x => assert.strictEqual(1, x)))(fulfill(0))(fulfill(x => x + 1))(fulfill(x => x - 1))
+    })
+
+    it('should satisfy annihilation', () => {
+      return Plus.annihilation(Promise)(assertIsNever)(fulfill({}))
     })
   })
 })

@@ -64,6 +64,14 @@ class Core {
 		return this.concat(p)
 	}
 
+	[fl.alt] (p) {
+		return this.or(p)
+	}
+
+	static [fl.zero] () {
+		return never()
+	}
+
 	// @deprecated The name concat is deprecated, use or() instead.
 	concat (b) {
 		return this.or(b)
