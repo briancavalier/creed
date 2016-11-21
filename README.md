@@ -775,7 +775,7 @@ Promise.resolve(123);
 
 ## Fantasy Land
 
-Creed implements Fantasy Land 2.0:
+Creed implements Fantasy Land 2.1:
 
 * [Functor](https://github.com/fantasyland/fantasy-land#functor)
 * [Apply](https://github.com/fantasyland/fantasy-land#apply)
