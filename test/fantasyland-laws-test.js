@@ -1,9 +1,10 @@
 import { describe, it } from 'mocha'
 import assert from 'assert'
-import { fulfill, Promise } from '../src/main'
+import { fulfill, reject, Promise } from '../src/main'
 import { isNever } from '../src/inspect'
 import { assertSame } from './lib/test-util'
 import * as Functor from 'fantasy-land/laws/functor'
+import * as Bifunctor from 'fantasy-land/laws/bifunctor'
 import * as Chain from 'fantasy-land/laws/chain'
 import * as Apply from 'fantasy-land/laws/apply'
 import * as Applicative from 'fantasy-land/laws/applicative'
@@ -25,6 +26,24 @@ describe('fantasyland laws', () => {
       const f = x => x + 'f'
       const g = x => x + 'g'
       return Functor.composition(fulfill)(assertSame)(f)(g)('x')
+    })
+  })
+
+  describe('bifunctor', () => {
+    it('should satisfy identity for fulfill', () => {
+      return Bifunctor.identity(fulfill)(assertSame)({})
+    })
+
+    it('should satisfy identity for reject', () => {
+      return Bifunctor.identity(reject)(assertSame)({})
+    })
+
+    it('should satisfy composition for fulfill', () => {
+      return Bifunctor.composition(fulfill)(assertSame)({})
+    })
+
+    it('should satisfy composition for reject', () => {
+      return Bifunctor.composition(reject)(assertSame)(new Error())
     })
   })
 

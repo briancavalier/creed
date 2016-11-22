@@ -53,6 +53,10 @@ class Core {
 		return this.map(f)
 	}
 
+	[fl.bimap] (r, f) {
+		return this.bimap(r, f)
+	}
+
 	[fl.ap] (pf) {
 		return pf.ap(this)
 	}

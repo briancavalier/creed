@@ -797,6 +797,7 @@ Promise.resolve(123)
 Creed implements Fantasy Land 2.1:
 
 * [Functor](https://github.com/fantasyland/fantasy-land#functor)
+* [Bifunctor](https://github.com/fantasyland/fantasy-land#bifunctor)
 * [Apply](https://github.com/fantasyland/fantasy-land#apply)
 * [Applicative](https://github.com/fantasyland/fantasy-land#applicative)
 * [Alt](https://github.com/fantasyland/fantasy-land#alt)
