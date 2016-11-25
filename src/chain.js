@@ -1,4 +1,5 @@
 import Action from './Action'
+import tryCall from './tryCall'
 import maybeThenable from './maybeThenable'
 
 export default function (f, p, promise) {
@@ -13,14 +14,14 @@ class Chain extends Action {
 	}
 
 	fulfilled (p) {
-		this.tryCall(this.f, p.value)
+		tryCall(this.f, p.value, handleChain, this.promise)
+	}
+}
+
+function handleChain (promise, result) {
+	if (!(maybeThenable(result) && typeof result.then === 'function')) {
+		promise._reject(new TypeError('f must return a promise'))
 	}
 
-	handle (y) {
-		if (!(maybeThenable(y) && typeof y.then === 'function')) {
-			this.promise._reject(new TypeError('f must return a promise'))
-		}
-
-		this.promise._resolve(y)
-	}
+	promise._resolve(result)
 }

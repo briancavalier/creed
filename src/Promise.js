@@ -7,6 +7,7 @@ import { isNever, isSettled } from './inspect'
 
 import then from './then'
 import map from './map'
+import bimap from './bimap'
 import chain from './chain'
 
 import Race from './Race'
@@ -50,6 +51,10 @@ class Core {
 
 	[fl.map] (f) {
 		return this.map(f)
+	}
+
+	[fl.bimap] (r, f) {
+		return this.bimap(r, f)
 	}
 
 	[fl.ap] (pf) {
@@ -99,19 +104,26 @@ export class Future extends Core {
 	// then :: Promise e a -> (a -> b) -> (e -> b) -> Promise e b
 	then (f, r) {
 		const n = this.near()
-		return n === this ? then(f, r, n, new Future()) : n.then(f, r)
+		return n === this ? then(f, r, this, new Future()) : n.then(f, r)
 	}
 
 	// catch :: Promise e a -> (e -> b) -> Promise e b
 	catch (r) {
 		const n = this.near()
-		return n === this ? then(void 0, r, n, new Future()) : n.catch(r)
+		return n === this ? then(void 0, r, this, new Future()) : n.catch(r)
 	}
 
 	// map :: Promise e a -> (a -> b) -> Promise e b
 	map (f) {
 		const n = this.near()
-		return n === this ? map(f, n, new Future()) : n.map(f)
+		return n === this ? map(f, this, new Future()) : n.map(f)
+	}
+
+	bimap (r, f) {
+		const n = this.near()
+		return n === this
+			? bimap(r, f, this, new Future())
+			: n.bimap(r, f)
 	}
 
 	// ap :: Promise e (a -> b) -> Promise e a -> Promise e b
@@ -124,7 +136,7 @@ export class Future extends Core {
 	// chain :: Promise e a -> (a -> Promise e b) -> Promise e b
 	chain (f) {
 		const n = this.near()
-		return n === this ? chain(f, n, new Future()) : n.chain(f)
+		return n === this ? chain(f, this, new Future()) : n.chain(f)
 	}
 
 	// or :: Promise e a -> Promise e a -> Promise e a
@@ -246,6 +258,10 @@ class Fulfilled extends Core {
 		return map(f, this, new Future())
 	}
 
+	bimap (_, f) {
+		return this.map(f)
+	}
+
 	ap (p) {
 		return p.map(this.value)
 	}
@@ -305,6 +321,10 @@ class Rejected extends Core {
 		return this
 	}
 
+	bimap (r) {
+		return bimap(r, void 0, this, new Future())
+	}
+
 	ap () {
 		return this
 	}
@@ -356,6 +376,10 @@ class Never extends Core {
 	}
 
 	map () {
+		return this
+	}
+
+	bimap () {
 		return this
 	}
 
