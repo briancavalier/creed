@@ -6,8 +6,7 @@
   "module": "dist/creed.es.js",
   "jsnext:main": "dist/creed.es.js",
   "files": [
-    "dist/creed.js",
-    "dist/creed.es.js"
+    "dist"
   ],
   "repository": {
     "type": "git",
