@@ -1,9 +1,17 @@
 import buble from 'rollup-plugin-buble'
+import node from 'rollup-plugin-node-resolve'
+import commonjs from 'rollup-plugin-commonjs'
 const pkg = require('./package.json')
 
 export default {
   entry: 'src/main.js',
-  plugins: [buble()],
+  plugins: [
+    buble(),
+    node(),
+    commonjs({
+      include: 'node_modules/**'
+    })
+  ],
   targets: [
     {
       format: 'umd',
