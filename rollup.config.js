@@ -8,11 +8,13 @@ export default {
     {
       format: 'umd',
       moduleName: 'creed',
-      dest: pkg['main']
+      dest: pkg['main'],
+      sourceMap: true
     },
     {
       format: 'es',
-      dest: pkg['jsnext:main']
+      dest: pkg['jsnext:main'],
+      sourceMap: true
     }
   ]
 }
