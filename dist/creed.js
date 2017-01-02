@@ -1,10 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('fantasy-land')) :
-    typeof define === 'function' && define.amd ? define(['exports', 'fantasy-land'], factory) :
-    (factory((global.creed = global.creed || {}),global.fl));
-}(this, (function (exports,fl) { 'use strict';
-
-fl = 'default' in fl ? fl['default'] : fl;
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+    typeof define === 'function' && define.amd ? define(['exports'], factory) :
+    (factory((global.creed = global.creed || {})));
+}(this, (function (exports) { 'use strict';
 
 /* eslint no-multi-spaces: 0 */
 var PENDING   = 1 << 0;
@@ -430,6 +428,44 @@ var Indexed = (function (Action$$1) {
 	return Indexed;
 }(Action));
 
+function createCommonjsModule(fn, module) {
+	return module = { exports: {} }, fn(module, module.exports), module.exports;
+}
+
+var index = createCommonjsModule(function (module) {
+(function() {
+
+  'use strict';
+
+  /* eslint comma-dangle: ["off"], no-var: ["off"], strict: ["error", "function"] */
+  /* global self */
+
+  var mapping = {
+    equals: 'fantasy-land/equals',
+    concat: 'fantasy-land/concat',
+    empty: 'fantasy-land/empty',
+    map: 'fantasy-land/map',
+    ap: 'fantasy-land/ap',
+    of: 'fantasy-land/of',
+    alt: 'fantasy-land/alt',
+    zero: 'fantasy-land/zero',
+    reduce: 'fantasy-land/reduce',
+    traverse: 'fantasy-land/traverse',
+    chain: 'fantasy-land/chain',
+    chainRec: 'fantasy-land/chainRec',
+    extend: 'fantasy-land/extend',
+    extract: 'fantasy-land/extract',
+    bimap: 'fantasy-land/bimap',
+    promap: 'fantasy-land/promap'
+  };
+
+  {
+    module.exports = mapping;
+  }
+
+}());
+});
+
 var taskQueue = new TaskQueue();
 /* istanbul ignore next */
 var errorHandler = new ErrorHandler(makeEmitError(), function (e) {
@@ -453,39 +489,39 @@ Core.of = function of (x) {
 	return fulfill(x)
 };
 
-Core[fl.empty] = function () {
+Core[index.empty] = function () {
 	return never()
 };
 
-Core[fl.of] = function (x) {
+Core[index.of] = function (x) {
 	return fulfill(x)
 };
 
-Core.prototype[fl.map] = function (f) {
+Core.prototype[index.map] = function (f) {
 	return this.map(f)
 };
 
-Core.prototype[fl.bimap] = function (r, f) {
+Core.prototype[index.bimap] = function (r, f) {
 	return this.bimap(r, f)
 };
 
-Core.prototype[fl.ap] = function (pf) {
+Core.prototype[index.ap] = function (pf) {
 	return pf.ap(this)
 };
 
-Core.prototype[fl.chain] = function (f) {
+Core.prototype[index.chain] = function (f) {
 	return this.chain(f)
 };
 
-Core.prototype[fl.concat] = function (p) {
+Core.prototype[index.concat] = function (p) {
 	return this.concat(p)
 };
 
-Core.prototype[fl.alt] = function (p) {
+Core.prototype[index.alt] = function (p) {
 	return this.or(p)
 };
 
-Core[fl.zero] = function () {
+Core[index.zero] = function () {
 	return never()
 };
 
