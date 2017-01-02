@@ -283,6 +283,88 @@ function handleThen (promise, result) {
 	promise._resolve(result);
 }
 
+var map = function (f, p, promise) {
+	p._when(new Map(f, promise));
+	return promise
+};
+
+var Map = (function (Action$$1) {
+	function Map (f, promise) {
+		Action$$1.call(this, promise);
+		this.f = f;
+	}
+
+	if ( Action$$1 ) Map.__proto__ = Action$$1;
+	Map.prototype = Object.create( Action$$1 && Action$$1.prototype );
+	Map.prototype.constructor = Map;
+
+	Map.prototype.fulfilled = function fulfilled (p) {
+		tryCall(this.f, p.value, handleMap, this.promise);
+	};
+
+	return Map;
+}(Action));
+
+function handleMap (promise, result) {
+	promise._fulfill(result);
+}
+
+var bimap = function (r, f, p, promise) {
+	p._when(new Bimap(r, f, promise));
+	return promise
+};
+
+var Bimap = (function (Map$$1) {
+	function Bimap (r, f, promise) {
+		Map$$1.call(this, f, promise);
+		this.r = r;
+	}
+
+	if ( Map$$1 ) Bimap.__proto__ = Map$$1;
+	Bimap.prototype = Object.create( Map$$1 && Map$$1.prototype );
+	Bimap.prototype.constructor = Bimap;
+
+	Bimap.prototype.rejected = function rejected (p) {
+		tryCall(this.r, p.value, handleMapRejected, this.promise);
+	};
+
+	return Bimap;
+}(Map));
+
+function handleMapRejected (promise, result) {
+	promise._reject(result);
+}
+
+var chain = function (f, p, promise) {
+	p._when(new Chain(f, promise));
+	return promise
+};
+
+var Chain = (function (Action$$1) {
+	function Chain (f, promise) {
+		Action$$1.call(this, promise);
+		this.f = f;
+	}
+
+	if ( Action$$1 ) Chain.__proto__ = Action$$1;
+	Chain.prototype = Object.create( Action$$1 && Action$$1.prototype );
+	Chain.prototype.constructor = Chain;
+
+	Chain.prototype.fulfilled = function fulfilled (p) {
+		tryCall(this.f, p.value, handleChain, this.promise);
+	};
+
+	return Chain;
+}(Action));
+
+function handleChain (promise, result) {
+	if (!(maybeThenable(result) && typeof result.then === 'function')) {
+		promise._reject(new TypeError('f must return a promise'));
+	}
+
+	promise._resolve(result);
+}
+
 var Race = function Race (never) {
 	this.never = never;
 };
@@ -453,8 +535,10 @@ var index = createCommonjsModule(function (module) {
     promap: 'fantasy-land/promap'
   };
 
-  {
+  if ('object' === 'object' && 'object' === 'object') {
     module.exports = mapping;
+  } else {
+    self.FantasyLand = mapping;
   }
 
 }());
@@ -547,9 +631,9 @@ var Future = (function (Core) {
 	// then :: Promise e a -> (a -> b) -> Promise e b
 	// then :: Promise e a -> () -> (e -> b) -> Promise e b
 	// then :: Promise e a -> (a -> b) -> (e -> b) -> Promise e b
-	Future.prototype.then = function then$$1 (f, r) {
+	Future.prototype.then = function then$1 (f, r) {
 		var n = this.near();
-		return n === this ? then$$1(f, r, this, new Future()) : n.then(f, r)
+		return n === this ? then(f, r, this, new Future()) : n.then(f, r)
 	};
 
 	// catch :: Promise e a -> (e -> b) -> Promise e b
@@ -559,15 +643,15 @@ var Future = (function (Core) {
 	};
 
 	// map :: Promise e a -> (a -> b) -> Promise e b
-	Future.prototype.map = function map$$1 (f) {
+	Future.prototype.map = function map$1 (f) {
 		var n = this.near();
-		return n === this ? map$$1(f, this, new Future()) : n.map(f)
+		return n === this ? map(f, this, new Future()) : n.map(f)
 	};
 
-	Future.prototype.bimap = function bimap$$1 (r, f) {
+	Future.prototype.bimap = function bimap$1 (r, f) {
 		var n = this.near();
 		return n === this
-			? bimap$$1(r, f, this, new Future())
+			? bimap(r, f, this, new Future())
 			: n.bimap(r, f)
 	};
 
@@ -579,9 +663,9 @@ var Future = (function (Core) {
 	};
 
 	// chain :: Promise e a -> (a -> Promise e b) -> Promise e b
-	Future.prototype.chain = function chain$$1 (f) {
+	Future.prototype.chain = function chain$1 (f) {
 		var n = this.near();
-		return n === this ? chain$$1(f, this, new Future()) : n.chain(f)
+		return n === this ? chain(f, this, new Future()) : n.chain(f)
 	};
 
 	// or :: Promise e a -> Promise e a -> Promise e a
@@ -699,19 +783,19 @@ var Fulfilled = (function (Core) {
 	Fulfilled.prototype = Object.create( Core && Core.prototype );
 	Fulfilled.prototype.constructor = Fulfilled;
 
-	Fulfilled.prototype.then = function then$$1 (f) {
-		return typeof f === 'function' ? then$$1(f, void 0, this, new Future()) : this
+	Fulfilled.prototype.then = function then$2 (f) {
+		return typeof f === 'function' ? then(f, void 0, this, new Future()) : this
 	};
 
 	Fulfilled.prototype.catch = function catch$2 () {
 		return this
 	};
 
-	Fulfilled.prototype.map = function map$$1 (f) {
-		return map$$1(f, this, new Future())
+	Fulfilled.prototype.map = function map$2 (f) {
+		return map(f, this, new Future())
 	};
 
-	Fulfilled.prototype.bimap = function bimap$$1 (_, f) {
+	Fulfilled.prototype.bimap = function bimap$2 (_, f) {
 		return this.map(f)
 	};
 
@@ -719,8 +803,8 @@ var Fulfilled = (function (Core) {
 		return p.map(this.value)
 	};
 
-	Fulfilled.prototype.chain = function chain$$1 (f) {
-		return chain$$1(f, this, new Future())
+	Fulfilled.prototype.chain = function chain$2 (f) {
+		return chain(f, this, new Future())
 	};
 
 	Fulfilled.prototype.or = function or () {
@@ -768,7 +852,7 @@ var Rejected = (function (Core) {
 	Rejected.prototype = Object.create( Core && Core.prototype );
 	Rejected.prototype.constructor = Rejected;
 
-	Rejected.prototype.then = function then$$1 (_, r) {
+	Rejected.prototype.then = function then$3 (_, r) {
 		return typeof r === 'function' ? this.catch(r) : this
 	};
 
@@ -776,19 +860,19 @@ var Rejected = (function (Core) {
 		return then(void 0, r, this, new Future())
 	};
 
-	Rejected.prototype.map = function map$$1 () {
+	Rejected.prototype.map = function map$3 () {
 		return this
 	};
 
-	Rejected.prototype.bimap = function bimap$$1 (r) {
-		return bimap$$1(r, void 0, this, new Future())
+	Rejected.prototype.bimap = function bimap$3 (r) {
+		return bimap(r, void 0, this, new Future())
 	};
 
 	Rejected.prototype.ap = function ap () {
 		return this
 	};
 
-	Rejected.prototype.chain = function chain$$1 () {
+	Rejected.prototype.chain = function chain$3 () {
 		return this
 	};
 
@@ -836,7 +920,7 @@ var Never = (function (Core) {
 	Never.prototype = Object.create( Core && Core.prototype );
 	Never.prototype.constructor = Never;
 
-	Never.prototype.then = function then$$1 () {
+	Never.prototype.then = function then$4 () {
 		return this
 	};
 
@@ -844,11 +928,11 @@ var Never = (function (Core) {
 		return this
 	};
 
-	Never.prototype.map = function map$$1 () {
+	Never.prototype.map = function map$4 () {
 		return this
 	};
 
-	Never.prototype.bimap = function bimap$$1 () {
+	Never.prototype.bimap = function bimap$4 () {
 		return this
 	};
 
@@ -856,7 +940,7 @@ var Never = (function (Core) {
 		return this
 	};
 
-	Never.prototype.chain = function chain$$1 () {
+	Never.prototype.chain = function chain$4 () {
 		return this
 	};
 
@@ -1374,7 +1458,7 @@ function settle (promises) {
 // -------------------------------------------------------------
 
 // merge :: (...* -> b) -> ...Promise e a -> Promise e b
-function merge (f) {
+function merge$1$1 (f) {
 	var args = [], len = arguments.length - 1;
 	while ( len-- > 0 ) args[ len ] = arguments[ len + 1 ];
 
@@ -1393,7 +1477,7 @@ var MergeHandler = function MergeHandler (f, c) {
 	this.args = void 0;
 };
 
-MergeHandler.prototype.merge = function merge (promise, args) {
+MergeHandler.prototype.merge = function merge$1 (promise, args) {
 	this.promise = promise;
 	this.args = args;
 	taskQueue.add(this);
@@ -1460,5 +1544,5 @@ if (typeof Promise !== 'function') {
 	shim();
 }
 
-export { resolve, reject, future, never, fulfill, all, race, isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason, coroutine, fromNode, runNode, runPromise, delay, timeout, any, settle, merge, shim, CreedPromise as Promise };
+export { resolve, reject, future, never, fulfill, all, race, isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason, coroutine, fromNode, runNode, runPromise, delay, timeout, any, settle, merge$1$1 as merge, shim, CreedPromise as Promise };
 //# sourceMappingURL=creed.es.js.map
