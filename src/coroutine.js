@@ -1,41 +1,47 @@
-'use strict';
+import Action from './Action'
 
-export default function (refFor, iterator, promise) {
-    coStep(refFor, iterator.next, void 0, iterator, promise);
-    return promise;
+export default function (resolve, iterator, promise) {
+	new Coroutine(resolve, iterator, promise).run()
+	return promise
 }
 
-function coStep(refFor, continuation, x, iterator, promise) {
-    try {
-        handle(refFor, continuation.call(iterator, x), iterator, promise);
-    } catch (e) {
-        promise._reject(e);
-    }
-}
+class Coroutine extends Action {
+	constructor (resolve, iterator, promise) {
+		super(promise)
+		this.resolve = resolve
+		this.generator = iterator
+	}
 
-function handle(refFor, result, iterator, promise) {
-    if (result.done) {
-        return promise._resolve(result.value);
-    }
+	run () {
+		this.tryStep(this.generator.next, void 0)
+	}
 
-    refFor(result.value)._runAction(new Next(refFor, iterator, promise));
-}
+	tryStep (resume, x) {
+		let result
+		// test if `resume` (and only it) throws
+		try {
+			result = resume.call(this.generator, x)
+		} catch (e) {
+			this.promise._reject(e)
+			return
+		} // else
+		this.handle(result)
+	}
 
-class Next {
-    constructor(refFor, iterator, promise) {
-        this.refFor = refFor;
-        this.iterator = iterator;
-        this.promise = promise;
-    }
+	handle (result) {
+		if (result.done) {
+			return this.promise._resolve(result.value)
+		}
 
-    fulfilled(ref) {
-        let iterator = this.iterator;
-        coStep(this.refFor, iterator.next, ref.value, iterator, this.promise);
-    }
+		this.resolve(result.value)._when(this)
+	}
 
-    rejected(ref) {
-        let iterator = this.iterator;
-        coStep(this.refFor, iterator.throw, ref.value, iterator, this.promise);
-        return true;
-    }
+	fulfilled (ref) {
+		this.tryStep(this.generator.next, ref.value)
+	}
+
+	rejected (ref) {
+		this.tryStep(this.generator.throw, ref.value)
+		return true
+	}
 }

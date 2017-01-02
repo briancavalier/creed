@@ -1,80 +1,79 @@
-import ErrorHandler from '../src/ErrorHandler';
-import assert from 'assert';
-import { isHandled } from '../src/inspect';
-import { HANDLED } from '../src/state';
+import { describe, it } from 'mocha'
+import ErrorHandler from '../src/ErrorHandler'
+import assert from 'assert'
+import { HANDLED } from '../src/state'
 
-function fakeError(value) {
-    return {
-        value: value,
-        _state: 0,
-        state() { return this._state; },
-        _runAction() { this._state |= HANDLED } };
+function fakeError (value) {
+	return {
+		value: value,
+		_state: 0,
+		state () { return this._state },
+		_runAction () { this._state |= HANDLED }
+	}
 }
 
 describe('ErrorHandler', () => {
+	describe('track', () => {
+		it('should emit event immediately', () => {
+			const value = {}
+			const expected = fakeError(value)
+			function fail (e) {
+				assert.fail(e, expected, 'should not call reportError')
+			}
 
-    describe('track', () => {
-        it('should emit event immediately', () => {
-            let value = {};
-            let expected = fakeError(value);
-            function fail(e) {
-                assert.fail(e, expected, 'should not call reportError');
-            }
+			function verify (event, e, error) {
+				assert.strictEqual(e, expected)
+				assert.strictEqual(error, value)
+				return true
+			}
 
-            function verify(event, e, error) {
-                assert.strictEqual(e, expected);
-                assert.strictEqual(error, value);
-                return true;
-            }
+			const eh = new ErrorHandler(verify, fail)
+			eh.track(expected)
+		})
 
-            let eh = new ErrorHandler(verify, fail);
-            eh.track(expected);
-        });
+		it('should report error later', done => {
+			const value = {}
+			const expected = fakeError(value)
+			function verify (e) {
+				assert.strictEqual(e, expected)
+				assert.strictEqual(e.value, value)
+				done()
+			}
 
-        it('should report error later', done => {
-            let value = {};
-            let expected = fakeError(value);
-            function verify(e) {
-                assert.strictEqual(e, expected);
-                assert.strictEqual(e.value, value);
-                done();
-            }
+			const eh = new ErrorHandler(() => false, verify)
+			eh.track(expected)
+		})
+	})
 
-            let eh = new ErrorHandler(() => false, verify);
-            eh.track(expected);
-        });
-    });
+	describe('untrack', () => {
+		it('should emit event immediately', () => {
+			const value = {}
+			const expected = fakeError(value)
+			function fail (e) {
+				assert.fail(e, expected, 'should not call reportError')
+			}
 
-    describe('untrack', () => {
-        it('should emit event immediately', () => {
-            let value = {};
-            let expected = fakeError(value);
-            function fail(e) {
-                assert.fail(e, expected, 'should not call reportError');
-            }
+			function verify (event, e) {
+				assert.strictEqual(e, expected)
+				assert.strictEqual(e.value, value)
+				return true
+			}
 
-            function verify(event, e) {
-                assert.strictEqual(e, expected);
-                assert.strictEqual(e.value, value);
-                return true;
-            }
+			const eh = new ErrorHandler(verify, fail)
+			eh.untrack(expected)
+		})
 
-            let eh = new ErrorHandler(verify, fail);
-            eh.untrack(expected);
-        });
+		it('should silence error', () => {
+			const value = {}
+			const expected = fakeError(value)
+			function fail (e) {
+				assert.fail(e, expected, 'should not call reportError')
+			}
 
-        it('should silence error', () => {
-            let value = {};
-            let expected = fakeError(value);
-            function fail(e) {
-                assert.fail(e, expected, 'should not call reportError');
-            }
+			const eh = new ErrorHandler(() => true, fail)
+			eh.untrack(expected)
 
-            let eh = new ErrorHandler(() => true, fail);
-            eh.untrack(expected);
-
-            assert.equal(expected.state(), HANDLED);
-        });
-    });
-
-});
+			assert.equal(expected.state(), HANDLED)
+		})
+	})
+})

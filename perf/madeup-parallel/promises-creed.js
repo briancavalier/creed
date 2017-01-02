@@ -3,9 +3,8 @@ global.useQ = false;
 global.useWhen = false;
 
 global.useCreed = true;
-global.parallelQueries = 25;
 
-var creed = require('../../dist/creed');
+var creed = require('../..');
 
 require('../lib/fakesP');
 

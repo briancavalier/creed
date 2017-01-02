@@ -1,73 +1,80 @@
-import { isFulfilled, isRejected, silenceError } from './inspect';
-import maybeThenable from './maybeThenable';
+import { isFulfilled, isRejected, silenceError } from './inspect'
+import Action from './Action'
+import maybeThenable from './maybeThenable'
 
-export function resultsArray(iterable) {
-    return Array.isArray(iterable) ? new Array(iterable.length) : [];
+export function resultsArray (iterable) {
+	return Array.isArray(iterable) ? new Array(iterable.length) : []
 }
 
-export function resolveIterable(resolve, itemHandler, promises, promise) {
-    let run = Array.isArray(promises) ? runArray : runIterable;
-    try {
-        run(resolve, itemHandler, promises, promise);
-    } catch (e) {
-        promise._reject(e);
-    }
-    return promise.near();
+export function resolveIterable (resolve, handler, promises, promise) {
+	const run = Array.isArray(promises) ? runArray : runIterable
+	try {
+		run(resolve, handler, promises, promise)
+	} catch (e) {
+		promise._reject(e)
+	}
+	return promise.near()
 }
 
-function runArray(resolve, itemHandler, promises, promise) {
-    let i = 0;
+function runArray (resolve, handler, promises, promise) {
+	let i = 0
 
-    for (; i < promises.length; ++i) {
-        handleItem(resolve, itemHandler, promises[i], i, promise);
-    }
+	for (; i < promises.length; ++i) {
+		handleItem(resolve, handler, promises[i], i, promise)
+	}
 
-    itemHandler.complete(i, promise);
+	handler.complete(i, promise)
 }
 
-function runIterable(resolve, itemHandler, promises, promise) {
-    let i = 0;
+function runIterable (resolve, handler, promises, promise) {
+	let i = 0
+	const iter = promises[Symbol.iterator]()
 
-    for (let x of promises) {
-        handleItem(resolve, itemHandler, x, i++, promise);
-    }
+	while (true) {
+		const step = iter.next()
+		if (step.done) {
+			break
+		}
+		handleItem(resolve, handler, step.value, i++, promise)
+	}
 
-    itemHandler.complete(i, promise);
+	handler.complete(i, promise)
 }
 
-function handleItem(resolve, itemHandler, x, i, promise) {
-    /*eslint complexity:[1,6]*/
-    if (maybeThenable(x)) {
-        let p = resolve(x);
+function handleItem (resolve, handler, x, i, promise) {
+	/* eslint complexity:[1,6] */
+	if (!maybeThenable(x)) {
+		handler.valueAt(x, i, promise)
+		return
+	}
 
-        if (promise._isResolved()) {
-            if (!isFulfilled(p)) {
-                silenceError(p);
-            }
-        } else if (isFulfilled(p)) {
-            itemHandler.fulfillAt(p, i, promise);
-        } else if (isRejected(p)) {
-            itemHandler.rejectAt(p, i, promise);
-        } else {
-            p._runAction(new SettleAt(itemHandler, i, promise));
-        }
-    } else {
-        itemHandler.valueAt(x, i, promise);
-    }
+	const p = resolve(x)
+
+	if (promise._isResolved()) {
+		if (!isFulfilled(p)) {
+			silenceError(p)
+		}
+	} else if (isFulfilled(p)) {
+		handler.fulfillAt(p, i, promise)
+	} else if (isRejected(p)) {
+		handler.rejectAt(p, i, promise)
+	} else {
+		p._runAction(new Indexed(handler, i, promise))
+	}
 }
 
-class SettleAt {
-    constructor(handler, index, promise) {
-        this.handler = handler;
-        this.index = index;
-        this.promise = promise;
-    }
+class Indexed extends Action {
+	constructor (handler, i, promise) {
+		super(promise)
+		this.i = i
+		this.handler = handler
+	}
 
-    fulfilled(p) {
-        this.handler.fulfillAt(p, this.index, this.promise);
-    }
+	fulfilled (p) {
+		this.handler.fulfillAt(p, this.i, this.promise)
+	}
 
-    rejected(p) {
-        return this.handler.rejectAt(p, this.index, this.promise);
-    }
+	rejected (p) {
+		return this.handler.rejectAt(p, this.i, this.promise)
+	}
 }

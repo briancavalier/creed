@@ -1,31 +1,29 @@
-'use strict';
-
-import TimeoutError from './TimeoutError';
+import Action from './Action'
+import TimeoutError from './TimeoutError'
 
 export default function (ms, p, promise) {
-    let timer = setTimeout(rejectOnTimeout, ms, promise);
-    p._runAction(new Timeout(timer, promise));
-    return promise;
+	const timer = setTimeout(rejectOnTimeout, ms, promise)
+	p._runAction(new Timeout(timer, promise))
+	return promise
 }
 
-class Timeout {
-    constructor(timer, promise) {
-        this.timer = timer;
-        this.promise = promise;
-    }
+class Timeout extends Action {
+	constructor (timer, promise) {
+		super(promise)
+		this.timer = timer
+	}
 
-    fulfilled(p) {
-        clearTimeout(this.timer);
-        this.promise._become(p);
-    }
+	fulfilled (p) {
+		clearTimeout(this.timer)
+		this.promise._become(p)
+	}
 
-    rejected(p) {
-        clearTimeout(this.timer);
-        this.promise._become(p);
-        return false;
-    }
+	rejected (p) {
+		clearTimeout(this.timer)
+		return super.rejected(p)
+	}
 }
 
-function rejectOnTimeout(promise) {
-    promise._reject(new TimeoutError('promise timeout'));
+function rejectOnTimeout (promise) {
+	promise._reject(new TimeoutError('promise timeout'))
 }

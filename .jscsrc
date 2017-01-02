@@ -2,6 +2,8 @@
   "preset": "crockford",
   "esnext": true,
   "disallowDanglingUnderscores": null,
+  "validateIndentation": "\t",
   "requireMultipleVarDecl": null,
-  "requireSemicolons": true
+  "requireSemicolons": true,
+  "requireSpacesInAnonymousFunctionExpression": false
 }
