@@ -41,7 +41,7 @@
     "assert": "^1.3.0",
     "babel-eslint": "^7.0.0",
     "buba": "^4.0.1",
-    "buble": "^0.14.3",
+    "buble": "^0.15.2",
     "coveralls": "^2.11.14",
     "eslint": "^3.8.1",
     "eslint-config-standard": "^6.2.0",
