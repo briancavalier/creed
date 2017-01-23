@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import assert from 'assert'
+import { eq, is, fail } from '@briancavalier/assert'
 import { fulfill, reject, future, delay, never } from '../src/main'
 import { assertSame, assertSameRejected } from './lib/test-util'
 
@@ -34,15 +34,15 @@ describe('bimap', () => {
   it('should map future fulfilled value', () => {
     const { resolve, promise } = future()
     resolve(delay(1, 1))
-    return promise.bimap(assert.ifError, x => x + 1)
-      .then(x => assert.strictEqual(x, 2))
+    return promise.bimap(fail, x => x + 1)
+      .then(eq(2))
   })
 
   it('should map future rejected value', () => {
     const { resolve, promise } = future()
     resolve(delay(1, 1).then(reject))
     return promise.bimap(x => x + 1, id)
-      .then(assert.ifError, x => assert.strictEqual(x, 2))
+      .then(fail, eq(2))
   })
 
   it('should reject if f throws', () => {
@@ -50,27 +50,27 @@ describe('bimap', () => {
     const expected = {}
     const fail = {}
     return p.bimap(e => fail, () => { throw expected })
-      .then(assert.ifError, x => assert.strictEqual(expected, x))
+      .then(fail, is(expected))
   })
 
   it('should reject if r throws', () => {
     const p = reject()
     const expected = {}
     return p.bimap(() => { throw expected }, id)
-      .then(assert.ifError, x => assert.strictEqual(expected, x))
+      .then(fail, is(expected))
   })
 
   it('should fulfill with returned promise verbatim', () => {
     const p = fulfill()
-    const expected = never()
-    return p.bimap(assert.ifError, () => expected)
-      .then(x => assert.strictEqual(expected, x))
+    const expected = fulfill()
+    return p.bimap(fail, () => expected)
+      .then(is(expected))
   })
 
   it('should reject with returned promise verbatim', () => {
     const p = reject()
-    const expected = never()
+    const expected = fulfill()
     return p.bimap(() => expected, id)
-      .then(assert.ifError, x => assert.strictEqual(expected, x))
+      .then(fail, is(expected))
   })
 })
