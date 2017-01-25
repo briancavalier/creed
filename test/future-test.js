@@ -3,7 +3,7 @@ import { future, reject, fulfill, isSettled, isPending, never } from '../src/mai
 import { Future } from '../src/Promise'
 import { silenceError } from '../src/inspect'
 import { assertSame } from './lib/test-util'
-import assert from 'assert'
+import { eq, is, assert, fail } from '@briancavalier/assert'
 
 const silenced = p => (silenceError(p), p)
 const f = x => x + 1
@@ -31,21 +31,21 @@ describe('future', () => {
 			const { resolve, promise } = future()
 			const expected = {}
 			resolve(expected)
-			return promise.then(x => assert.strictEqual(expected, x))
+			return promise.then(is(expected))
 		})
 
 		it('should resolve to fulfilled promise', () => {
 			const { resolve, promise } = future()
 			const expected = {}
 			resolve(fulfill(expected))
-			return promise.then(x => assert.strictEqual(expected, x))
+      return promise.then(is(expected))
 		})
 
 		it('should resolve to rejected promise', () => {
 			const { resolve, promise } = future()
 			const expected = {}
 			resolve(reject(expected))
-			return promise.then(assert.ifError, x => assert.strictEqual(expected, x))
+			return promise.then(fail, is(expected))
 		})
 	})
 
@@ -55,21 +55,21 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const p = fulfill(1)
 				resolve(p)
-				assert.strictEqual(p.state(), promise.state())
+				eq(p.state(), promise.state())
 			})
 
 			it('should have rejected state', () => {
 				const { resolve, promise } = future()
 				const p = silenced(reject(1))
 				resolve(p)
-				assert.strictEqual(p.state(), promise.state())
+				eq(p.state(), promise.state())
 			})
 
 			it('should have never state', () => {
 				const { resolve, promise } = future()
 				const p = never()
 				resolve(p)
-				assert.strictEqual(p.state(), promise.state())
+				eq(p.state(), promise.state())
 			})
 		})
 
@@ -78,21 +78,21 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const p = fulfill(1)
 				resolve(p)
-				assert.strictEqual(p.inspect(), promise.inspect())
+				eq(p.inspect(), promise.inspect())
 			})
 
 			it('should have rejected state', () => {
 				const { resolve, promise } = future()
 				const p = silenced(reject(1))
 				resolve(p)
-				assert.strictEqual(p.inspect(), promise.inspect())
+				eq(p.inspect(), promise.inspect())
 			})
 
 			it('should have never state', () => {
 				const { resolve, promise } = future()
 				const p = never()
 				resolve(p)
-				assert.strictEqual(p.inspect(), promise.inspect())
+				eq(p.inspect(), promise.inspect())
 			})
 		})
 
@@ -122,14 +122,14 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const p = silenced(reject(1))
 				resolve(p)
-				assert.strictEqual(p, promise.then(f))
+				is(p, promise.then(f))
 			})
 
 			it('should be identity for never', () => {
 				const { resolve, promise } = future()
 				const p = never()
 				resolve(p)
-				assert.strictEqual(p, promise.then(f))
+				is(p, promise.then(f))
 			})
 		})
 
@@ -138,7 +138,7 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const p = fulfill(1)
 				resolve(p)
-				assert.strictEqual(p, promise.catch(f))
+				is(p, promise.catch(f))
 			})
 
 			it('should behave like mapped for reject', () => {
@@ -166,7 +166,7 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const p = never()
 				resolve(p)
-				assert.strictEqual(p, promise.catch(f))
+				is(p, promise.catch(f))
 			})
 		})
 
@@ -182,14 +182,14 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const p = silenced(reject(1))
 				resolve(p)
-				assert.strictEqual(p, promise.map(f))
+				is(p, promise.map(f))
 			})
 
 			it('should be identity for never', () => {
 				const { resolve, promise } = future()
 				const p = never()
 				resolve(p)
-				assert.strictEqual(p, promise.map(f))
+				is(p, promise.map(f))
 			})
 		})
 
@@ -212,14 +212,14 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const p = silenced(reject(1))
 				resolve(p)
-				assert.strictEqual(p, promise.chain(fp))
+				is(p, promise.chain(fp))
 			})
 
 			it('should be identity for never', () => {
 				const { resolve, promise } = future()
 				const p = never()
 				resolve(p)
-				assert.strictEqual(p, promise.chain(fp))
+				is(p, promise.chain(fp))
 			})
 		})
 
@@ -236,14 +236,14 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const p = silenced(reject(f))
 				resolve(p)
-				assert.strictEqual(p, promise.ap(fulfill(1)))
+				is(p, promise.ap(fulfill(1)))
 			})
 
 			it('should be identity for never', () => {
 				const { resolve, promise } = future()
 				const p = never()
 				resolve(p)
-				return assert.strictEqual(p, promise.ap(fulfill(1)))
+				return is(p, promise.ap(fulfill(1)))
 			})
 		})
 
@@ -253,7 +253,7 @@ describe('future', () => {
 				const p1 = fulfill(1)
 				const p2 = fulfill(2)
 				resolve(p1)
-				assert.strictEqual(p1, promise.concat(p2))
+				is(p1, promise.concat(p2))
 			})
 
 			it('should be identity for reject', () => {
@@ -261,7 +261,7 @@ describe('future', () => {
 				const p1 = silenced(reject(new Error()))
 				const p2 = silenced(reject(new Error()))
 				resolve(p1)
-				assert.strictEqual(p1, promise.concat(p2))
+				is(p1, promise.concat(p2))
 			})
 
 			it('should return other for never', () => {
@@ -269,7 +269,7 @@ describe('future', () => {
 				const p1 = never()
 				const p2 = fulfill(2)
 				resolve(p1)
-				assert.strictEqual(p1.concat(p2), promise.concat(p2))
+				is(p1.concat(p2), promise.concat(p2))
 			})
 		})
 	})
@@ -290,12 +290,12 @@ describe('future', () => {
 		describe('inspect', () => {
 			it('should not be fulfilled', () => {
 				const { promise } = future()
-				assert.notStrictEqual(fulfill().inspect(), promise.inspect())
+				assert(fulfill().inspect() !== promise.inspect())
 			})
 
 			it('should not be rejected', () => {
 				const { promise } = future()
-				assert.notStrictEqual(silenced(reject()).inspect(), promise.inspect())
+				assert(silenced(reject()).inspect() !== promise.inspect())
 			})
 		})
 

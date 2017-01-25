@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import assert from 'assert'
+import { eq } from '@briancavalier/assert'
 import { fulfill, reject, Promise } from '../src/main'
 import { isNever } from '../src/inspect'
 import { assertSame } from './lib/test-util'
@@ -115,7 +115,7 @@ describe('fantasyland laws', () => {
 
   describe('alternative', () => {
     it('should satisfy distributivity', () => {
-      return Alternative.distributivity(p => p.then(x => assert.strictEqual(1, x)))(fulfill(0))(fulfill(x => x + 1))(fulfill(x => x - 1))
+      return Alternative.distributivity(p => p.then(eq(1)))(fulfill(0))(fulfill(x => x + 1))(fulfill(x => x - 1))
     })
 
     it('should satisfy annihilation', () => {

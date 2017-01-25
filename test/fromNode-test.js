@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
 import { fromNode, all } from '../src/main'
-import assert from 'assert'
+import { is, eq, assert, fail } from '@briancavalier/assert'
 
 function makefn () {
 	return fromNode(function (...args) {
@@ -19,7 +19,7 @@ describe('fromNode', function () {
 		const expected = {}
 		const f = fromNode((a, cb) => cb(null, a))
 
-		return f(expected).then(x => assert.strictEqual(x, expected))
+		return f(expected).then(is(expected))
 	})
 
 	it('should reject on failure', () => {
@@ -27,7 +27,7 @@ describe('fromNode', function () {
 		const f = fromNode((a, cb) => cb(a))
 
 		return f(expected)
-			.then(assert.ifError, e => assert.strictEqual(e, expected))
+			.then(fail, is(expected))
 	})
 
 	it('should reject if function throws synchronously', () => {
@@ -35,7 +35,7 @@ describe('fromNode', function () {
 		const f = fromNode(a => { throw a })
 
 		return f(expected)
-			.then(assert.ifError, e => assert.strictEqual(e, expected))
+      .then(fail, is(expected))
 	})
 
 	it('should accept zero args', () => {
@@ -45,7 +45,6 @@ describe('fromNode', function () {
 	})
 
 	it('should accept multiple args', () => {
-		const eq = a => b => assert.equal(a, b)
 		const a = []
 
 		a.push(makefn()('a').then(eq('a')))
