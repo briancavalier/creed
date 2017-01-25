@@ -243,7 +243,7 @@ describe('future', () => {
 				const { resolve, promise } = future()
 				const p = never()
 				resolve(p)
-				return is(p, promise.ap(fulfill(1)))
+				is(p, promise.ap(fulfill(1)))
 			})
 		})
 

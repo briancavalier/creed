@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import { eq } from '@briancavalier/assert'
+import { eq, assert } from '@briancavalier/assert'
 import { fulfill, reject, Promise } from '../src/main'
 import { isNever } from '../src/inspect'
 import { assertSame } from './lib/test-util'
