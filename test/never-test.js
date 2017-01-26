@@ -1,36 +1,36 @@
 import { describe, it } from 'mocha'
 import { never, fulfill } from '../src/main'
-import assert from 'assert'
+import { is, eq, fail } from '@briancavalier/assert'
 
 describe('never', () => {
 	it('then should be identity', () => {
-		var p = never()
-		assert.strictEqual(p, p.then(assert.ifError, assert.ifError))
+		const p = never()
+		is(p, p.then(fail, fail))
 	})
 
 	it('catch should be identity', () => {
-		var p = never()
-		assert.strictEqual(p, p.catch(assert.ifError))
+		const p = never()
+		is(p, p.catch(fail))
 	})
 
 	it('map should be identity', () => {
-		var p = never()
-		assert.strictEqual(p, p.map(assert.ifError))
+		const p = never()
+		is(p, p.map(fail))
 	})
 
 	it('bimap should be identity', () => {
-		var p = never()
-		assert.strictEqual(p, p.bimap(assert.ifError, assert.ifError))
+		const p = never()
+		is(p, p.bimap(fail, fail))
 	})
 
 	it('ap should be identity', () => {
-		var p = never()
-		assert.strictEqual(p, p.ap(fulfill()))
+		const p = never()
+		is(p, p.ap(fulfill()))
 	})
 
 	it('chain should be identity', () => {
-		var p = never()
-		assert.strictEqual(p, p.chain(fulfill))
+		const p = never()
+		is(p, p.chain(fulfill))
 	})
 
 	it('_when should not call action', () => {
@@ -40,6 +40,6 @@ describe('never', () => {
 			rejected: fail
 		}
 
-		assert.strictEqual(void 0, never()._when(action))
+		eq(undefined, never()._when(action))
 	})
 })

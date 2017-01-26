@@ -1,7 +1,7 @@
 import { describe, it } from 'mocha'
 import { fulfill, delay, reject } from '../src/main'
 import { assertSame } from './lib/test-util'
-import assert from 'assert'
+import { is, fail } from '@briancavalier/assert'
 
 describe('map', () => {
 	it('should satisfy identity', () => {
@@ -20,12 +20,12 @@ describe('map', () => {
 	it('should reject if f throws', () => {
 		const expected = {}
 		return delay(1).map(() => { throw expected })
-			.then(assert.ifError, x => assert.strictEqual(x, expected))
+			.then(fail, is(expected))
 	})
 
 	it('should not map rejection', () => {
 		const expected = {}
 		return delay(1, expected).then(reject).map(() => null)
-			.then(assert.ifError, x => assert.strictEqual(x, expected))
+			.then(fail, is(expected))
 	})
 })

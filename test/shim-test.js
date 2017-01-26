@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
 import { shim, Promise } from '../src/main'
-import assert from 'assert'
+import { is } from '@briancavalier/assert'
 
 /* global self */
 let g = typeof self !== 'undefined' ? self
@@ -11,7 +11,7 @@ describe('shim', () => {
 	it('should return pre-existing Promise', () => {
 		let prev = g.Promise
 		try {
-			assert.strictEqual(shim(), prev)
+			is(shim(), prev)
 		} finally {
 			g.Promise = prev
 		}
@@ -21,7 +21,7 @@ describe('shim', () => {
 		let prev = void 0
 		try {
 			prev = shim()
-			assert.strictEqual(Promise, g.Promise)
+			is(Promise, g.Promise)
 		} finally {
 			g.Promise = prev
 		}
