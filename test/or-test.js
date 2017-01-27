@@ -2,24 +2,24 @@ import { describe, it } from 'mocha'
 import { fulfill, delay, reject, never } from '../src/main'
 import { silenceError } from '../src/inspect'
 import { assertSame } from './lib/test-util'
-import assert from 'assert'
+import { is } from '@briancavalier/assert'
 
-describe('concat', function () {
+describe('or', function () {
 	it('should be identity for fulfill', () => {
 		const p = fulfill()
-		assert.strictEqual(p, p.or(fulfill()))
+		is(p, p.or(fulfill()))
 	})
 
 	it('should be identity for reject', () => {
-		const p = reject()
+		const p = reject(new Error())
 		silenceError(p)
-		assert.strictEqual(p, p.or(fulfill()))
+    is(p, p.or(fulfill()))
 	})
 
 	it('should return other for never', () => {
 		const p1 = never()
 		const p2 = fulfill()
-		assert.strictEqual(p2, p1.or(p2))
+    is(p2, p1.or(p2))
 	})
 
 	it('should behave like earlier future', () => {
@@ -37,19 +37,18 @@ describe('concat', function () {
 	it('should return other with fulfilled', () => {
 		const expected = {}
 		const p = fulfill(expected)
-		return assert.strictEqual(delay(10).or(p), p)
+		return is(delay(10).or(p), p)
 	})
 
 	it('should return other with rejected', () => {
-		const expected = {}
-		const p = reject(expected)
+    const p = reject(new Error())
 		silenceError(p)
-		return assert.strictEqual(delay(10).or(p), p)
+		is(delay(10).or(p), p)
 	})
 
 	it('should be identity with never', () => {
 		const p2 = never()
 		const p1 = delay(10)
-		return assert.strictEqual(p1.or(p2), p1)
+		is(p1.or(p2), p1)
 	})
 })

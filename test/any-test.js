@@ -1,13 +1,13 @@
 import { describe, it } from 'mocha'
 import { any, resolve, reject } from '../src/main'
 import { throwingIterable, arrayIterable } from './lib/test-util'
-import assert from 'assert'
+import { eq, is, assert, fail } from '@briancavalier/assert'
 
 describe('any', () => {
 	it('should reject if iterator throws', () => {
 		const error = new Error()
 		return any(throwingIterable(error))
-			.then(assert.ifError, e => assert(e === error))
+			.then(fail, is(error))
 	})
 
 	it('should reject with RangeError for empty iterable', () => {
@@ -28,11 +28,11 @@ describe('any', () => {
 
 	it('should resolve if at least one input resolves', () => {
 		const s = arrayIterable([reject(1), reject(2), resolve(3)])
-		return any(s).then(x => assert.equal(x, 3))
+		return any(s).then(eq(3))
 	})
 
 	it('should reject if all inputs reject', () => {
 		const s = arrayIterable([1, 2, 3].map(reject))
-		return any(s).catch(() => assert(true))
+		return any(s).then(fail, e => assert(e instanceof Error))
 	})
 })

@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
 import { runNode, all } from '../src/main'
-import assert from 'assert'
+import { is, eq, assert, fail } from '@briancavalier/assert'
 
 function runFn (...args) {
 	return runNode(function(...args) {
@@ -18,19 +18,19 @@ describe('run', function () {
 	it('should fulfill on success', () => {
 		let expected = {}
 		return runNode((a, cb) => cb(null, a), expected)
-			.then(x => assert.strictEqual(x, expected))
+			.then(is(expected))
 	})
 
 	it('should reject on failure', () => {
 		let expected = new Error()
 		return runNode((a, cb) => cb(a), expected)
-			.then(assert.ifError, e => assert.strictEqual(e, expected))
+			.then(fail, is(expected))
 	})
 
 	it('should reject if function throws synchronously', () => {
 		let expected = new Error()
 		return runNode(a => { throw a }, expected)
-			.then(assert.ifError, e => assert.strictEqual(e, expected))
+			.then(fail, is(expected))
 	})
 
 	it('should accept zero args', () => {
@@ -38,8 +38,7 @@ describe('run', function () {
 	})
 
 	it('should accept multiple args', () => {
-		let eq = a => b => assert.equal(a, b)
-		let a = []
+		const a = []
 
 		a.push(runFn('a').then(eq('a')))
 		a.push(runFn('a', 'b').then(eq('ab')))

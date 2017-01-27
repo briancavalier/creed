@@ -1,24 +1,19 @@
 'use strict'
 
-import assert from 'assert'
+import { is, fail } from '@briancavalier/assert'
 
-export function assertSame (ap, bp) {
-	return ap.then(a => bp.then(b => assert.strictEqual(a, b)),
-	               a => bp.then(x => { throw x }, b => assert.strictEqual(a, b)))
-}
+export const assertSame = (ap, bp) =>
+	ap.then(a => bp.then(is(a)),
+		a => bp.then(x => { throw x }, is(a)))
 
-export function assertSameRejected (ap, bp) {
-	return ap.then(assert.ifError,
-		a => bp.then(assert.ifError, b => assert(a === b)))
-}
+export const assertSameRejected = (ap, bp) =>
+	ap.then(fail, a => bp.then(fail, is(a)))
 
-export function throwingIterable (e) {
-	return new FakeIterable(new ThrowingIterator(e))
-}
+export const throwingIterable = e =>
+	new FakeIterable(new ThrowingIterator(e))
 
-export function arrayIterable (array) {
-	return new FakeIterable(new ArrayIterator(array))
-}
+export const arrayIterable = array =>
+	new FakeIterable(new ArrayIterator(array))
 
 class FakeIterable {
 	constructor (iterator) {

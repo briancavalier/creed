@@ -1,12 +1,12 @@
 import { describe, it } from 'mocha'
 import { fulfill, reject, delay, coroutine } from '../src/main'
-import assert from 'assert'
+import { eq, is, fail } from '@briancavalier/assert'
 
 describe('coroutine', function () {
 	it('should allow parameters', () => {
 		const f = coroutine(function *(a, b) {
-			assert.equal(a, 'a')
-			assert.equal(b, 'b')
+			eq(a, 'a')
+			eq(b, 'b')
 		})
 
 		return f('a', 'b')
@@ -17,7 +17,7 @@ describe('coroutine', function () {
 			return (yield delay(1, a)) + (yield fulfill(b))
 		})
 
-		return f('a', 'b').then(x => assert.equal(x, 'ab'))
+		return f('a', 'b').then(eq('ab'))
 	})
 
 	it('should throw on rejected promises', () => {
@@ -31,7 +31,7 @@ describe('coroutine', function () {
 		})
 
 		return f(expected)
-			.then(x => assert.strictEqual(x, expected))
+			.then(is(expected))
 	})
 
 	it('should reject on uncaught exception', () => {
@@ -41,6 +41,6 @@ describe('coroutine', function () {
 		})
 
 		return f(expected)
-			.then(assert.ifError, e => assert.strictEqual(e, expected))
+			.then(fail, is(expected))
 	})
 })

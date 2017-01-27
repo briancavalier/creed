@@ -1,7 +1,7 @@
 import { describe, it } from 'mocha'
 import { fulfill, reject, delay } from '../src/main'
 import { assertSame } from './lib/test-util'
-import assert from 'assert'
+import { is, assert, fail } from '@briancavalier/assert'
 
 describe('chain', function () {
 	it('should satisfy associativity', () => {
@@ -18,15 +18,12 @@ describe('chain', function () {
 
 	it('should reject if f returns a non-promise', () => {
 		return fulfill(1).chain(x => x)
-			.then(
-				() => { throw new Error('should not fulfill') },
-				e => assert(e instanceof TypeError)
-			)
+			.then(fail, e => assert(e instanceof TypeError))
 	})
 
 	it('should not map rejection', () => {
 		const expected = {}
 		return delay(1, expected).then(reject).chain(() => null)
-			.then(assert.ifError, x => assert.strictEqual(x, expected))
+			.then(fail, is(expected))
 	})
 })

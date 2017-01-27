@@ -1,127 +1,126 @@
 import { describe, it } from 'mocha'
 import { runPromise, resolve } from '../src/main'
-import assert from 'assert'
+import { is, assert, fail, throws } from '@briancavalier/assert'
 
-let fail = x => { throw x }
+const isTypeError = e => assert(e instanceof TypeError)
+const throwsTypeError = f => isTypeError(throws(f))
 
 describe('runPromise', () => {
 	it('should throw synchronously when function not provided', () => {
-		assert.throws(runPromise, TypeError)
+		throwsTypeError(runPromise)
 	})
 
 	it('should reject if resolver throws', () => {
-		let x = {}
-		return runPromise(fail, x).then(fail, e => assert(x === e))
+		const expected = new Error()
+		return runPromise(x => { throw x }, expected)
+			.then(fail, is(expected))
 	})
 
 	it('should reject', () => {
-		let x = {}
-		return runPromise((_, reject) => {
-			reject(x)
-		}).then(fail, e => assert(x === e))
+		let expected = new Error()
+		return runPromise((_, reject) => reject(expected))
+			.then(fail, is(expected))
 	})
 
 	it('should resolve', () => {
-		let x = {}
-		return runPromise(resolve => resolve(x))
-			.then(a => assert(x === a))
+		let expected = {}
+		return runPromise(resolve => resolve(expected))
+			.then(is(expected))
 	})
 
 	describe('when rejected explicitly', () => {
 		it('should ignore subsequent throw', () => {
-			let x = {}
+			const expected = new Error()
 			return runPromise((_, reject) => {
-				reject(x)
+				reject(expected)
 				throw new Error()
-			}).then(fail, e => assert(x === e))
+			}).then(fail, is(expected))
 		})
 
 		it('should ignore subsequent reject', () => {
-			let x = {}
-			let y = {}
+			const expected = new Error()
 			return runPromise((_, reject) => {
-				reject(x)
-				reject(y)
-			}).then(fail, e => assert(x === e))
+				reject(expected)
+				reject(new Error())
+			}).then(fail, is(expected))
 		})
 
 		it('should ignore subsequent resolve', () => {
-			let x = {}
+			let expected = {}
 			return runPromise((_, reject) => {
-				reject(x)
+				reject(expected)
 				resolve()
-			}).then(fail, e => assert(x === e))
+			}).then(fail, is(expected))
 		})
 	})
 
 	describe('when resolved explicitly', () => {
 		it('should ignore subsequent throw', () => {
-			let x = {}
+			const expected = {}
 			return runPromise(resolve => {
-				resolve(x)
+				resolve(expected)
 				throw new Error()
-			}).then(a => assert(x === a))
+			}).then(is(expected))
 		})
 
 		it('should ignore subsequent reject', () => {
-			let x = {}
-			let y = {}
+			const expected = {}
 			return runPromise((resolve, reject) => {
-				resolve(x)
-				reject(y)
-			}).then(a => assert(x === a))
+				resolve(expected)
+				reject(new Error())
+			}).then(is(expected))
 		})
 
 		it('should ignore subsequent resolve', () => {
-			let x = {}
+			const expected = {}
 			return runPromise(resolve => {
-				resolve(x)
+				resolve(expected)
 				resolve()
-			}).then(a => assert(x === a))
+			}).then(is(expected))
 		})
 	})
 
 	describe('should pass arguments to resolver', () => {
 		it('for 1 argument', () => {
-			let a = {}
+			const a = {}
 			return runPromise((w, resolve) => {
-				assert(w === a)
+				is(a, w)
 				resolve()
 			}, a)
 		})
 
 		it('for 2 arguments', () => {
-			let a = {}
-			let b = {}
+			const a = {}
+			const b = {}
 			return runPromise((w, x, resolve) => {
-				assert(w === a)
-				assert(x === b)
+				is(a, w)
+				is(b, x)
 				resolve()
 			}, a, b)
 		})
 
 		it('for 3 arguments', () => {
-			let a = {}
-			let b = {}
-			let c = {}
+			const a = {}
+      const b = {}
+      const c = {}
 			return runPromise((w, x, y, resolve) => {
-				assert(w === a)
-				assert(x === b)
-				assert(y === c)
+				is(a, w)
+				is(b, x)
+				is(c, y)
 				resolve()
 			}, a, b, c)
 		})
 
 		it('for 4 or more arguments', () => {
-			let a = {}
-			let b = {}
-			let c = {}
-			let d = {}
+      const a = {}
+      const b = {}
+      const c = {}
+      const d = {}
 			return runPromise((w, x, y, z, resolve) => {
-				assert(w === a)
-				assert(x === b)
-				assert(y === c)
-				assert(z === d)
+        is(a, w)
+        is(b, x)
+        is(c, y)
+				is(d, z)
 				resolve()
 			}, a, b, c, d)
 		})

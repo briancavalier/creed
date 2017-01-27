@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
 import TaskQueue from '../src/TaskQueue'
-import assert from 'assert'
+import { eq } from '@briancavalier/assert'
 
 describe('TaskQueue', () => {
 	describe('add', () => {
@@ -11,11 +11,11 @@ describe('TaskQueue', () => {
 			}
 
 			function verify () {
-				assert.equal(i, 2)
+				eq(i, 2)
 				done()
 			}
 
-			let t = new TaskQueue()
+			const t = new TaskQueue()
 
 			t.add({ run: inc })
 			t.add({ run: inc })

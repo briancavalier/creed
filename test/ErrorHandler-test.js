@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
 import ErrorHandler from '../src/ErrorHandler'
-import assert from 'assert'
+import { is, eq, fail } from '@briancavalier/assert'
 import { HANDLED } from '../src/state'
 
 function fakeError (value) {
@@ -17,13 +17,10 @@ describe('ErrorHandler', () => {
 		it('should emit event immediately', () => {
 			const value = {}
 			const expected = fakeError(value)
-			function fail (e) {
-				assert.fail(e, expected, 'should not call reportError')
-			}
 
 			function verify (event, e, error) {
-				assert.strictEqual(e, expected)
-				assert.strictEqual(error, value)
+				is(e, expected)
+				is(error, value)
 				return true
 			}
 
@@ -35,8 +32,8 @@ describe('ErrorHandler', () => {
 			const value = {}
 			const expected = fakeError(value)
 			function verify (e) {
-				assert.strictEqual(e, expected)
-				assert.strictEqual(e.value, value)
+				is(e, expected)
+				is(e.value, value)
 				done()
 			}
 
@@ -49,13 +46,10 @@ describe('ErrorHandler', () => {
 		it('should emit event immediately', () => {
 			const value = {}
 			const expected = fakeError(value)
-			function fail (e) {
-				assert.fail(e, expected, 'should not call reportError')
-			}
 
 			function verify (event, e) {
-				assert.strictEqual(e, expected)
-				assert.strictEqual(e.value, value)
+				is(e, expected)
+				is(e.value, value)
 				return true
 			}
 
@@ -66,14 +60,11 @@ describe('ErrorHandler', () => {
 		it('should silence error', () => {
 			const value = {}
 			const expected = fakeError(value)
-			function fail (e) {
-				assert.fail(e, expected, 'should not call reportError')
-			}
 
 			const eh = new ErrorHandler(() => true, fail)
 			eh.untrack(expected)
 
-			assert.equal(expected.state(), HANDLED)
+			eq(expected.state(), HANDLED)
 		})
 	})
 })

@@ -2,13 +2,14 @@ import { describe, it } from 'mocha'
 import { race, resolve, reject, never } from '../src/main'
 import { isNever } from '../src/inspect'
 import { throwingIterable } from './lib/test-util'
-import assert from 'assert'
+import { is, eq, assert, fail} from '@briancavalier/assert'
+
+const isTypeError = e => assert(e instanceof TypeError)
 
 describe('race', () => {
 	it('should reject if iterator throws', () => {
 		let error = new Error()
-		return race(throwingIterable(error))
-			.then(assert.ifError, e => assert(e === error))
+		return race(throwingIterable(error)).then(fail, is(error))
 	})
 
 	it('should return never when input is empty', () => {
@@ -16,22 +17,21 @@ describe('race', () => {
 	})
 
 	it('should reject with a TypeError when passed non-iterable', () => {
-		return race(123).then(assert.ifError, e => assert(e instanceof TypeError))
+		return race(123).then(fail, isTypeError)
 	})
 
 	it('should be identity for 1 element when value', () => {
-		return race(new Set([1]))
-			.then(x => assert.equal(x, 1))
+		return race(new Set([1])).then(eq(1))
 	})
 
 	it('should be identity for 1 element when fulfilled', () => {
-		return race(new Set([resolve(1)]))
-			.then(x => assert.equal(x, 1))
+		return race(new Set([resolve(1)])).then(eq(1))
 	})
 
 	it('should be identity for 1 element when rejected', () => {
-		return race(new Set([reject(1)]))
-			.catch(x => assert.equal(x, 1))
+		const expected = new Error()
+		return race(new Set([reject(expected)]))
+			.then(fail, is(expected))
 	})
 
 	it('should fulfill when winner fulfills', () => {
@@ -39,7 +39,8 @@ describe('race', () => {
 	})
 
 	it('should reject when winner rejects', () => {
-		return race([reject(1), never()])
-			.then(assert.ifError, x => assert.equal(x, 1))
+		const expected = new Error()
+		return race([reject(expected), never()])
+			.then(fail, is(expected))
 	})
 })

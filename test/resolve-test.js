@@ -1,41 +1,41 @@
 import { describe, it } from 'mocha'
 import { resolve, Future } from '../src/Promise'
-import assert from 'assert'
+import { is, assert, fail } from '@briancavalier/assert'
+
+const isTypeError = e => assert(e instanceof TypeError)
 
 describe('resolve', () => {
 	it('should reject promise cycle', () => {
 		let p = new Future()
 		p._resolve(p)
-		return p.then(assert.ifError, e => assert(e instanceof TypeError))
+		return p.then(fail, isTypeError)
 	})
 
 	describe('thenables', () => {
 		it('should resolve fulfilled thenable', () => {
-			let expected = {}
-			return resolve({ then: f => f(expected) })
-				.then(x => assert.strictEqual(expected, x))
+			const expected = {}
+			return resolve({ then: f => f(expected) }).then(is(expected))
 		})
 
 		it('should resolve rejected thenable', () => {
-			let expected = {}
+			const expected = new Error()
 			return resolve({ then: (f, r) => r(expected) })
-				.then(assert.ifError, e => assert.strictEqual(expected, e))
+				.then(fail, is(expected))
 		})
 
 		it('should reject if thenable.then throws', () => {
-			let expected = {}
+			const expected = new Error()
 			return resolve({ then: () => { throw expected } })
-				.then(assert.ifError, e => assert.strictEqual(expected, e))
+				.then(fail, is(expected))
 		})
 
 		it('should reject if accessing thenable.then throws', () => {
-			let expected = {}
-			let thenable = {
+			const expected = new Error()
+			const thenable = {
 				get then () { throw expected }
 			}
 
-			return resolve(thenable)
-				.then(assert.ifError, e => assert.strictEqual(expected, e))
+			return resolve(thenable).then(fail, is(expected))
 		})
 	})
 })

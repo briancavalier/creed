@@ -3,20 +3,20 @@ import { delay } from '../src/main'
 import { Future, never, reject, fulfill } from '../src/Promise'
 import { silenceError, isNever, isPending } from '../src/inspect'
 import { assertSame } from './lib/test-util'
-import assert from 'assert'
+import { is, assert, fail } from '@briancavalier/assert'
 
 const lte = (a, b) => (a - 1) <= b
 
 describe('delay', function () {
 	it('should be identity for 0 ms', () => {
 		const p = fulfill()
-		assert.strictEqual(p, delay(0, p))
+		is(p, delay(0, p))
 	})
 
 	it('should be identity for rejected', () => {
 		const p = reject()
 		silenceError(p)
-		assert.strictEqual(p, delay(1, p))
+		is(p, delay(1, p))
 	})
 
 	it('should not delay rejected', () => {
@@ -25,10 +25,10 @@ describe('delay', function () {
 
 		assert(isPending(d))
 
-		const x = {}
-		p._reject(x)
+		const e = new Error()
+		p._reject(e)
 
-		return d.then(assert.ifError, e => assert.strictEqual(x, e))
+		return d.then(fail, is(e))
 	})
 
 	it('should return never for never', () => {
