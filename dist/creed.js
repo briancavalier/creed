@@ -1,7 +1,7 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-    typeof define === 'function' && define.amd ? define(['exports'], factory) :
-    (factory((global.creed = global.creed || {})));
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+	typeof define === 'function' && define.amd ? define(['exports'], factory) :
+	(factory((global.creed = global.creed || {})));
 }(this, (function (exports) { 'use strict';
 
 /* eslint no-multi-spaces: 0 */
@@ -541,10 +541,8 @@ var index = createCommonjsModule(function (module) {
     promap: 'fantasy-land/promap'
   };
 
-  if ('object' === 'object' && 'object' === 'object') {
+  {
     module.exports = mapping;
-  } else {
-    self.FantasyLand = mapping;
   }
 
 }());
@@ -801,7 +799,7 @@ var Fulfilled = (function (Core) {
 		return map(f, this, new Future())
 	};
 
-	Fulfilled.prototype.bimap = function bimap$2 (_, f) {
+	Fulfilled.prototype.bimap = function bimap$$1 (_, f) {
 		return this.map(f)
 	};
 
@@ -858,7 +856,7 @@ var Rejected = (function (Core) {
 	Rejected.prototype = Object.create( Core && Core.prototype );
 	Rejected.prototype.constructor = Rejected;
 
-	Rejected.prototype.then = function then$3 (_, r) {
+	Rejected.prototype.then = function then$$1 (_, r) {
 		return typeof r === 'function' ? this.catch(r) : this
 	};
 
@@ -866,11 +864,11 @@ var Rejected = (function (Core) {
 		return then(void 0, r, this, new Future())
 	};
 
-	Rejected.prototype.map = function map$3 () {
+	Rejected.prototype.map = function map$$1 () {
 		return this
 	};
 
-	Rejected.prototype.bimap = function bimap$3 (r) {
+	Rejected.prototype.bimap = function bimap$2 (r) {
 		return bimap(r, void 0, this, new Future())
 	};
 
@@ -878,7 +876,7 @@ var Rejected = (function (Core) {
 		return this
 	};
 
-	Rejected.prototype.chain = function chain$3 () {
+	Rejected.prototype.chain = function chain$$1 () {
 		return this
 	};
 
@@ -926,7 +924,7 @@ var Never = (function (Core) {
 	Never.prototype = Object.create( Core && Core.prototype );
 	Never.prototype.constructor = Never;
 
-	Never.prototype.then = function then$4 () {
+	Never.prototype.then = function then$$1 () {
 		return this
 	};
 
@@ -934,11 +932,11 @@ var Never = (function (Core) {
 		return this
 	};
 
-	Never.prototype.map = function map$4 () {
+	Never.prototype.map = function map$$1 () {
 		return this
 	};
 
-	Never.prototype.bimap = function bimap$4 () {
+	Never.prototype.bimap = function bimap$$1 () {
 		return this
 	};
 
@@ -946,7 +944,7 @@ var Never = (function (Core) {
 		return this
 	};
 
-	Never.prototype.chain = function chain$4 () {
+	Never.prototype.chain = function chain$$1 () {
 		return this
 	};
 
@@ -1464,7 +1462,7 @@ function settle (promises) {
 // -------------------------------------------------------------
 
 // merge :: (...* -> b) -> ...Promise e a -> Promise e b
-function merge$1$1 (f) {
+function merge (f) {
 	var args = [], len = arguments.length - 1;
 	while ( len-- > 0 ) args[ len ] = arguments[ len + 1 ];
 
@@ -1483,7 +1481,7 @@ var MergeHandler = function MergeHandler (f, c) {
 	this.args = void 0;
 };
 
-MergeHandler.prototype.merge = function merge$1 (promise, args) {
+MergeHandler.prototype.merge = function merge (promise, args) {
 	this.promise = promise;
 	this.args = args;
 	taskQueue.add(this);
@@ -1572,7 +1570,7 @@ exports.delay = delay;
 exports.timeout = timeout;
 exports.any = any;
 exports.settle = settle;
-exports.merge = merge$1$1;
+exports.merge = merge;
 exports.shim = shim;
 exports.Promise = CreedPromise;
 
