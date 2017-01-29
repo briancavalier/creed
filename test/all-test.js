@@ -1,13 +1,15 @@
 import { describe, it } from 'mocha'
 import { Future, all, resolve } from '../src/Promise'
 import { throwingIterable, arrayIterable } from './lib/test-util'
-import { is, eq, fail } from '@briancavalier/assert'
+import { is, eq, rejects } from '@briancavalier/assert'
+
+const rejectsWith = (expected, p) =>
+	rejects(p).then(is(expected))
 
 describe('all', () => {
 	it('should reject if iterator throws', () => {
-		const error = new Error()
-		return all(throwingIterable(error))
-			.then(fail, is(error))
+		const expected = new Error()
+		return rejectsWith(expected, all(throwingIterable(expected)))
 	})
 
 	it('should resolve empty iterable', () => {
@@ -29,9 +31,9 @@ describe('all', () => {
 
 	it('should reject if input contains rejection', () => {
 		const p = new Future()
-		setTimeout(p => p._reject(2), 0, p)
-		return all(arrayIterable([1, p, 3]))
-			.catch(eq(2))
+		const expected = new Error()
+		setTimeout(p => p._reject(expected), 0, p)
+		return rejectsWith(expected, all(arrayIterable([1, p, 3])))
 	})
 
 	describe('when input contains thenables', () => {
