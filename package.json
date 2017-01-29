@@ -38,7 +38,7 @@
     "test-aplus": "promises-aplus-tests test/aplus.js --reporter dot"
   },
   "devDependencies": {
-    "@briancavalier/assert": "^3.2.0",
+    "@briancavalier/assert": "^3.3.1",
     "babel-eslint": "^7.0.0",
     "buba": "^4.0.1",
     "buble": "^0.14.3",
