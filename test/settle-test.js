@@ -1,14 +1,13 @@
 import { describe, it } from 'mocha'
 import { settle, resolve, reject } from '../src/main'
 import { isFulfilled, isRejected } from '../src/inspect'
-import { throwingIterable } from './lib/test-util'
-import { is, eq, assert, fail } from '@briancavalier/assert'
+import { throwingIterable, rejectsWith } from './lib/test-util'
+import { is, eq, assert } from '@briancavalier/assert'
 
 describe('settle', () => {
 	it('should reject if iterator throws', () => {
-		const error = new Error()
-		return settle(throwingIterable(error))
-			.then(fail, is(error))
+		const expected = new Error()
+		return rejectsWith(is(expected), settle(throwingIterable(expected)))
 	})
 
 	it('should settle empty iterable', () => {

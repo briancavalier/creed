@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha'
 import { fulfill, delay, reject } from '../src/main'
-import { assertSame } from './lib/test-util'
+import { assertSame, rejectsWith } from './lib/test-util'
 import { is, fail } from '@briancavalier/assert'
 
 describe('map', () => {
@@ -18,14 +18,12 @@ describe('map', () => {
 	})
 
 	it('should reject if f throws', () => {
-		const expected = {}
-		return delay(1).map(() => { throw expected })
-			.then(fail, is(expected))
+		const expected = new Error()
+		return rejectsWith(is(expected), delay(1).map(() => { throw expected }))
 	})
 
 	it('should not map rejection', () => {
-		const expected = {}
-		return delay(1, expected).then(reject).map(() => null)
-			.then(fail, is(expected))
+		const expected = new Error()
+		return rejectsWith(is(expected), delay(1, expected).then(reject).map(() => null))
 	})
 })

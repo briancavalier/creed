@@ -1,6 +1,7 @@
 import { describe, it } from 'mocha'
 import { fromNode, all } from '../src/main'
 import { is, eq, assert, fail } from '@briancavalier/assert'
+import { rejectsWith } from './lib/test-util'
 
 function makefn () {
 	return fromNode(function (...args) {
@@ -26,16 +27,14 @@ describe('fromNode', function () {
 		const expected = new Error()
 		const f = fromNode((a, cb) => cb(a))
 
-		return f(expected)
-			.then(fail, is(expected))
+		return rejectsWith(is(expected), f(expected))
 	})
 
 	it('should reject if function throws synchronously', () => {
 		const expected = new Error()
 		const f = fromNode(a => { throw a })
 
-		return f(expected)
-      .then(fail, is(expected))
+		return rejectsWith(is(expected), f(expected))
 	})
 
 	it('should accept zero args', () => {

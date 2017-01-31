@@ -1,9 +1,9 @@
 import { describe, it } from 'mocha'
 import { runPromise, resolve } from '../src/main'
-import { is, assert, fail, throws } from '@briancavalier/assert'
+import { assertTypeError, rejectsWith } from './lib/test-util'
+import { is, throws } from '@briancavalier/assert'
 
-const isTypeError = e => assert(e instanceof TypeError)
-const throwsTypeError = f => isTypeError(throws(f))
+const throwsTypeError = f => assertTypeError(throws(f))
 
 describe('runPromise', () => {
 	it('should throw synchronously when function not provided', () => {
@@ -12,18 +12,18 @@ describe('runPromise', () => {
 
 	it('should reject if resolver throws', () => {
 		const expected = new Error()
-		return runPromise(x => { throw x }, expected)
-			.then(fail, is(expected))
+		const p = runPromise(x => { throw x }, expected)
+		return rejectsWith(is(expected), p)
 	})
 
 	it('should reject', () => {
-		let expected = new Error()
-		return runPromise((_, reject) => reject(expected))
-			.then(fail, is(expected))
+		const expected = new Error()
+		const p = runPromise((_, reject) => reject(expected))
+		return rejectsWith(is(expected), p)
 	})
 
 	it('should resolve', () => {
-		let expected = {}
+		const expected = {}
 		return runPromise(resolve => resolve(expected))
 			.then(is(expected))
 	})
@@ -31,26 +31,29 @@ describe('runPromise', () => {
 	describe('when rejected explicitly', () => {
 		it('should ignore subsequent throw', () => {
 			const expected = new Error()
-			return runPromise((_, reject) => {
+			const p = runPromise((_, reject) => {
 				reject(expected)
 				throw new Error()
-			}).then(fail, is(expected))
+			})
+			return rejectsWith(is(expected), p)
 		})
 
 		it('should ignore subsequent reject', () => {
 			const expected = new Error()
-			return runPromise((_, reject) => {
+			const p = runPromise((_, reject) => {
 				reject(expected)
 				reject(new Error())
-			}).then(fail, is(expected))
+			})
+			return rejectsWith(is(expected), p)
 		})
 
 		it('should ignore subsequent resolve', () => {
-			let expected = {}
-			return runPromise((_, reject) => {
+			const expected = new Error()
+			const p = runPromise((_, reject) => {
 				reject(expected)
 				resolve()
-			}).then(fail, is(expected))
+			})
+			return rejectsWith(is(expected), p)
 		})
 	})
 
@@ -101,8 +104,8 @@ describe('runPromise', () => {
 
 		it('for 3 arguments', () => {
 			const a = {}
-      const b = {}
-      const c = {}
+			const b = {}
+			const c = {}
 			return runPromise((w, x, y, resolve) => {
 				is(a, w)
 				is(b, x)
@@ -112,14 +115,14 @@ describe('runPromise', () => {
 		})
 
 		it('for 4 or more arguments', () => {
-      const a = {}
-      const b = {}
-      const c = {}
-      const d = {}
+			const a = {}
+			const b = {}
+			const c = {}
+			const d = {}
 			return runPromise((w, x, y, z, resolve) => {
-        is(a, w)
-        is(b, x)
-        is(c, y)
+				is(a, w)
+				is(b, x)
+				is(c, y)
 				is(d, z)
 				resolve()
 			}, a, b, c, d)

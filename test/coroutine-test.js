@@ -1,6 +1,7 @@
 import { describe, it } from 'mocha'
 import { fulfill, reject, delay, coroutine } from '../src/main'
-import { eq, is, fail } from '@briancavalier/assert'
+import { eq, is } from '@briancavalier/assert'
+import { rejectsWith } from './lib/test-util'
 
 describe('coroutine', function () {
 	it('should allow parameters', () => {
@@ -40,7 +41,6 @@ describe('coroutine', function () {
 			yield reject(a)
 		})
 
-		return f(expected)
-			.then(fail, is(expected))
+		return rejectsWith(is(expected), f(expected))
 	})
 })

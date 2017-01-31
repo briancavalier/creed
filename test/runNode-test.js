@@ -1,6 +1,7 @@
 import { describe, it } from 'mocha'
 import { runNode, all } from '../src/main'
 import { is, eq, assert, fail } from '@briancavalier/assert'
+import { rejectsWith } from './lib/test-util'
 
 function runFn (...args) {
 	return runNode(function(...args) {
@@ -23,14 +24,12 @@ describe('run', function () {
 
 	it('should reject on failure', () => {
 		let expected = new Error()
-		return runNode((a, cb) => cb(a), expected)
-			.then(fail, is(expected))
+		return rejectsWith(is(expected), runNode((a, cb) => cb(a), expected))
 	})
 
 	it('should reject if function throws synchronously', () => {
 		let expected = new Error()
-		return runNode(a => { throw a }, expected)
-			.then(fail, is(expected))
+		return rejectsWith(is(expected), runNode(a => { throw a }, expected))
 	})
 
 	it('should accept zero args', () => {

@@ -1,6 +1,7 @@
 import { describe, it } from 'mocha'
 import { merge, resolve, reject } from '../src/main'
 import { eq, is, assert, fail } from '@briancavalier/assert'
+import { rejectsWith } from './lib/test-util'
 
 describe('merge', () => {
 	it('should call merge function later', () => {
@@ -29,15 +30,16 @@ describe('merge', () => {
 
 	it('should reject if input contains rejection', () => {
 		const expected = new Error()
-		return merge(() => assert(false), 1, reject(expected))
-			.then(fail, is(expected))
+		const p = merge(() => assert(false), 1, reject(expected))
+		return rejectsWith(is(expected), p)
 	})
 
 	it('should reject if merge function throws', () => {
 		const expected = {}
-		return merge(() => {
+		const p = merge(() => {
 			throw expected
 		}, resolve(1), resolve(2))
-			.then(fail, is(expected))
+
+		return rejectsWith(is(expected), p)
 	})
 })
