@@ -1,16 +1,16 @@
 import { describe, it } from 'mocha'
 import { any, resolve, reject } from '../src/main'
-import { throwingIterable, arrayIterable } from './lib/test-util'
-import { eq, is, assert, rejects, fail } from '@briancavalier/assert'
+import { throwingIterable, arrayIterable, assertInstanceOf, rejectsWith } from './lib/test-util'
+import { eq, is, assert } from '@briancavalier/assert'
 
+const assertRangeError = assertInstanceOf(RangeError)
 const rejectsWithRangeError = p =>
-	rejects(p).then(e => e instanceof RangeError)
+	rejectsWith(assertRangeError, p)
 
 describe('any', () => {
 	it('should reject if iterator throws', () => {
 		const error = new Error()
-		return any(throwingIterable(error))
-			.then(fail, is(error))
+		return rejectsWith(is(error), any(throwingIterable(error)))
 	})
 
 	it('should reject with RangeError for empty iterable', () => {

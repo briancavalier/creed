@@ -2,8 +2,8 @@ import { describe, it } from 'mocha'
 import { delay } from '../src/main'
 import { Future, never, reject, fulfill } from '../src/Promise'
 import { silenceError, isNever, isPending } from '../src/inspect'
-import { assertSame } from './lib/test-util'
-import { is, assert, fail } from '@briancavalier/assert'
+import { assertSame, rejectsWith } from './lib/test-util'
+import { is, assert } from '@briancavalier/assert'
 
 const lte = (a, b) => (a - 1) <= b
 
@@ -28,7 +28,7 @@ describe('delay', function () {
 		const e = new Error()
 		p._reject(e)
 
-		return d.then(fail, is(e))
+		return rejectsWith(is(e), d)
 	})
 
 	it('should return never for never', () => {

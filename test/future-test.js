@@ -2,8 +2,8 @@ import { describe, it } from 'mocha'
 import { future, reject, fulfill, isSettled, isPending, never } from '../src/main'
 import { Future } from '../src/Promise'
 import { silenceError } from '../src/inspect'
-import { assertSame } from './lib/test-util'
-import { eq, is, assert, fail } from '@briancavalier/assert'
+import { assertSame, assertInstanceOf, rejectsWith } from './lib/test-util'
+import { eq, is, assert } from '@briancavalier/assert'
 
 const silenced = p => (silenceError(p), p)
 const f = x => x + 1
@@ -14,7 +14,7 @@ describe('future', () => {
 	it('should return { resolve, promise }', () => {
 		const { resolve, promise } = future()
 		assert(typeof resolve === 'function')
-		assert(promise instanceof Future)
+    assertInstanceOf(Future, promise)
 	})
 
 	describe('then', () => {
@@ -45,7 +45,7 @@ describe('future', () => {
 			const { resolve, promise } = future()
 			const expected = {}
 			resolve(reject(expected))
-			return promise.then(fail, is(expected))
+			return rejectsWith(is(expected), promise)
 		})
 	})
 

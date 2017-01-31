@@ -1,14 +1,13 @@
 import { describe, it } from 'mocha'
 import { resolve, Future } from '../src/Promise'
-import { is, assert, fail } from '@briancavalier/assert'
-
-const isTypeError = e => assert(e instanceof TypeError)
+import { assertTypeError, rejectsWith } from './lib/test-util'
+import { is } from '@briancavalier/assert'
 
 describe('resolve', () => {
 	it('should reject promise cycle', () => {
-		let p = new Future()
+		const p = new Future()
 		p._resolve(p)
-		return p.then(fail, isTypeError)
+		return rejectsWith(assertTypeError, p)
 	})
 
 	describe('thenables', () => {
@@ -19,14 +18,12 @@ describe('resolve', () => {
 
 		it('should resolve rejected thenable', () => {
 			const expected = new Error()
-			return resolve({ then: (f, r) => r(expected) })
-				.then(fail, is(expected))
+			return rejectsWith(is(expected), resolve({ then: (f, r) => r(expected) }))
 		})
 
 		it('should reject if thenable.then throws', () => {
 			const expected = new Error()
-			return resolve({ then: () => { throw expected } })
-				.then(fail, is(expected))
+			return rejectsWith(is(expected), resolve({ then: () => { throw expected } }))
 		})
 
 		it('should reject if accessing thenable.then throws', () => {
@@ -35,7 +32,7 @@ describe('resolve', () => {
 				get then () { throw expected }
 			}
 
-			return resolve(thenable).then(fail, is(expected))
+			return rejectsWith(is(expected), resolve(thenable))
 		})
 	})
 })

@@ -1,6 +1,12 @@
 'use strict'
 
-import { is, fail } from '@briancavalier/assert'
+import { is, rejects, fail, where } from '@briancavalier/assert'
+
+export const assertInstanceOf = where((C, a) => a instanceof C)
+export const assertTypeError = assertInstanceOf(TypeError)
+
+export const rejectsWith = (assertion, p) =>
+	rejects(p).map(assertion)
 
 export const assertSame = (ap, bp) =>
 	ap.then(a => bp.then(is(a)),

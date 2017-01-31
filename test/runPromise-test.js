@@ -1,9 +1,9 @@
 import { describe, it } from 'mocha'
 import { runPromise, resolve } from '../src/main'
-import { is, assert, fail, throws } from '@briancavalier/assert'
+import { assertTypeError, rejectsWith } from './lib/test-util'
+import { is, throws } from '@briancavalier/assert'
 
-const isTypeError = e => assert(e instanceof TypeError)
-const throwsTypeError = f => isTypeError(throws(f))
+const throwsTypeError = f => assertTypeError(throws(f))
 
 describe('runPromise', () => {
 	it('should throw synchronously when function not provided', () => {
@@ -12,18 +12,18 @@ describe('runPromise', () => {
 
 	it('should reject if resolver throws', () => {
 		const expected = new Error()
-		return runPromise(x => { throw x }, expected)
-			.then(fail, is(expected))
+    const p = runPromise(x => { throw x }, expected)
+    return rejectsWith(is(expected), p)
 	})
 
 	it('should reject', () => {
-		let expected = new Error()
-		return runPromise((_, reject) => reject(expected))
-			.then(fail, is(expected))
+		const expected = new Error()
+    const p = runPromise((_, reject) => reject(expected))
+    return rejectsWith(is(expected), p)
 	})
 
 	it('should resolve', () => {
-		let expected = {}
+		const expected = {}
 		return runPromise(resolve => resolve(expected))
 			.then(is(expected))
 	})
@@ -31,26 +31,29 @@ describe('runPromise', () => {
 	describe('when rejected explicitly', () => {
 		it('should ignore subsequent throw', () => {
 			const expected = new Error()
-			return runPromise((_, reject) => {
-				reject(expected)
-				throw new Error()
-			}).then(fail, is(expected))
+      const p = runPromise((_, reject) => {
+        reject(expected)
+        throw new Error()
+      })
+      return rejectsWith(is(expected), p)
 		})
 
 		it('should ignore subsequent reject', () => {
 			const expected = new Error()
-			return runPromise((_, reject) => {
-				reject(expected)
-				reject(new Error())
-			}).then(fail, is(expected))
+      const p = runPromise((_, reject) => {
+        reject(expected)
+        reject(new Error())
+      })
+      return rejectsWith(is(expected), p)
 		})
 
 		it('should ignore subsequent resolve', () => {
-			let expected = {}
-			return runPromise((_, reject) => {
-				reject(expected)
-				resolve()
-			}).then(fail, is(expected))
+			const expected = new Error()
+      const p = runPromise((_, reject) => {
+        reject(expected)
+        resolve()
+      })
+      return rejectsWith(is(expected), p)
 		})
 	})
 

@@ -1,8 +1,8 @@
 import { describe, it } from 'mocha'
 import { Future, resolve } from '../src/Promise'
 import { resolveIterable } from '../src/iterable'
-import { arrayIterable } from './lib/test-util'
-import { is, fail } from '@briancavalier/assert'
+import { arrayIterable, rejectsWith } from './lib/test-util'
+import { is } from '@briancavalier/assert'
 
 describe('iterable', () => {
 	it('should reject if itemHandler throws synchronously before resolution', () => {
@@ -14,8 +14,8 @@ describe('iterable', () => {
 		}
 
 		const iterable = arrayIterable([1, 2, 3])
-		return resolveIterable(resolve, itemHandler, iterable, new Future())
-			.then(fail, is(error))
+    const p = resolveIterable(resolve, itemHandler, iterable, new Future())
+    return rejectsWith(is(error), p)
 	})
 
 	it('should not reject if itemHandler throws synchronously after resolution', () => {

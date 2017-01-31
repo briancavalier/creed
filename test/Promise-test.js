@@ -1,11 +1,12 @@
 import { describe, it } from 'mocha'
 import { Promise, fulfill, reject } from '../src/main'
 import { is, assert, fail } from '@briancavalier/assert'
+import { rejectsWith } from './lib/test-util'
 
 describe('Promise', () => {
 	it('should call resolver synchronously', () => {
 		let called = false
-		const p = new Promise((resolve, reject) => {
+		const p = new Promise((resolve) => {
 			called = true
 			resolve()
 		})
@@ -15,8 +16,8 @@ describe('Promise', () => {
 
 	it('should reject if resolver throws synchronously', () => {
 		const expected = new Error()
-		return new Promise(() => { throw expected })
-			.then(fail, is(expected))
+    const p = new Promise(() => { throw expected })
+    return rejectsWith(is(expected), p)
 	})
 
 	describe('resolvers', () => {
@@ -34,14 +35,14 @@ describe('Promise', () => {
 
 		it('should resolve to rejected promise', () => {
 			const expected = new Error()
-			return new Promise(resolve => resolve(reject(expected)))
-				.then(fail, is(expected))
+      const p = new Promise(resolve => resolve(reject(expected)))
+      return rejectsWith(is(expected), p)
 		})
 
 		it('should reject with value', () => {
 			const expected = new Error()
-			return new Promise((resolve, reject) => reject(expected))
-				.then(fail, is(expected))
+      const p = new Promise((resolve, reject) => reject(expected))
+      return rejectsWith(is(expected), p)
 		})
 
 		it('should asynchronously fulfill with value', () => {
@@ -58,14 +59,14 @@ describe('Promise', () => {
 
 		it('should asynchronously resolve to rejected promise', () => {
 			const expected = new Error()
-			return new Promise(resolve => setTimeout(resolve, 1, reject(expected)))
-				.then(fail, is(expected))
+      const p = new Promise(resolve => setTimeout(resolve, 1, reject(expected)))
+      return rejectsWith(is(expected), p)
 		})
 
 		it('should asynchronously reject with value', () => {
 			const expected = new Error()
-			return new Promise((resolve, reject) => setTimeout(reject, 1, expected))
-				.then(fail, is(expected))
+      const p = new Promise((resolve, reject) => setTimeout(reject, 1, expected))
+      return rejectsWith(is(expected), p)
 		})
 	})
 })
