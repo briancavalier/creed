@@ -6,7 +6,7 @@ export const assertInstanceOf = where((C, a) => a instanceof C)
 export const assertTypeError = assertInstanceOf(TypeError)
 
 export const rejectsWith = (assertion, p) =>
-	rejects(p).map(assertion)
+	rejects(p).then(assertion)
 
 export const assertSame = (ap, bp) =>
 	ap.then(a => bp.then(is(a)),
