@@ -12,14 +12,14 @@ describe('runPromise', () => {
 
 	it('should reject if resolver throws', () => {
 		const expected = new Error()
-    const p = runPromise(x => { throw x }, expected)
-    return rejectsWith(is(expected), p)
+		const p = runPromise(x => { throw x }, expected)
+		return rejectsWith(is(expected), p)
 	})
 
 	it('should reject', () => {
 		const expected = new Error()
-    const p = runPromise((_, reject) => reject(expected))
-    return rejectsWith(is(expected), p)
+		const p = runPromise((_, reject) => reject(expected))
+		return rejectsWith(is(expected), p)
 	})
 
 	it('should resolve', () => {
@@ -31,29 +31,29 @@ describe('runPromise', () => {
 	describe('when rejected explicitly', () => {
 		it('should ignore subsequent throw', () => {
 			const expected = new Error()
-      const p = runPromise((_, reject) => {
-        reject(expected)
-        throw new Error()
-      })
-      return rejectsWith(is(expected), p)
+			const p = runPromise((_, reject) => {
+				reject(expected)
+				throw new Error()
+			})
+			return rejectsWith(is(expected), p)
 		})
 
 		it('should ignore subsequent reject', () => {
 			const expected = new Error()
-      const p = runPromise((_, reject) => {
-        reject(expected)
-        reject(new Error())
-      })
-      return rejectsWith(is(expected), p)
+			const p = runPromise((_, reject) => {
+				reject(expected)
+				reject(new Error())
+			})
+			return rejectsWith(is(expected), p)
 		})
 
 		it('should ignore subsequent resolve', () => {
 			const expected = new Error()
-      const p = runPromise((_, reject) => {
-        reject(expected)
-        resolve()
-      })
-      return rejectsWith(is(expected), p)
+			const p = runPromise((_, reject) => {
+				reject(expected)
+				resolve()
+			})
+			return rejectsWith(is(expected), p)
 		})
 	})
 
@@ -104,8 +104,8 @@ describe('runPromise', () => {
 
 		it('for 3 arguments', () => {
 			const a = {}
-      const b = {}
-      const c = {}
+			const b = {}
+			const c = {}
 			return runPromise((w, x, y, resolve) => {
 				is(a, w)
 				is(b, x)
@@ -115,14 +115,14 @@ describe('runPromise', () => {
 		})
 
 		it('for 4 or more arguments', () => {
-      const a = {}
-      const b = {}
-      const c = {}
-      const d = {}
+			const a = {}
+			const b = {}
+			const c = {}
+			const d = {}
 			return runPromise((w, x, y, z, resolve) => {
-        is(a, w)
-        is(b, x)
-        is(c, y)
+				is(a, w)
+				is(b, x)
+				is(c, y)
 				is(d, z)
 				resolve()
 			}, a, b, c, d)

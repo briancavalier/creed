@@ -12,19 +12,19 @@ describe('then', function () {
 
 	it('should not change reason when r is not a function', () => {
 		const expected = {}
-    const p = delay(1, expected).then(reject).then(x => null)
-    return rejectsWith(is(expected), p)
+		const p = delay(1, expected).then(reject).then(x => null)
+		return rejectsWith(is(expected), p)
 	})
 
 	it('should reject if f throws', () => {
 		const expected = {}
-    const p = delay(1).then(() => { throw expected })
-    return rejectsWith(is(expected), p)
+		const p = delay(1).then(() => { throw expected })
+		return rejectsWith(is(expected), p)
 	})
 
 	it('should reject if r throws', () => {
 		const expected = {}
-    const p = delay(1).then(reject).then(null, () => { throw expected })
-    return rejectsWith(is(expected), p)
+		const p = delay(1).then(reject).then(null, () => { throw expected })
+		return rejectsWith(is(expected), p)
 	})
 })

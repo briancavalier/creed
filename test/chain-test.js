@@ -17,13 +17,13 @@ describe('chain', function () {
 	})
 
 	it('should reject if f returns a non-promise', () => {
-    const p = fulfill(1).chain(x => x)
-    return rejectsWith(assertTypeError, p)
+		const p = fulfill(1).chain(x => x)
+		return rejectsWith(assertTypeError, p)
 	})
 
 	it('should not map rejection', () => {
 		const expected = new Error()
-    const p = delay(1, expected).then(reject)
-    return rejectsWith(is(expected), p.chain(() => null))
+		const p = delay(1, expected).then(reject)
+		return rejectsWith(is(expected), p.chain(() => null))
 	})
 })

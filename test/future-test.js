@@ -14,7 +14,7 @@ describe('future', () => {
 	it('should return { resolve, promise }', () => {
 		const { resolve, promise } = future()
 		assert(typeof resolve === 'function')
-    assertInstanceOf(Future, promise)
+		assertInstanceOf(Future, promise)
 	})
 
 	describe('then', () => {
@@ -38,7 +38,7 @@ describe('future', () => {
 			const { resolve, promise } = future()
 			const expected = {}
 			resolve(fulfill(expected))
-      return promise.then(is(expected))
+			return promise.then(is(expected))
 		})
 
 		it('should resolve to rejected promise', () => {

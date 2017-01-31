@@ -16,8 +16,8 @@ describe('Promise', () => {
 
 	it('should reject if resolver throws synchronously', () => {
 		const expected = new Error()
-    const p = new Promise(() => { throw expected })
-    return rejectsWith(is(expected), p)
+		const p = new Promise(() => { throw expected })
+		return rejectsWith(is(expected), p)
 	})
 
 	describe('resolvers', () => {
@@ -35,14 +35,14 @@ describe('Promise', () => {
 
 		it('should resolve to rejected promise', () => {
 			const expected = new Error()
-      const p = new Promise(resolve => resolve(reject(expected)))
-      return rejectsWith(is(expected), p)
+			const p = new Promise(resolve => resolve(reject(expected)))
+			return rejectsWith(is(expected), p)
 		})
 
 		it('should reject with value', () => {
 			const expected = new Error()
-      const p = new Promise((resolve, reject) => reject(expected))
-      return rejectsWith(is(expected), p)
+			const p = new Promise((resolve, reject) => reject(expected))
+			return rejectsWith(is(expected), p)
 		})
 
 		it('should asynchronously fulfill with value', () => {
@@ -59,14 +59,14 @@ describe('Promise', () => {
 
 		it('should asynchronously resolve to rejected promise', () => {
 			const expected = new Error()
-      const p = new Promise(resolve => setTimeout(resolve, 1, reject(expected)))
-      return rejectsWith(is(expected), p)
+			const p = new Promise(resolve => setTimeout(resolve, 1, reject(expected)))
+			return rejectsWith(is(expected), p)
 		})
 
 		it('should asynchronously reject with value', () => {
 			const expected = new Error()
-      const p = new Promise((resolve, reject) => setTimeout(reject, 1, expected))
-      return rejectsWith(is(expected), p)
+			const p = new Promise((resolve, reject) => setTimeout(reject, 1, expected))
+			return rejectsWith(is(expected), p)
 		})
 	})
 })

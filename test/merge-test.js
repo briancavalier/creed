@@ -30,16 +30,16 @@ describe('merge', () => {
 
 	it('should reject if input contains rejection', () => {
 		const expected = new Error()
-    const p = merge(() => assert(false), 1, reject(expected))
-    return rejectsWith(is(expected), p)
+		const p = merge(() => assert(false), 1, reject(expected))
+		return rejectsWith(is(expected), p)
 	})
 
 	it('should reject if merge function throws', () => {
 		const expected = {}
-    const p = merge(() => {
-      throw expected
-    }, resolve(1), resolve(2))
+		const p = merge(() => {
+			throw expected
+		}, resolve(1), resolve(2))
 
-    return rejectsWith(is(expected), p)
+		return rejectsWith(is(expected), p)
 	})
 })

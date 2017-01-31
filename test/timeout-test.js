@@ -27,8 +27,8 @@ describe('timeout', function () {
 	})
 
 	it('should reject if timeout is earlier than fulfill', () => {
-    const p = timeout(1, delay(10, true))
-    return rejectsWith(isTimeoutError, p)
+		const p = timeout(1, delay(10, true))
+		return rejectsWith(isTimeoutError, p)
 	})
 
 	it('should fulfill if timeout is later than fulfill', () => {
@@ -37,13 +37,13 @@ describe('timeout', function () {
 	})
 
 	it('should reject if timeout is earlier than reject', () => {
-    const p = timeout(1, delayReject(10, new Error()))
-    return rejectsWith(isTimeoutError, p)
+		const p = timeout(1, delayReject(10, new Error()))
+		return rejectsWith(isTimeoutError, p)
 	})
 
 	it('should reject if timeout is later than reject', () => {
 		const x = new Error()
-    const p = timeout(10, delayReject(1, x))
-    return rejectsWith(is(x), p)
+		const p = timeout(10, delayReject(1, x))
+		return rejectsWith(is(x), p)
 	})
 })

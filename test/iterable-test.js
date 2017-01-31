@@ -14,8 +14,8 @@ describe('iterable', () => {
 		}
 
 		const iterable = arrayIterable([1, 2, 3])
-    const p = resolveIterable(resolve, itemHandler, iterable, new Future())
-    return rejectsWith(is(error), p)
+		const p = resolveIterable(resolve, itemHandler, iterable, new Future())
+		return rejectsWith(is(error), p)
 	})
 
 	it('should not reject if itemHandler throws synchronously after resolution', () => {
