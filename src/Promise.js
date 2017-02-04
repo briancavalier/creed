@@ -9,6 +9,7 @@ import then from './then'
 import map from './map'
 import bimap from './bimap'
 import chain from './chain'
+import when from './when'
 
 import Race from './Race'
 import Merge from './Merge'
@@ -77,7 +78,11 @@ class Core {
 		return never()
 	}
 
-	// @deprecated The name concat is deprecated, use or() instead.
+  when (r, f) {
+    return when(r, f, this)
+  }
+
+  // @deprecated The name concat is deprecated, use or() instead.
 	concat (b) {
 		return this.or(b)
 	}
@@ -305,6 +310,8 @@ class Rejected extends Core {
 	constructor (e) {
 		super()
 		this.value = e
+		// Error.captureStackTrace(this, Rejected)
+    // this._value = e instanceof Error ? e : new Error(e);
 		this._state = REJECTED
 		errorHandler.track(this)
 	}
@@ -393,6 +400,10 @@ class Never extends Core {
 
 	or (b) {
 		return b
+	}
+
+	into () {
+		return void 0
 	}
 
 	toString () {
