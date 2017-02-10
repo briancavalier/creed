@@ -59,11 +59,11 @@ function handleItem (resolve, handler, x, i, promise) {
 	} else if (isRejected(p)) {
 		handler.rejectAt(p, i, promise)
 	} else {
-		p._runAction(new Indexed(handler, i, promise))
+		p._runAction(new AtIndex(handler, i, promise))
 	}
 }
 
-class Indexed extends Action {
+class AtIndex extends Action {
 	constructor (handler, i, promise) {
 		super(promise)
 		this.i = i

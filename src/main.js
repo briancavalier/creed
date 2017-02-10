@@ -13,6 +13,15 @@ import _runPromise from './runPromise'
 import _runNode from './node'
 import _runCoroutine from './coroutine.js'
 
+import { isDebug } from './env'
+import { swapContext, pushContext, enableContextTracing, disableContextTracing } from './trace'
+
+export { enableContextTracing, disableContextTracing }
+
+if (isDebug) {
+	enableContextTracing()
+}
+
 // -------------------------------------------------------------
 // ## Core promise methods
 // -------------------------------------------------------------
@@ -134,6 +143,7 @@ function runMerge (f, thisArg, args) {
 
 class MergeHandler {
 	constructor (f, c) {
+		this.context = pushContext(this.constructor, Merge.name)
 		this.f = f
 		this.c = c
 		this.promise = void 0
@@ -147,11 +157,13 @@ class MergeHandler {
 	}
 
 	run () {
+		const c = swapContext(this.context)
 		try {
 			this.promise._resolve(this.f.apply(this.c, this.args))
 		} catch (e) {
 			this.promise._reject(e)
 		}
+		swapContext(c)
 	}
 }
 

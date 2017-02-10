@@ -1,6 +1,9 @@
+import { pushContext } from './trace'
+
 export default class Action {
 	constructor (promise) {
 		this.promise = promise
+		this.context = pushContext(this.constructor)
 	}
 
 	// default onFulfilled action
@@ -13,5 +16,9 @@ export default class Action {
 	rejected (p) {
 		this.promise._become(p)
 		return false
+	}
+
+	toString () {
+		return this.constructor.name
 	}
 }

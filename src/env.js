@@ -7,4 +7,10 @@ const isNode = typeof process !== 'undefined' &&
 const MutationObs = (typeof MutationObserver === 'function' && MutationObserver) ||
     (typeof WebKitMutationObserver === 'function' && WebKitMutationObserver)
 
-export { isNode, MutationObs }
+const getenv = name => isNode && process.env[name]
+
+const isDebug = getenv('CREED_DEBUG') ||
+  getenv('NODE_ENV') === 'development' ||
+  getenv('NODE_ENV') === 'test'
+
+export { isNode, MutationObs, isDebug }

@@ -14,15 +14,19 @@ import Race from './Race'
 import Merge from './Merge'
 import { resolveIterable, resultsArray } from './iterable'
 
+import { swapContext, peekContext, attachTrace } from './trace'
+
 import fl from 'fantasy-land'
 
 const taskQueue = new TaskQueue()
 export { taskQueue }
 
+const handleError = ({ context, value }) => {
+	throw attachTrace(context, value)
+}
+
 /* istanbul ignore next */
-const errorHandler = new ErrorHandler(makeEmitError(), e => {
-	throw e.value
-})
+const errorHandler = new ErrorHandler(makeEmitError(), handleError)
 
 // -------------------------------------------------------------
 // ## Types
@@ -295,7 +299,9 @@ class Fulfilled extends Core {
 	}
 
 	_runAction (action) {
+		const c = swapContext(action.context)
 		action.fulfilled(this)
+		swapContext(c)
 	}
 }
 
@@ -306,6 +312,7 @@ class Rejected extends Core {
 		super()
 		this.value = e
 		this._state = REJECTED
+		this.context = peekContext()
 		errorHandler.track(this)
 	}
 
@@ -358,9 +365,11 @@ class Rejected extends Core {
 	}
 
 	_runAction (action) {
+		const c = swapContext(action.context)
 		if (action.rejected(this)) {
 			errorHandler.untrack(this)
 		}
+		swapContext(c)
 	}
 }
 
@@ -464,7 +473,9 @@ export function all (promises) {
 
 const allHandler = {
 	merge (promise, args) {
+		const c = swapContext(this.context)
 		promise._fulfill(args)
+		swapContext(c)
 	}
 }
 
