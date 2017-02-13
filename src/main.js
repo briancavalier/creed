@@ -18,6 +18,7 @@ import { swapContext, pushContext, enableContextTracing, disableContextTracing }
 
 export { enableContextTracing, disableContextTracing }
 
+/* istanbul ignore next */
 if (isDebug) {
 	enableContextTracing()
 }

@@ -21,6 +21,7 @@ import fl from 'fantasy-land'
 const taskQueue = new TaskQueue()
 export { taskQueue }
 
+/* istanbul ignore next */
 const handleError = ({ context, value }) => {
 	throw attachTrace(context, value)
 }

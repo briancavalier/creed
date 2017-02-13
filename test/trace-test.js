@@ -1,8 +1,13 @@
-import { describe, it } from 'mocha'
-import { traceContext, pushContext, swapContext, peekContext, formatTrace, attachTrace } from '../src/trace'
-import { is, eq, assert } from '@briancavalier/assert'
+import { describe, it, afterEach } from 'mocha'
+import { is, eq, assert, fail } from '@briancavalier/assert'
+
+import { traceContext, pushContext, swapContext, peekContext, formatTrace, attachTrace, captureStackTrace,
+createContext, elideTrace, enableContextTracing, disableContextTracing, Context
+} from '../src/trace'
 
 describe('trace', () => {
+  afterEach(() => disableContextTracing())
+
   describe('pushContext', () => {
     it('should return expected context', () => {
       const createContext = (context, at, tag) => ({ context, at, tag })
@@ -57,11 +62,26 @@ describe('trace', () => {
   })
 
   describe('enableContextTracing', () => {
+    it('should install default initialContext and createContext', () => {
+      enableContextTracing()
 
+      const context = pushContext(() => {}, '')
+
+      assert(context instanceof Context)
+      eq(undefined, swapContext(context))
+      is(context, swapContext(context.next))
+    })
   })
 
   describe('disableContextTracing', () => {
+    it('should remove context and default createContext', () => {
+      const initialContext = {}
+      traceContext(fail, initialContext)
+      disableContextTracing()
 
+      eq(undefined, pushContext(() => {}, ''))
+      eq(undefined, swapContext({}))
+    })
   })
 
   describe('attachTrace', () => {
@@ -92,16 +112,118 @@ describe('trace', () => {
     })
 
     it('should retain expected frames from all contexts', () => {
+      const trace1 = 'Trace 1:\n'
+        + ' at a\n'
+        + ' at (creed/src/):1:1\n'
+        + ' at (creed\\src\\):1:2\n'
+        + ' at b\n'
+        + ' at (internal/process/):3:1\n'
+        + ' at (internal\\process\\):3:2'
 
+      const trace2 = 'Trace 2:\n'
+        + ' at c\n'
+        + ' at (creed/dist/):2:1\n'
+        + ' at (creed\\dist\\):2:2\n'
+        + ' at d\n'
+        + ' at (timers.js):4:1\n'
+        + ' at (module.js):4:2'
+
+      const context1 = { stack: trace1, next: undefined }
+      const context2 = { stack: trace2, next: context1 }
+
+      const expected = '\nTrace 2:\n'
+        + ' at c\n'
+        + ' at d\n'
+        + 'Trace 1:\n'
+        + ' at a\n'
+        + ' at b'
+
+      eq(expected, formatTrace(context2))
     })
   })
 
   describe('elideTrace', () => {
     it('should retain only expected frames', () => {
+      const trace = 'Test\n'
+        + ' at a\n'
+        + ' at (creed/src/):1:1\n'
+        + ' at (creed\\src\\):1:2\n'
+        + ' at b\n'
+        + ' at (creed/dist/):2:1\n'
+        + ' at (creed\\dist\\):2:2\n'
+        + ' at c\n'
+        + ' at (internal/process/):3:1\n'
+        + ' at (internal\\process\\):3:2\n'
+        + ' at d\n'
+        + ' at (timers.js):4:1\n'
+        + ' at (module.js):4:2\n'
 
+      eq('\nTest\n at a\n at b\n at c\n at d\n', elideTrace(trace))
     })
-    it('should return empty when all frames elided', () => {
 
+    it('should return empty when all frames elided', () => {
+      const trace = 'Test\n'
+        + ' at (creed/src/):1:1\n'
+        + ' at (creed\\src\\):1:2\n'
+        + ' at (creed/dist/):2:1\n'
+        + ' at (creed\\dist\\):2:2\n'
+        + ' at (internal/process/):3:1\n'
+        + ' at (internal\\process\\):3:2\n'
+        + ' at (timers.js):4:1\n'
+        + ' at (module.js):4:2\n'
+
+      eq('', elideTrace(trace))
+    })
+  })
+
+  describe('createContext', () => {
+    it('should create Context with expected next and tag', () => {
+      const currentContext = {}
+      const at = () => {}
+      const tag = `${Math.random()}`
+
+      const actual = createContext(currentContext, at, tag)
+
+      is(currentContext, actual.next)
+      eq(tag, actual.tag)
+    })
+  })
+
+  describe('Context', () => {
+    it('should have expected next and tag', () => {
+      const next = {}
+      const at = () => {}
+      const tag = `${Math.random()}`
+
+      const actual = new Context(next, tag, at)
+
+      is(next, actual.next)
+      eq(tag, actual.tag)
+    })
+
+    it('should have toString containing tag when tag present', () => {
+      const next = {}
+      const at = () => {}
+      const tag = `${Math.random()}`
+
+      const actual = new Context(next, tag, at)
+      assert(actual.toString().indexOf(tag) >= 0)
+    })
+
+    it('should have default toString when tag missing', () => {
+      const next = {}
+      const at = () => {}
+      const tag = ''
+
+      const actual = new Context(next, tag, at)
+
+      assert(actual.toString().length > 0)
+    })
+  })
+
+  describe('captureStackTrace', () => {
+    it('should be a function', () => {
+      assert(typeof captureStackTrace === 'function')
     })
   })
 })

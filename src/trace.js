@@ -28,8 +28,8 @@ export const swapContext = context => {
 // initialContext :: c
 // An initial current context
 export const traceContext = (createContext, initialContext) => {
-	_currentContext = initialContext
 	_createContext = createContext
+	_currentContext = initialContext
 }
 
 // Enable default context tracing
@@ -39,29 +39,6 @@ export const enableContextTracing = () =>
 // Disable context tracing
 export const disableContextTracing = () =>
   traceContext(noop, undefined)
-
-// ------------------------------------------------------
-// Formatting
-
-export const attachTrace = (context, e) => {
-	if (context !== undefined) {
-		e.stack = elideTrace(e.stack) + formatTrace(context)
-	}
-
-	return e
-}
-
-export const formatTrace = context =>
-  context === undefined ? ''
-    : elideTrace(context.stack) + formatTrace(context.next)
-
-export const elideTraceRx =
-  /\s*at\s.*(creed[\\/](src|dist)[\\/]|internal[\\/]process[\\/]|\((timers|module)\.js).+:\d.*/g
-
-export const elideTrace = stack => {
-	const s = stack.replace(elideTraceRx, '')
-	return s.indexOf(' at ') < 0 ? '' : '\n' + s
-}
 
 // ------------------------------------------------------
 // Default context tracing
@@ -81,4 +58,27 @@ export class Context {
 	toString () {
 		return this.tag ? ` from ${this.tag}:` : ' from previous context:'
 	}
+}
+
+// ------------------------------------------------------
+// Default context formatting
+
+export const attachTrace = (context, e) => {
+	if (context !== undefined) {
+		e.stack = elideTrace(e.stack) + formatTrace(context)
+	}
+
+	return e
+}
+
+export const formatTrace = context =>
+  context === undefined ? ''
+    : elideTrace(context.stack) + formatTrace(context.next)
+
+export const elideTraceRx =
+  /\s*at\s.*(creed[\\/](src|dist)[\\/]|internal[\\/]process[\\/]|\((timers|module)\.js).+:\d.*/g
+
+export const elideTrace = stack => {
+	const s = stack.replace(elideTraceRx, '')
+	return s.indexOf(' at ') < 0 ? '' : '\n' + s
 }
