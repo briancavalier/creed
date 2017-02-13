@@ -45,7 +45,7 @@ export const disableContextTracing = () =>
 
 export const attachTrace = (context, e) => {
 	if (context !== undefined) {
-		e.stack = elide(e.stack) + formatTrace(context)
+		e.stack = elideTrace(e.stack) + formatTrace(context)
 	}
 
 	return e
@@ -53,25 +53,25 @@ export const attachTrace = (context, e) => {
 
 export const formatTrace = context =>
   context === undefined ? ''
-    : elide(context.stack) + formatTrace(context.next)
+    : elideTrace(context.stack) + formatTrace(context.next)
 
-const defaultStackRx =
+export const elideTraceRx =
   /\s*at\s.*(creed[\\/](src|dist)[\\/]|internal[\\/]process[\\/]|\((timers|module)\.js).+:\d.*/g
 
-const elide = stack => {
-	const s = stack.replace(defaultStackRx, '')
+export const elideTrace = stack => {
+	const s = stack.replace(elideTraceRx, '')
 	return s.indexOf(' at ') < 0 ? '' : '\n' + s
 }
 
 // ------------------------------------------------------
 // Default context tracing
 
-const createContext = (currentContext, at, tag) =>
+export const createContext = (currentContext, at, tag) =>
   new Context(currentContext, tag || at.name, at)
 
-const captureStackTrace = Error.captureStackTrace || noop
+export const captureStackTrace = Error.captureStackTrace || noop
 
-class Context {
+export class Context {
 	constructor (next, tag, at) {
 		this.next = next
 		this.tag = tag
