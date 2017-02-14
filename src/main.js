@@ -14,13 +14,13 @@ import _runNode from './node'
 import _runCoroutine from './coroutine.js'
 
 import { isDebug } from './env'
-import { swapContext, pushContext, enableContextTracing, disableContextTracing } from './trace'
+import { swapContext, pushContext, enableAsyncTraces, disableAsyncTraces } from './trace'
 
-export { enableContextTracing, disableContextTracing }
+export { enableAsyncTraces, disableAsyncTraces }
 
 /* istanbul ignore next */
 if (isDebug) {
-	enableContextTracing()
+	enableAsyncTraces()
 }
 
 // -------------------------------------------------------------

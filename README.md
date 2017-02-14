@@ -126,22 +126,64 @@ Running this program (e.g. using `babel-node`) causes a fatal error, exiting the
  
 ```
 > babel-node experiments/errors.js file1 file2 ...
-/Users/brian/Projects/creed/dist/creed.js:583
-		throw e.value;
+/Users/brian/Projects/creed/dist/creed.js:660
+		throw attachTrace(context, value);
 		^
 
 ReferenceError: fail is not defined
     at append (/Users/brian/Projects/creed/experiments/errors.js:8:39)
     at Array.reduce (native)
-    at /Users/brian/Projects/creed/experiments/errors.js:11:31
-    at Map.applyMap [as apply] (/Users/brian/Projects/creed/dist/creed.js:342:17)
-    at Map.fulfilled (/Users/brian/Projects/creed/dist/creed.js:360:19)
-    at Future._runAction (/Users/brian/Projects/creed/dist/creed.js:791:17)
-    at Future.run (/Users/brian/Projects/creed/dist/creed.js:724:14)
-    at TaskQueue._drain (/Users/brian/Projects/creed/dist/creed.js:158:10)
-    at /Users/brian/Projects/creed/dist/creed.js:143:18
-    at doNTCallback0 (node.js:407:9)
+    at readFilesP.map.contents (/Users/brian/Projects/creed/experiments/errors.js:13:31)
+    at tryCall (/Users/brian/Projects/creed/dist/creed.js:333:12)
+    at Map.fulfilled (/Users/brian/Projects/creed/dist/creed.js:397:3)
+    at Fulfilled._runAction (/Users/brian/Projects/creed/dist/creed.js:935:10)
+    at Future.run (/Users/brian/Projects/creed/dist/creed.js:861:5)
+    at TaskQueue._drain (/Users/brian/Projects/creed/dist/creed.js:131:8)
+    at /Users/brian/Projects/creed/dist/creed.js:117:53
+    at _combinedTickCallback (internal/process/next_tick.js:67:7)
 ```
+
+## Async traces
+
+Fatal stack traces are helpful, but sometimes they aren't enough.  Enable _async traces_ for stack traces for even more detail.
+
+**Note:** Enabling async traces is typically an application-level concern.  Libraries that use creed *should not* enable them in dist builds.
+
+Running the example above with async traces enabled yields a more helpful trace. Notably:
+ 
+- asynchronous stack frames are shown: both the point at which map is called and the point in the mapping function (which is called asynchronous) are shown.
+- the Map operation in the example is called out specifically
+- stack frames from within creed are omitted
+
+```
+> CREED_DEBUG=1 babel-node experiments/errors.js file1 file2 ...
+/Users/brian/Projects/creed/dist/creed.js:660
+		throw attachTrace(context, value);
+		^
+
+ReferenceError: fail is not defined
+    at append (/Users/brian/Projects/creed/experiments/errors.js:8:39)
+    at Array.reduce (native)
+    at readFilesP.map.contents (/Users/brian/Projects/creed/experiments/errors.js:13:31)
+ from Map:
+    at Object.<anonymous> (/Users/brian/Projects/creed/experiments/errors.js:13:6)
+    at loader (/Users/brian/Projects/creed/node_modules/babel-register/lib/node.js:144:5)
+    at Object.require.extensions.(anonymous function) [as .js] (/Users/brian/Projects/creed/node_modules/babel-register/lib/node.js:154:7)
+```
+
+### Enabling async traces
+
+Enable async traces by:
+
+* `NODE_ENV=development` or `NODE_ENV=test` - async traces will be enabled automatically.
+* `CREED_DEBUG=1` (or any non-empty string) - enables async traces even if NODE_ENV=production or NODE_ENV not set.
+* `enableAsyncTraces()` - programatically enable async traces, e.g. for browsers, etc. where env vars aren't available.
+
+### Performance impact
+    
+Async traces have about a 4-5x impact on performance.
+
+That may be just fine for some applications, while not for others.  Be sure to assess your application performance needs and budget before running with async traces enabled in production.
 
 ## Debug events
 
@@ -773,6 +815,16 @@ getReason(resolve(123))      //=> throws TypeError
 getReason(reject('because')) //=> 'because'
 getReason(never())           //=> throws TypeError
 ```
+
+## Debugging
+
+### enableAsyncTraces :: () &rarr; ()
+
+Enable [async traces](#asynctraces).  Should be called as soon after application startup as possible.  Can be called at any time, but will only trace promises created *after* it's called.
+
+### disableAsyncTraces :: () &rarr; ()
+
+Disable [async traces](#asynctraces).
 
 ## Polyfill
 

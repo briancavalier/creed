@@ -27,18 +27,18 @@ export const swapContext = context => {
 // return a new current context
 // initialContext :: c
 // An initial current context
-export const traceContext = (createContext, initialContext) => {
+export const traceAsync = (createContext, initialContext) => {
 	_createContext = createContext
 	_currentContext = initialContext
 }
 
 // Enable default context tracing
-export const enableContextTracing = () =>
-	traceContext(createContext, undefined)
+export const enableAsyncTraces = () =>
+	traceAsync(createContext, undefined)
 
 // Disable context tracing
-export const disableContextTracing = () =>
-  traceContext(noop, undefined)
+export const disableAsyncTraces = () =>
+  traceAsync(noop, undefined)
 
 // ------------------------------------------------------
 // Default context tracing

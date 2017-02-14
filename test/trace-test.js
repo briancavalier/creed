@@ -1,12 +1,12 @@
 import { describe, it, afterEach } from 'mocha'
 import { is, eq, assert, fail } from '@briancavalier/assert'
 
-import { traceContext, pushContext, swapContext, peekContext, formatTrace, attachTrace, captureStackTrace,
-createContext, elideTrace, enableContextTracing, disableContextTracing, Context
+import { traceAsync, pushContext, swapContext, peekContext, formatTrace, attachTrace, captureStackTrace,
+createContext, elideTrace, enableAsyncTraces, disableAsyncTraces, Context
 } from '../src/trace'
 
 describe('trace', () => {
-  afterEach(() => disableContextTracing())
+  afterEach(() => disableAsyncTraces())
 
   describe('pushContext', () => {
     it('should return expected context', () => {
@@ -15,7 +15,7 @@ describe('trace', () => {
       const at = () => {}
       const tag = `${Math.random()}`
 
-      traceContext(createContext, initialContext)
+      traceAsync(createContext, initialContext)
       const actual = pushContext(at, tag)
 
       is(initialContext, actual.context)
@@ -31,7 +31,7 @@ describe('trace', () => {
       const at = () => {}
       const tag = `${Math.random()}`
 
-      traceContext(createContext, initialContext)
+      traceAsync(createContext, initialContext)
 
       const context1 = pushContext(at, tag)
 
@@ -51,7 +51,7 @@ describe('trace', () => {
       const initialContext = {}
       const otherContext = {}
 
-      traceContext(createContext, initialContext)
+      traceAsync(createContext, initialContext)
 
       is(initialContext, peekContext())
 
@@ -61,9 +61,9 @@ describe('trace', () => {
     })
   })
 
-  describe('enableContextTracing', () => {
+  describe('enableAsyncTraces', () => {
     it('should install default initialContext and createContext', () => {
-      enableContextTracing()
+      enableAsyncTraces()
 
       const context = pushContext(() => {}, '')
 
@@ -73,11 +73,11 @@ describe('trace', () => {
     })
   })
 
-  describe('disableContextTracing', () => {
+  describe('disableAsyncTraces', () => {
     it('should remove context and default createContext', () => {
       const initialContext = {}
-      traceContext(fail, initialContext)
-      disableContextTracing()
+      traceAsync(fail, initialContext)
+      disableAsyncTraces()
 
       eq(undefined, pushContext(() => {}, ''))
       eq(undefined, swapContext({}))
