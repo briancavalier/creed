@@ -152,7 +152,7 @@ Fatal stack traces are helpful, but sometimes they aren't enough.  Enable _async
 Running the example above with async traces enabled yields a more helpful trace. Notably:
  
 - asynchronous stack frames are shown: both the point at which map is called and the point in the mapping function (which is called asynchronous) are shown.
-- the Map operation in the example is called out specifically
+- the Map operation is called out specifically
 - stack frames from within creed are omitted
 
 ```
@@ -190,6 +190,8 @@ That may be just fine for some applications, while not for others.  Be sure to a
 
 Creed supports global `window` events in browsers, and `process` events in Node, similar to Node's `'uncaughtException'` event. This allows applications to register a handler to receive events from all promise implementations that support these global events.
 
+Errors passed to unhandled rejection event handlers will have [async traces](#async-traces) if they are enabled.
+
 The events are:
 
 * `'unhandledRejection'`: fired when an unhandled rejection is detected
@@ -201,7 +203,6 @@ The following example shows how to use global `process` events in Node.js to imp
 
 * `reason` - the rejection reason, typically an `Error` instance.
 * `promise` - the promise that was rejected.  This can be used to correlate corresponding `unhandledRejection` and `rejectionHandled` events for the same promise.
-
 
 ```js
 process.on('unhandledRejection', reportRejection)
