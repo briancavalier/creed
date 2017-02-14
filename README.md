@@ -177,7 +177,8 @@ Enable async traces by:
 
 * `NODE_ENV=development` or `NODE_ENV=test` - async traces will be enabled automatically.
 * `CREED_DEBUG=1` (or any non-empty string) - enables async traces even if NODE_ENV=production or NODE_ENV not set.
-* `enableAsyncTraces()` - programatically enable async traces, e.g. for browsers, etc. where env vars aren't available.
+* [`enableAsyncTraces()`](#enableasynctraces----) - programatically enable async traces, e.g. for browsers, etc. where env vars aren't available.
+    * [`disableAsyncTraces()`](#disableasynctraces----) - programatically disable async traces.
 
 ### Performance impact
     
@@ -820,11 +821,11 @@ getReason(never())           //=> throws TypeError
 
 ### enableAsyncTraces :: () &rarr; ()
 
-Enable [async traces](#asynctraces).  Should be called as soon after application startup as possible.  Can be called at any time, but will only trace promises created *after* it's called.
+Enable [async traces](#async-traces).  Should be called as soon after application startup as possible.  Can be called at any time, but will only trace promises created *after* it's called.
 
 ### disableAsyncTraces :: () &rarr; ()
 
-Disable [async traces](#asynctraces).
+Disable [async traces](#async-traces).
 
 ## Polyfill
 
