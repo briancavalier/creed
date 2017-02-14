@@ -1,7 +1,7 @@
 import { describe, it, afterEach } from 'mocha'
 import { is, eq, assert, fail } from '@briancavalier/assert'
 
-import { traceAsync, pushContext, swapContext, peekContext, formatTrace, attachTrace, captureStackTrace,
+import { traceAsync, pushContext, swapContext, peekContext, formatContext, attachTrace, captureStackTrace,
 createContext, elideTrace, enableAsyncTraces, disableAsyncTraces, Context
 } from '../src/trace'
 
@@ -88,7 +88,7 @@ describe('trace', () => {
     it('should not modify stack when context is undefined', () => {
       const expected = new Error()
       const expectedStack = expected.stack
-      const actual = attachTrace(undefined, expected)
+      const actual = attachTrace(expected, undefined)
 
       is(expected, actual)
       eq(expectedStack, actual.stack)
@@ -99,16 +99,17 @@ describe('trace', () => {
       const unexpectedStack = expected.stack
       const context = new Error()
 
-      const actual = attachTrace(context, expected)
+      const actual = attachTrace(expected, context)
 
       is(expected, actual)
       assert(unexpectedStack !== actual.stack)
     })
   })
 
-  describe('formatTrace', () => {
-    it('should return empty string for missing context', () => {
-      eq('', formatTrace(undefined))
+  describe('formatContext', () => {
+    it('should return initial for missing context', () => {
+      const initial = `${Math.random()}`
+      eq(initial, formatContext(initial, undefined))
     })
 
     it('should retain expected frames from all contexts', () => {
@@ -131,20 +132,23 @@ describe('trace', () => {
       const context1 = { stack: trace1, next: undefined }
       const context2 = { stack: trace2, next: context1 }
 
-      const expected = '\nTrace 2:\n'
+      const initial = `${Math.random()}`
+      const expected = initial
+        + '\nTrace 2:\n'
         + ' at c\n'
         + ' at d\n'
         + 'Trace 1:\n'
         + ' at a\n'
         + ' at b'
 
-      eq(expected, formatTrace(context2))
+      eq(expected, formatContext(initial, context2))
     })
   })
 
   describe('elideTrace', () => {
     it('should retain only expected frames', () => {
-      const trace = 'Test\n'
+      const initial = `${Math.random()}\n`
+      const trace = initial
         + ' at a\n'
         + ' at (creed/src/):1:1\n'
         + ' at (creed\\src\\):1:2\n'
@@ -158,11 +162,12 @@ describe('trace', () => {
         + ' at (timers.js):4:1\n'
         + ' at (module.js):4:2\n'
 
-      eq('\nTest\n at a\n at b\n at c\n at d\n', elideTrace(trace))
+      eq(initial + ' at a\n at b\n at c\n at d\n', elideTrace(trace))
     })
 
     it('should return empty when all frames elided', () => {
-      const trace = 'Test\n'
+      const initial = `${Math.random()}\n`
+      const trace = initial
         + ' at (creed/src/):1:1\n'
         + ' at (creed\\src\\):1:2\n'
         + ' at (creed/dist/):2:1\n'
@@ -172,7 +177,7 @@ describe('trace', () => {
         + ' at (timers.js):4:1\n'
         + ' at (module.js):4:2\n'
 
-      eq('', elideTrace(trace))
+      eq(initial, elideTrace(trace))
     })
   })
 

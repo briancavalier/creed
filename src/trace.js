@@ -63,22 +63,32 @@ export class Context {
 // ------------------------------------------------------
 // Default context formatting
 
-export const attachTrace = (context, e) => {
-	if (context !== undefined) {
-		e.stack = elideTrace(e.stack) + formatTrace(context)
-	}
+// If e is an Error, attach an async trace for the provided context.
+// Otherwise, do nothing.
+export const attachTrace = (e, context) =>
+  context != null && e instanceof Error ? formatTrace(e, context) : e
 
+// Attach an async trace to e for the provided context
+function formatTrace (e, context) {
+	if (!e._creedOriginalStack) {
+		e._creedOriginalStack = e.stack
+		e.stack = formatContext(elideTrace(e.stack), context)
+	}
 	return e
 }
 
-export const formatTrace = context =>
-  context === undefined ? ''
-    : elideTrace(context.stack) + formatTrace(context.next)
+// Fold context list into a newline-separated, combined async trace
+export function formatContext (trace, context) {
+	if (context == null) {
+		return trace
+	}
+	const s = elideTrace(context.stack)
+	return formatContext(s.indexOf(' at ') < 0 ? trace : (trace + '\n' + s), context.next)
+}
 
 export const elideTraceRx =
   /\s*at\s.*(creed[\\/](src|dist)[\\/]|internal[\\/]process[\\/]|\((timers|module)\.js).+:\d.*/g
 
-export const elideTrace = stack => {
-	const s = stack.replace(elideTraceRx, '')
-	return s.indexOf(' at ') < 0 ? '' : '\n' + s
-}
+// Remove internal stack frames
+export const elideTrace = stack =>
+	stack.replace(elideTraceRx, '')

@@ -14,7 +14,7 @@ import Race from './Race'
 import Merge from './Merge'
 import { resolveIterable, resultsArray } from './iterable'
 
-import { swapContext, peekContext, attachTrace } from './trace'
+import { swapContext, peekContext } from './trace'
 
 import fl from 'fantasy-land'
 
@@ -22,9 +22,7 @@ const taskQueue = new TaskQueue()
 export { taskQueue }
 
 /* istanbul ignore next */
-const handleError = ({ context, value }) => {
-	throw attachTrace(context, value)
-}
+const handleError = ({ value }) => { throw value }
 
 /* istanbul ignore next */
 const errorHandler = new ErrorHandler(makeEmitError(), handleError)
