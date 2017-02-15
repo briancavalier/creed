@@ -1,17 +1,15 @@
-import { pushContext, swapContext } from './trace'
+import { swapContext } from './trace'
 
 export default function runPromise (f, thisArg, args, promise) {
-	const context = pushContext(f)
-
   /* eslint complexity:[2,5] */
 	function resolve (x) {
-		const c = swapContext(context)
+		const c = swapContext(promise.context)
 		promise._resolve(x)
 		swapContext(c)
 	}
 
 	function reject (e) {
-		const c = swapContext(context)
+		const c = swapContext(promise.context)
 		promise._reject(e)
 		swapContext(c)
 	}

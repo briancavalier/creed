@@ -34,6 +34,9 @@ const errorHandler = new ErrorHandler(makeEmitError(), handleError)
 // Internal base type, provides fantasy-land namespace
 // and type representative
 class Core {
+	constructor () {
+		this.context = peekContext()
+	}
 	// empty :: Promise e a
 	static empty () {
 		return never()
@@ -311,7 +314,6 @@ class Rejected extends Core {
 		super()
 		this.value = e
 		this._state = REJECTED
-		this.context = peekContext()
 		errorHandler.track(this)
 	}
 
@@ -472,9 +474,7 @@ export function all (promises) {
 
 const allHandler = {
 	merge (promise, args) {
-		const c = swapContext(this.context)
 		promise._fulfill(args)
-		swapContext(c)
 	}
 }
 

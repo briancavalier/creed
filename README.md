@@ -145,6 +145,8 @@ ReferenceError: fail is not defined
 
 ## Async traces
 
+**Experimental: V8 only**
+
 Fatal stack traces are helpful, but sometimes they aren't enough.  Enable _async traces_ for stack traces for even more detail.
 
 **Note:** Enabling async traces is typically an application-level concern.  Libraries that use creed *should not* enable them in dist builds.
@@ -182,7 +184,7 @@ Enable async traces by:
 
 ### Performance impact
     
-Async traces have about a 4-5x impact on performance.
+Async traces typically have about a 3-4x impact on performance.
 
 That may be just fine for some applications, while not for others.  Be sure to assess your application performance needs and budget before running with async traces enabled in production.
 
@@ -822,7 +824,7 @@ getReason(never())           //=> throws TypeError
 
 ### enableAsyncTraces :: () &rarr; ()
 
-Enable [async traces](#async-traces).  Should be called as soon after application startup as possible.  Can be called at any time, but will only trace promises created *after* it's called.
+Enable [async traces](#async-traces).  Can be called at any time, but will only trace promises created *after* it's called.  If called multiple times, *resets* the tracing state each time.
 
 ### disableAsyncTraces :: () &rarr; ()
 

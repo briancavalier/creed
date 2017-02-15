@@ -1,11 +1,9 @@
-import { pushContext, swapContext } from './trace'
+import { swapContext } from './trace'
 
 export default function runNode (f, thisArg, args, promise) {
-	const context = pushContext(f)
-
   /* eslint complexity:[2,5] */
 	function settleNode (e, x) {
-		const c = swapContext(context)
+		const c = swapContext(promise.context)
 		if (e) {
 			promise._reject(e)
 		} else {
