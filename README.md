@@ -159,8 +159,8 @@ Running the example above with async traces enabled yields a more helpful trace.
 
 ```
 > CREED_DEBUG=1 babel-node experiments/errors.js file1 file2 ...
-/Users/brian/Projects/creed/dist/creed.js:660
-		throw attachTrace(context, value);
+/Users/brian/Projects/creed/dist/creed.js:672
+		throw value;
 		^
 
 ReferenceError: fail is not defined
