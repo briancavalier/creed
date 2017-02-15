@@ -45,10 +45,4 @@ describe('Action', () => {
       is(expected, promise.actual)
     })
   })
-
-  describe('toString', () => {
-    it('should be constructor name', () => {
-      eq(Action.name, new Action({}).toString())
-    })
-  })
 })

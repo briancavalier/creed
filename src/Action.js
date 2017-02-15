@@ -17,8 +17,4 @@ export default class Action {
 		this.promise._become(p)
 		return false
 	}
-
-	toString () {
-		return this.constructor.name
-	}
 }
