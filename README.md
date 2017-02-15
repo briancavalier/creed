@@ -126,18 +126,18 @@ Running this program (e.g. using `babel-node`) causes a fatal error, exiting the
  
 ```
 > babel-node experiments/errors.js file1 file2 ...
-/Users/brian/Projects/creed/dist/creed.js:660
-		throw attachTrace(context, value);
+/Users/brian/Projects/creed/dist/creed.js:672
+		throw value;
 		^
 
 ReferenceError: fail is not defined
     at append (/Users/brian/Projects/creed/experiments/errors.js:8:39)
     at Array.reduce (native)
     at readFilesP.map.contents (/Users/brian/Projects/creed/experiments/errors.js:13:31)
-    at tryCall (/Users/brian/Projects/creed/dist/creed.js:333:12)
-    at Map.fulfilled (/Users/brian/Projects/creed/dist/creed.js:397:3)
-    at Fulfilled._runAction (/Users/brian/Projects/creed/dist/creed.js:935:10)
-    at Future.run (/Users/brian/Projects/creed/dist/creed.js:861:5)
+    at tryCall (/Users/brian/Projects/creed/dist/creed.js:344:12)
+    at Map.fulfilled (/Users/brian/Projects/creed/dist/creed.js:408:3)
+    at Fulfilled._runAction (/Users/brian/Projects/creed/dist/creed.js:945:10)
+    at Future.run (/Users/brian/Projects/creed/dist/creed.js:871:5)
     at TaskQueue._drain (/Users/brian/Projects/creed/dist/creed.js:131:8)
     at /Users/brian/Projects/creed/dist/creed.js:117:53
     at _combinedTickCallback (internal/process/next_tick.js:67:7)
