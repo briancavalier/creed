@@ -77,6 +77,12 @@ var isNode = typeof process !== 'undefined' &&
 var MutationObs = (typeof MutationObserver === 'function' && MutationObserver) ||
     (typeof WebKitMutationObserver === 'function' && WebKitMutationObserver);
 
+var getenv = function (name) { return isNode && process.env[name]; };
+
+var isDebug = getenv('CREED_DEBUG') ||
+  getenv('NODE_ENV') === 'development' ||
+  getenv('NODE_ENV') === 'test';
+
 /* global process,document */
 
 var makeAsync = function (f) {
@@ -128,6 +134,93 @@ TaskQueue.prototype._drain = function _drain () {
 	this.length = 0;
 };
 
+var noop = function () {};
+
+// WARNING: shared mutable notion of "current context"
+var _currentContext;
+var _createContext = noop;
+
+// Get the current context
+var peekContext = function () { return _currentContext; };
+
+// Append a new context to the current, and set the current context
+// to the newly appended one
+var pushContext = function (at, tag) { return _createContext(_currentContext, at, tag); };
+
+// Set the current context to the provided one, returning the
+// previously current context (which makes it easy to swap back
+// to it)
+var swapContext = function (context) {
+	var previousContext = _currentContext;
+	_currentContext = context;
+	return previousContext
+};
+
+// Enable context tracing.  Must provide:
+// createContext :: c -> Function -> String -> c
+// Given the current context, and a function and string tag representing a new context,
+// return a new current context
+// initialContext :: c
+// An initial current context
+var traceAsync = function (createContext, initialContext) {
+	_createContext = createContext;
+	_currentContext = initialContext;
+};
+
+// Enable default context tracing
+var enableAsyncTraces = function () { return traceAsync(createContext, undefined); };
+
+// Disable context tracing
+var disableAsyncTraces = function () { return traceAsync(noop, undefined); };
+
+// ------------------------------------------------------
+// Default context tracing
+
+var createContext = function (currentContext, at, tag) { return new Context(currentContext, tag || at.name, at); };
+
+var captureStackTrace = Error.captureStackTrace || noop;
+
+var Context = function Context (next, tag, at) {
+	this.next = next;
+	this.tag = tag;
+	captureStackTrace(this, at);
+};
+
+Context.prototype.toString = function toString () {
+	return this.tag ? (" from " + (this.tag) + ":") : ' from previous context:'
+};
+
+// ------------------------------------------------------
+// Default context formatting
+
+// If e is an Error, attach an async trace for the provided context.
+// Otherwise, do nothing.
+var attachTrace = function (e, context) { return context != null && e instanceof Error ? formatTrace(e, context) : e; };
+
+// Attach an async trace to e for the provided context
+function formatTrace (e, context) {
+	if (!e._creedOriginalStack) {
+		e._creedOriginalStack = e.stack;
+		e.stack = formatContext(elideTrace(e.stack), context);
+	}
+	return e
+}
+
+// Fold context list into a newline-separated, combined async trace
+function formatContext (trace, context) {
+	if (context == null) {
+		return trace
+	}
+	var s = elideTrace(context.stack);
+	return formatContext(s.indexOf(' at ') < 0 ? trace : (trace + '\n' + s), context.next)
+}
+
+var elideTraceRx =
+  /\s*at\s.*(creed[\\/](src|dist)[\\/]|internal[\\/]process[\\/]|\((timers|module)\.js).+:\d.*/g;
+
+// Remove internal stack frames
+var elideTrace = function (stack) { return stack.replace(elideTraceRx, ''); };
+
 var UNHANDLED_REJECTION = 'unhandledRejection';
 var HANDLED_REJECTION = 'rejectionHandled';
 
@@ -138,7 +231,9 @@ var ErrorHandler = function ErrorHandler (emitEvent, reportError) {
 };
 
 ErrorHandler.prototype.track = function track (rejected) {
-	if (!this.emit(UNHANDLED_REJECTION, rejected, rejected.value)) {
+	var e = attachTrace(rejected.value, rejected.context);
+
+	if (!this.emit(UNHANDLED_REJECTION, rejected, e)) {
 		/* istanbul ignore else */
 		if (this.rejections.length === 0) {
 			setTimeout(reportErrors, 1, this.reportError, this.rejections);
@@ -206,15 +301,15 @@ var makeEmitError = function () {
 
 				return !self.dispatchEvent(ev)
 			}
-		}(noop, self, CustomEvent))
+		}(noop$1, self, CustomEvent))
 	}
 
 	// istanbul ignore next */
-	return noop
+	return noop$1
 };
 
 // istanbul ignore next */
-function noop () {}
+function noop$1 () {}
 
 // maybeThenable :: * -> boolean
 function maybeThenable (x) {
@@ -223,6 +318,7 @@ function maybeThenable (x) {
 
 var Action = function Action (promise) {
 	this.promise = promise;
+	this.context = pushContext(this.constructor);
 };
 
 // default onFulfilled action
@@ -484,30 +580,30 @@ function handleItem (resolve, handler, x, i, promise) {
 	} else if (isRejected(p)) {
 		handler.rejectAt(p, i, promise);
 	} else {
-		p._runAction(new Indexed(handler, i, promise));
+		p._runAction(new AtIndex(handler, i, promise));
 	}
 }
 
-var Indexed = (function (Action$$1) {
-	function Indexed (handler, i, promise) {
+var AtIndex = (function (Action$$1) {
+	function AtIndex (handler, i, promise) {
 		Action$$1.call(this, promise);
 		this.i = i;
 		this.handler = handler;
 	}
 
-	if ( Action$$1 ) Indexed.__proto__ = Action$$1;
-	Indexed.prototype = Object.create( Action$$1 && Action$$1.prototype );
-	Indexed.prototype.constructor = Indexed;
+	if ( Action$$1 ) AtIndex.__proto__ = Action$$1;
+	AtIndex.prototype = Object.create( Action$$1 && Action$$1.prototype );
+	AtIndex.prototype.constructor = AtIndex;
 
-	Indexed.prototype.fulfilled = function fulfilled (p) {
+	AtIndex.prototype.fulfilled = function fulfilled (p) {
 		this.handler.fulfillAt(p, this.i, this.promise);
 	};
 
-	Indexed.prototype.rejected = function rejected (p) {
+	AtIndex.prototype.rejected = function rejected (p) {
 		return this.handler.rejectAt(p, this.i, this.promise)
 	};
 
-	return Indexed;
+	return AtIndex;
 }(Action));
 
 function createCommonjsModule(fn, module) {
@@ -550,9 +646,12 @@ var index = createCommonjsModule(function (module) {
 
 var taskQueue = new TaskQueue();
 /* istanbul ignore next */
-var errorHandler = new ErrorHandler(makeEmitError(), function (e) {
-	throw e.value
-});
+var handleError = function (ref) {
+var value = ref.value;
+ throw value };
+
+/* istanbul ignore next */
+var errorHandler = new ErrorHandler(makeEmitError(), handleError);
 
 // -------------------------------------------------------------
 // ## Types
@@ -560,8 +659,10 @@ var errorHandler = new ErrorHandler(makeEmitError(), function (e) {
 
 // Internal base type, provides fantasy-land namespace
 // and type representative
-var Core = function Core () {};
-
+var Core = function Core () {
+	this.context = peekContext();
+};
+// empty :: Promise e a
 Core.empty = function empty () {
 	return never()
 };
@@ -836,7 +937,9 @@ var Fulfilled = (function (Core) {
 	};
 
 	Fulfilled.prototype._runAction = function _runAction (action) {
+		var c = swapContext(action.context);
 		action.fulfilled(this);
+		swapContext(c);
 	};
 
 	return Fulfilled;
@@ -905,9 +1008,11 @@ var Rejected = (function (Core) {
 	};
 
 	Rejected.prototype._runAction = function _runAction (action) {
+		var c = swapContext(action.context);
 		if (action.rejected(this)) {
 			errorHandler.untrack(this);
 		}
+		swapContext(c);
 	};
 
 	return Rejected;
@@ -1237,13 +1342,17 @@ Settle.prototype.check = function check (pending, promise) {
 };
 
 function runPromise$1 (f, thisArg, args, promise) {
-	/* eslint complexity:[2,5] */
+  /* eslint complexity:[2,5] */
 	function resolve (x) {
+		var c = swapContext(promise.context);
 		promise._resolve(x);
+		swapContext(c);
 	}
 
 	function reject (e) {
+		var c = swapContext(promise.context);
 		promise._reject(e);
+		swapContext(c);
 	}
 
 	switch (args.length) {
@@ -1268,13 +1377,15 @@ function runPromise$1 (f, thisArg, args, promise) {
 }
 
 function runNode$1 (f, thisArg, args, promise) {
-	/* eslint complexity:[2,5] */
+  /* eslint complexity:[2,5] */
 	function settleNode (e, x) {
+		var c = swapContext(promise.context);
 		if (e) {
 			promise._reject(e);
 		} else {
 			promise._fulfill(x);
 		}
+		swapContext(c);
 	}
 
 	switch (args.length) {
@@ -1319,18 +1430,22 @@ var Coroutine = (function (Action$$1) {
 	};
 
 	Coroutine.prototype.tryStep = function tryStep (resume, x) {
+		var context = swapContext(this.context);
 		var result;
 		// test if `resume` (and only it) throws
 		try {
 			result = resume.call(this.generator, x);
 		} catch (e) {
-			this.promise._reject(e);
+			this.handleReject(e);
 			return
-		} // else
-		this.handle(result);
+		} finally {
+			swapContext(context);
+		}// else
+
+		this.handleResult(result);
 	};
 
-	Coroutine.prototype.handle = function handle (result) {
+	Coroutine.prototype.handleResult = function handleResult (result) {
 		if (result.done) {
 			return this.promise._resolve(result.value)
 		}
@@ -1338,17 +1453,26 @@ var Coroutine = (function (Action$$1) {
 		this.resolve(result.value)._when(this);
 	};
 
-	Coroutine.prototype.fulfilled = function fulfilled (ref) {
-		this.tryStep(this.generator.next, ref.value);
+	Coroutine.prototype.handleReject = function handleReject (e) {
+		this.promise._reject(e);
 	};
 
-	Coroutine.prototype.rejected = function rejected (ref) {
-		this.tryStep(this.generator.throw, ref.value);
+	Coroutine.prototype.fulfilled = function fulfilled (p) {
+		this.tryStep(this.generator.next, p.value);
+	};
+
+	Coroutine.prototype.rejected = function rejected (p) {
+		this.tryStep(this.generator.throw, p.value);
 		return true
 	};
 
 	return Coroutine;
 }(Action));
+
+/* istanbul ignore next */
+if (isDebug) {
+	enableAsyncTraces();
+}
 
 // -------------------------------------------------------------
 // ## Coroutine
@@ -1475,6 +1599,7 @@ function runMerge (f, thisArg, args) {
 }
 
 var MergeHandler = function MergeHandler (f, c) {
+	this.context = pushContext(this.constructor, Merge.name);
 	this.f = f;
 	this.c = c;
 	this.promise = void 0;
@@ -1488,11 +1613,13 @@ MergeHandler.prototype.merge = function merge (promise, args) {
 };
 
 MergeHandler.prototype.run = function run () {
+	var c = swapContext(this.context);
 	try {
 		this.promise._resolve(this.f.apply(this.c, this.args));
 	} catch (e) {
 		this.promise._reject(e);
 	}
+	swapContext(c);
 };
 
 function checkFunction (f) {
@@ -1548,6 +1675,8 @@ if (typeof Promise !== 'function') {
 	shim();
 }
 
+exports.enableAsyncTraces = enableAsyncTraces;
+exports.disableAsyncTraces = disableAsyncTraces;
 exports.resolve = resolve;
 exports.reject = reject;
 exports.future = future;
