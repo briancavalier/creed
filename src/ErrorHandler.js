@@ -1,4 +1,5 @@
 import { silenceError, isHandled } from './inspect'
+import { attachTrace } from './trace'
 
 const UNHANDLED_REJECTION = 'unhandledRejection'
 const HANDLED_REJECTION = 'rejectionHandled'
@@ -11,7 +12,9 @@ export default class ErrorHandler {
 	}
 
 	track (rejected) {
-		if (!this.emit(UNHANDLED_REJECTION, rejected, rejected.value)) {
+		const e = attachTrace(rejected.value, rejected.context)
+
+		if (!this.emit(UNHANDLED_REJECTION, rejected, e)) {
 			/* istanbul ignore else */
 			if (this.rejections.length === 0) {
 				setTimeout(reportErrors, 1, this.reportError, this.rejections)

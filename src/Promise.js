@@ -14,15 +14,18 @@ import Race from './Race'
 import Merge from './Merge'
 import { resolveIterable, resultsArray } from './iterable'
 
+import { swapContext, peekContext } from './trace'
+
 import fl from 'fantasy-land'
 
 const taskQueue = new TaskQueue()
 export { taskQueue }
 
 /* istanbul ignore next */
-const errorHandler = new ErrorHandler(makeEmitError(), e => {
-	throw e.value
-})
+const handleError = ({ value }) => { throw value }
+
+/* istanbul ignore next */
+const errorHandler = new ErrorHandler(makeEmitError(), handleError)
 
 // -------------------------------------------------------------
 // ## Types
@@ -31,6 +34,9 @@ const errorHandler = new ErrorHandler(makeEmitError(), e => {
 // Internal base type, provides fantasy-land namespace
 // and type representative
 class Core {
+	constructor () {
+		this.context = peekContext()
+	}
 	// empty :: Promise e a
 	static empty () {
 		return never()
@@ -295,7 +301,9 @@ class Fulfilled extends Core {
 	}
 
 	_runAction (action) {
+		const c = swapContext(action.context)
 		action.fulfilled(this)
+		swapContext(c)
 	}
 }
 
@@ -358,9 +366,11 @@ class Rejected extends Core {
 	}
 
 	_runAction (action) {
+		const c = swapContext(action.context)
 		if (action.rejected(this)) {
 			errorHandler.untrack(this)
 		}
+		swapContext(c)
 	}
 }
 

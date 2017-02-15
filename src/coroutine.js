@@ -1,4 +1,5 @@
 import Action from './Action'
+import { swapContext } from './trace'
 
 export default function (resolve, iterator, promise) {
 	new Coroutine(resolve, iterator, promise).run()
@@ -17,18 +18,22 @@ class Coroutine extends Action {
 	}
 
 	tryStep (resume, x) {
+		const context = swapContext(this.context)
 		let result
 		// test if `resume` (and only it) throws
 		try {
 			result = resume.call(this.generator, x)
 		} catch (e) {
-			this.promise._reject(e)
+			this.handleReject(e)
 			return
-		} // else
-		this.handle(result)
+		} finally {
+			swapContext(context)
+		}// else
+
+		this.handleResult(result)
 	}
 
-	handle (result) {
+	handleResult (result) {
 		if (result.done) {
 			return this.promise._resolve(result.value)
 		}
@@ -36,12 +41,16 @@ class Coroutine extends Action {
 		this.resolve(result.value)._when(this)
 	}
 
-	fulfilled (ref) {
-		this.tryStep(this.generator.next, ref.value)
+	handleReject (e) {
+		this.promise._reject(e)
 	}
 
-	rejected (ref) {
-		this.tryStep(this.generator.throw, ref.value)
+	fulfilled (p) {
+		this.tryStep(this.generator.next, p.value)
+	}
+
+	rejected (p) {
+		this.tryStep(this.generator.throw, p.value)
 		return true
 	}
 }

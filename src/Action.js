@@ -1,6 +1,9 @@
+import { pushContext } from './trace'
+
 export default class Action {
 	constructor (promise) {
 		this.promise = promise
+		this.context = pushContext(this.constructor)
 	}
 
 	// default onFulfilled action
