@@ -26,16 +26,15 @@
     "async"
   ],
   "scripts": {
-    "build-dist": "mkdirp dist && rollup -c",
-    "build-es6": "mkdirp dist && rollup -f cjs -o dist/creed.js src/main.js",
-    "build": "npm run build-dist && uglifyjs -c \"warnings=false\" -m -o dist/creed.min.js -- dist/creed.js",
+    "build": "npm run build:dist && npm run build:min",
+    "build:dist": "mkdirp dist && rollup -c",
+    "build:min": "uglifyjs -c \"warnings=false\" -m -o dist/creed.min.js -- dist/creed.js",
     "preversion": "npm run build",
-    "lint": "jsinspect src && eslint src --fix",
-    "pretest": "npm run lint",
-    "test": "nyc --check-coverage --statements 100 --branches 89 --lines 100 --functions 100 mocha",
-    "coverage": "nyc report --reporter=text-lcov | coveralls",
-    "posttest": "npm run test-aplus",
-    "test-aplus": "promises-aplus-tests test/aplus.js --reporter dot"
+    "test": "npm run test:lint && npm run test:unit && npm run test:aplus",
+    "test:lint": "jsinspect src && eslint src --fix",
+    "test:unit": "nyc --check-coverage --statements 100 --branches 89 --lines 100 --functions 100 mocha",
+    "test:aplus": "promises-aplus-tests test/aplus.js --reporter dot",
+    "coverage": "nyc report --reporter=text-lcov | coveralls"
   },
   "devDependencies": {
     "@briancavalier/assert": "^3.4.0",

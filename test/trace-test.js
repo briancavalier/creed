@@ -2,7 +2,7 @@ import { describe, it, afterEach } from 'mocha'
 import { is, eq, assert, fail } from '@briancavalier/assert'
 
 import { traceAsync, pushContext, swapContext, peekContext, formatContext, attachTrace, captureStackTrace,
-createContext, elideTrace, enableAsyncTraces, disableAsyncTraces, Context
+createContext, elideTrace, enableAsyncTraces, disableAsyncTraces, Context, formatTrace
 } from '../src/trace'
 
 describe('trace', () => {
@@ -97,12 +97,35 @@ describe('trace', () => {
     it('should modify stack when context is provided', () => {
       const expected = new Error()
       const unexpectedStack = expected.stack
-      const context = new Error()
+      const context = { stack: `${Math.random()}` }
 
       const actual = attachTrace(expected, context)
 
       is(expected, actual)
       assert(unexpectedStack !== actual.stack)
+    })
+  })
+
+  describe('formatTrace', () => {
+    it('should not modify non-Error', () => {
+      const expected = {}
+      eq({}, formatTrace(expected, {}))
+    })
+
+    it('should modify Error only once', () => {
+      const expected = new Error()
+      expected.stack = ''
+
+      const context1 = { stack: `Test1\n at ${Math.random()}` }
+      const context2 = { stack: `Test2\n at ${Math.random()}` }
+
+      const expectedStack = `\n${context1.stack}`
+
+      const actual = formatTrace(expected, context1)
+
+      is(expected, actual)
+      eq(expectedStack, actual.stack)
+      eq(expectedStack, formatTrace(actual, context2).stack)
     })
   })
 
@@ -146,6 +169,20 @@ describe('trace', () => {
   })
 
   describe('elideTrace', () => {
+    it('should return empty string when stack is empty string', () => {
+      eq('', elideTrace(''))
+    })
+
+    it('should return empty string when stack is not a string', () => {
+      eq('', elideTrace(null))
+      eq('', elideTrace(undefined))
+      eq('', elideTrace({}))
+      eq('', elideTrace(true))
+      eq('', elideTrace(false))
+      eq('', elideTrace(1))
+      eq('', elideTrace(0))
+    })
+
     it('should retain only expected frames', () => {
       const initial = `${Math.random()}\n`
       const trace = initial
