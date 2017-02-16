@@ -193,14 +193,15 @@ Context.prototype.toString = function toString () {
 // ------------------------------------------------------
 // Default context formatting
 
-// If e is an Error, attach an async trace for the provided context.
+// If context provided, attach an async trace for it.
 // Otherwise, do nothing.
-var attachTrace = function (e, context) { return context != null && e instanceof Error ? formatTrace(e, context) : e; };
+var attachTrace = function (e, context) { return context != null ? formatTrace(e, context) : e; };
 
-// Attach an async trace to e for the provided context
+// If e is an Error, attach an async trace to e for the provided context
+// Otherwise, do nothing
 function formatTrace (e, context) {
-	if (!e._creedOriginalStack) {
-		e._creedOriginalStack = e.stack;
+	if (e instanceof Error && !('_creed$OriginalStack' in e)) {
+		e._creed$OriginalStack = e.stack;
 		e.stack = formatContext(elideTrace(e.stack), context);
 	}
 	return e
@@ -219,7 +220,7 @@ var elideTraceRx =
   /\s*at\s.*(creed[\\/](src|dist)[\\/]|internal[\\/]process[\\/]|\((timers|module)\.js).+:\d.*/g;
 
 // Remove internal stack frames
-var elideTrace = function (stack) { return stack.replace(elideTraceRx, ''); };
+var elideTrace = function (stack) { return typeof stack === 'string' ? stack.replace(elideTraceRx, '') : ''; };
 
 var UNHANDLED_REJECTION = 'unhandledRejection';
 var HANDLED_REJECTION = 'rejectionHandled';
