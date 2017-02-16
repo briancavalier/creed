@@ -63,15 +63,16 @@ export class Context {
 // ------------------------------------------------------
 // Default context formatting
 
-// If e is an Error, attach an async trace for the provided context.
+// If context provided, attach an async trace for it.
 // Otherwise, do nothing.
 export const attachTrace = (e, context) =>
-  context != null && e instanceof Error ? formatTrace(e, context) : e
+  context != null ? formatTrace(e, context) : e
 
-// Attach an async trace to e for the provided context
-function formatTrace (e, context) {
-	if (!e._creedOriginalStack) {
-		e._creedOriginalStack = e.stack
+// If e is an Error, attach an async trace to e for the provided context
+// Otherwise, do nothing
+export function formatTrace (e, context) {
+	if (e instanceof Error && !('_creed$OriginalStack' in e)) {
+		e._creed$OriginalStack = e.stack
 		e.stack = formatContext(elideTrace(e.stack), context)
 	}
 	return e
@@ -91,4 +92,4 @@ export const elideTraceRx =
 
 // Remove internal stack frames
 export const elideTrace = stack =>
-	stack.replace(elideTraceRx, '')
+	typeof stack === 'string' ? stack.replace(elideTraceRx, '') : ''
