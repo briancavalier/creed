@@ -1,5 +1,7 @@
 # creed :: async
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/briancavalier/creed.svg)](https://greenkeeper.io/)
+
 [![Join the chat at https://gitter.im/briancavalier/creed](https://badges.gitter.im/briancavalier/creed.svg)](https://gitter.im/briancavalier/creed?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Sophisticated and functionally-minded async with advanced features: coroutines, promises, ES2015 iterables, [fantasy-land](#fantasy-land).
