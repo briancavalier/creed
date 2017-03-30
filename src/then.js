@@ -34,4 +34,3 @@ class Then extends Action {
 function handleThen (promise, result) {
 	promise._resolve(result)
 }
-

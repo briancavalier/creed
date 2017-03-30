@@ -480,7 +480,7 @@ const allHandler = {
 
 // race :: Iterable (Promise e a) -> Promise e a
 export function race (promises) {
-	return iterablePromise(new Race(never), promises)
+	return iterablePromise(new Race(), promises)
 }
 
 function isIterable (x) {
