@@ -20,4 +20,3 @@ export class Map extends Action {
 function handleMap (promise, result) {
 	promise._fulfill(result)
 }
-
