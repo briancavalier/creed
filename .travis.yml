@@ -8,4 +8,5 @@ branches:
   only:
     - master
     - /^greenkeeper-.*$/
+    - /^greenkeeper/.*$/
 after_script: "npm run coverage"
