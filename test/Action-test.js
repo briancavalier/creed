@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha'
-import { eq, is, assert } from '@briancavalier/assert'
+import { is, assert } from '@briancavalier/assert'
 
 import Action from '../src/Action'
 

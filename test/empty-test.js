@@ -4,7 +4,7 @@ import { isNever } from '../src/inspect'
 import { assert } from '@briancavalier/assert'
 
 describe('empty', function () {
-	it('should return never', () => {
-		assert(isNever(Future.empty()))
-	})
+  it('should return never', () => {
+    assert(isNever(Future.empty()))
+  })
 })

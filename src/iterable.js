@@ -3,78 +3,78 @@ import Action from './Action'
 import maybeThenable from './maybeThenable'
 
 export function resultsArray (iterable) {
-	return Array.isArray(iterable) ? new Array(iterable.length) : []
+  return Array.isArray(iterable) ? new Array(iterable.length) : []
 }
 
 export function resolveIterable (resolve, handler, promises, promise) {
-	const run = Array.isArray(promises) ? runArray : runIterable
-	try {
-		run(resolve, handler, promises, promise)
-	} catch (e) {
-		promise._reject(e)
-	}
-	return promise.near()
+  const run = Array.isArray(promises) ? runArray : runIterable
+  try {
+    run(resolve, handler, promises, promise)
+  } catch (e) {
+    promise._reject(e)
+  }
+  return promise.near()
 }
 
 function runArray (resolve, handler, promises, promise) {
-	let i = 0
+  let i = 0
 
-	for (; i < promises.length; ++i) {
-		handleItem(resolve, handler, promises[i], i, promise)
-	}
+  for (; i < promises.length; ++i) {
+    handleItem(resolve, handler, promises[i], i, promise)
+  }
 
-	handler.complete(i, promise)
+  handler.complete(i, promise)
 }
 
 function runIterable (resolve, handler, promises, promise) {
-	let i = 0
-	const iter = promises[Symbol.iterator]()
+  let i = 0
+  const iter = promises[Symbol.iterator]()
 
-	while (true) {
-		const step = iter.next()
-		if (step.done) {
-			break
-		}
-		handleItem(resolve, handler, step.value, i++, promise)
-	}
+  while (true) {
+    const step = iter.next()
+    if (step.done) {
+      break
+    }
+    handleItem(resolve, handler, step.value, i++, promise)
+  }
 
-	handler.complete(i, promise)
+  handler.complete(i, promise)
 }
 
 function handleItem (resolve, handler, x, i, promise) {
-	/* eslint complexity:[1,6] */
-	if (!maybeThenable(x)) {
-		handler.valueAt(x, i, promise)
-		return
-	}
+  /* eslint complexity:[1,6] */
+  if (!maybeThenable(x)) {
+    handler.valueAt(x, i, promise)
+    return
+  }
 
-	const p = resolve(x)
+  const p = resolve(x)
 
-	if (promise._isResolved()) {
-		if (!isFulfilled(p)) {
-			silenceError(p)
-		}
-	} else if (isFulfilled(p)) {
-		handler.fulfillAt(p, i, promise)
-	} else if (isRejected(p)) {
-		handler.rejectAt(p, i, promise)
-	} else {
-		p._runAction(new AtIndex(handler, i, promise))
-	}
+  if (promise._isResolved()) {
+    if (!isFulfilled(p)) {
+      silenceError(p)
+    }
+  } else if (isFulfilled(p)) {
+    handler.fulfillAt(p, i, promise)
+  } else if (isRejected(p)) {
+    handler.rejectAt(p, i, promise)
+  } else {
+    p._runAction(new AtIndex(handler, i, promise))
+  }
 }
 
 class AtIndex extends Action {
-	constructor (handler, i, promise) {
-		super(promise)
-		this.i = i
-		this.handler = handler
-	}
+  constructor (handler, i, promise) {
+    super(promise)
+    this.i = i
+    this.handler = handler
+  }
 
-	fulfilled (p) {
-		this.handler.fulfillAt(p, this.i, this.promise)
-	}
+  fulfilled (p) {
+    this.handler.fulfillAt(p, this.i, this.promise)
+  }
 
-	rejected (p) {
-		return this.handler.rejectAt(p, this.i, this.promise)
-	}
+  rejected (p) {
+    return this.handler.rejectAt(p, this.i, this.promise)
+  }
 }
