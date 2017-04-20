@@ -4,25 +4,25 @@ import { getValue, getReason } from '../src/inspect'
 import { eq } from '@briancavalier/assert'
 
 describe('toString', () => {
-	it('should indicate fulfilled promise', () => {
-		let p = fulfill('a')
+  it('should indicate fulfilled promise', () => {
+    let p = fulfill('a')
     eq(`[object Promise { fulfilled: ${getValue(p)} }]`,
-						p.toString())
-	})
+            p.toString())
+  })
 
-	it('should indicate rejected promise', () => {
-		let p = reject(new Error('a'))
+  it('should indicate rejected promise', () => {
+    let p = reject(new Error('a'))
     eq(`[object Promise { rejected: ${getReason(p)} }]`,
-						p.toString())
-	})
+            p.toString())
+  })
 
-	it('should indicate pending promise', () => {
-		let p = new Future()
+  it('should indicate pending promise', () => {
+    let p = new Future()
     eq('[object Promise { pending }]', p.toString())
-	})
+  })
 
-	it('should indicate never', () => {
-		let p = never()
+  it('should indicate never', () => {
+    let p = never()
     eq('[object Promise { never }]', p.toString())
-	})
+  })
 })

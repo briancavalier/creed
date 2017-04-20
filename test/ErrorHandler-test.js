@@ -4,67 +4,67 @@ import { is, eq, fail } from '@briancavalier/assert'
 import { HANDLED } from '../src/state'
 
 function fakeError (value) {
-	return {
-		value: value,
-		_state: 0,
-		state () { return this._state },
-		_runAction () { this._state |= HANDLED }
-	}
+  return {
+    value: value,
+    _state: 0,
+    state () { return this._state },
+    _runAction () { this._state |= HANDLED }
+  }
 }
 
 describe('ErrorHandler', () => {
-	describe('track', () => {
-		it('should emit event immediately', () => {
-			const value = {}
-			const expected = fakeError(value)
+  describe('track', () => {
+    it('should emit event immediately', () => {
+      const value = {}
+      const expected = fakeError(value)
 
-			function verify (event, e, error) {
-				is(e, expected)
-				is(error, value)
-				return true
-			}
+      function verify (event, e, error) {
+        is(e, expected)
+        is(error, value)
+        return true
+      }
 
-			const eh = new ErrorHandler(verify, fail)
-			eh.track(expected)
-		})
+      const eh = new ErrorHandler(verify, fail)
+      eh.track(expected)
+    })
 
-		it('should report error later', done => {
-			const value = {}
-			const expected = fakeError(value)
-			function verify (e) {
-				is(e, expected)
-				is(e.value, value)
-				done()
-			}
+    it('should report error later', done => {
+      const value = {}
+      const expected = fakeError(value)
+      function verify (e) {
+        is(e, expected)
+        is(e.value, value)
+        done()
+      }
 
-			const eh = new ErrorHandler(() => false, verify)
-			eh.track(expected)
-		})
-	})
+      const eh = new ErrorHandler(() => false, verify)
+      eh.track(expected)
+    })
+  })
 
-	describe('untrack', () => {
-		it('should emit event immediately', () => {
-			const value = {}
-			const expected = fakeError(value)
+  describe('untrack', () => {
+    it('should emit event immediately', () => {
+      const value = {}
+      const expected = fakeError(value)
 
-			function verify (event, e) {
-				is(e, expected)
-				is(e.value, value)
-				return true
-			}
+      function verify (event, e) {
+        is(e, expected)
+        is(e.value, value)
+        return true
+      }
 
-			const eh = new ErrorHandler(verify, fail)
-			eh.untrack(expected)
-		})
+      const eh = new ErrorHandler(verify, fail)
+      eh.untrack(expected)
+    })
 
-		it('should silence error', () => {
-			const value = {}
-			const expected = fakeError(value)
+    it('should silence error', () => {
+      const value = {}
+      const expected = fakeError(value)
 
-			const eh = new ErrorHandler(() => true, fail)
-			eh.untrack(expected)
+      const eh = new ErrorHandler(() => true, fail)
+      eh.untrack(expected)
 
-			eq(expected.state(), HANDLED)
-		})
-	})
+      eq(expected.state(), HANDLED)
+    })
+  })
 })

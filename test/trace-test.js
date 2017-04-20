@@ -136,33 +136,33 @@ describe('trace', () => {
     })
 
     it('should retain expected frames from all contexts', () => {
-      const trace1 = 'Trace 1:\n'
-        + ' at a\n'
-        + ' at (creed/src/):1:1\n'
-        + ' at (creed\\src\\):1:2\n'
-        + ' at b\n'
-        + ' at (internal/process/):3:1\n'
-        + ' at (internal\\process\\):3:2'
+      const trace1 = 'Trace 1:\n' +
+        ' at a\n' +
+        ' at (creed/src/):1:1\n' +
+        ' at (creed\\src\\):1:2\n' +
+        ' at b\n' +
+        ' at (internal/process/):3:1\n' +
+        ' at (internal\\process\\):3:2'
 
-      const trace2 = 'Trace 2:\n'
-        + ' at c\n'
-        + ' at (creed/dist/):2:1\n'
-        + ' at (creed\\dist\\):2:2\n'
-        + ' at d\n'
-        + ' at (timers.js):4:1\n'
-        + ' at (module.js):4:2'
+      const trace2 = 'Trace 2:\n' +
+        ' at c\n' +
+        ' at (creed/dist/):2:1\n' +
+        ' at (creed\\dist\\):2:2\n' +
+        ' at d\n' +
+        ' at (timers.js):4:1\n' +
+        ' at (module.js):4:2'
 
       const context1 = { stack: trace1, next: undefined }
       const context2 = { stack: trace2, next: context1 }
 
       const initial = `${Math.random()}`
-      const expected = initial
-        + '\nTrace 2:\n'
-        + ' at c\n'
-        + ' at d\n'
-        + 'Trace 1:\n'
-        + ' at a\n'
-        + ' at b'
+      const expected = initial +
+        '\nTrace 2:\n' +
+        ' at c\n' +
+        ' at d\n' +
+        'Trace 1:\n' +
+        ' at a\n' +
+        ' at b'
 
       eq(expected, formatContext(initial, context2))
     })
@@ -185,34 +185,34 @@ describe('trace', () => {
 
     it('should retain only expected frames', () => {
       const initial = `${Math.random()}\n`
-      const trace = initial
-        + ' at a\n'
-        + ' at (creed/src/):1:1\n'
-        + ' at (creed\\src\\):1:2\n'
-        + ' at b\n'
-        + ' at (creed/dist/):2:1\n'
-        + ' at (creed\\dist\\):2:2\n'
-        + ' at c\n'
-        + ' at (internal/process/):3:1\n'
-        + ' at (internal\\process\\):3:2\n'
-        + ' at d\n'
-        + ' at (timers.js):4:1\n'
-        + ' at (module.js):4:2\n'
+      const trace = initial +
+        ' at a\n' +
+        ' at (creed/src/):1:1\n' +
+        ' at (creed\\src\\):1:2\n' +
+        ' at b\n' +
+        ' at (creed/dist/):2:1\n' +
+        ' at (creed\\dist\\):2:2\n' +
+        ' at c\n' +
+        ' at (internal/process/):3:1\n' +
+        ' at (internal\\process\\):3:2\n' +
+        ' at d\n' +
+        ' at (timers.js):4:1\n' +
+        ' at (module.js):4:2\n'
 
       eq(initial + ' at a\n at b\n at c\n at d\n', elideTrace(trace))
     })
 
     it('should return empty when all frames elided', () => {
       const initial = `${Math.random()}\n`
-      const trace = initial
-        + ' at (creed/src/):1:1\n'
-        + ' at (creed\\src\\):1:2\n'
-        + ' at (creed/dist/):2:1\n'
-        + ' at (creed\\dist\\):2:2\n'
-        + ' at (internal/process/):3:1\n'
-        + ' at (internal\\process\\):3:2\n'
-        + ' at (timers.js):4:1\n'
-        + ' at (module.js):4:2\n'
+      const trace = initial +
+        ' at (creed/src/):1:1\n' +
+        ' at (creed\\src\\):1:2\n' +
+        ' at (creed/dist/):2:1\n' +
+        ' at (creed\\dist\\):2:2\n' +
+        ' at (internal/process/):3:1\n' +
+        ' at (internal\\process\\):3:2\n' +
+        ' at (timers.js):4:1\n' +
+        ' at (module.js):4:2\n'
 
       eq(initial, elideTrace(trace))
     })

@@ -8,50 +8,50 @@ import { is, assert } from '@briancavalier/assert'
 const lte = (a, b) => (a - 1) <= b
 
 describe('delay', function () {
-	it('should be identity for 0 ms', () => {
-		const p = fulfill()
-		is(p, delay(0, p))
-	})
+  it('should be identity for 0 ms', () => {
+    const p = fulfill()
+    is(p, delay(0, p))
+  })
 
-	it('should be identity for rejected', () => {
-		const p = reject()
-		silenceError(p)
-		is(p, delay(1, p))
-	})
+  it('should be identity for rejected', () => {
+    const p = reject()
+    silenceError(p)
+    is(p, delay(1, p))
+  })
 
-	it('should not delay rejected', () => {
-		const p = new Future()
-		const d = delay(1, p)
+  it('should not delay rejected', () => {
+    const p = new Future()
+    const d = delay(1, p)
 
-		assert(isPending(d))
+    assert(isPending(d))
 
-		const e = new Error()
-		p._reject(e)
+    const e = new Error()
+    p._reject(e)
 
-		return rejectsWith(is(e), d)
-	})
+    return rejectsWith(is(e), d)
+  })
 
-	it('should return never for never', () => {
-		assert(isNever(delay(0, never())))
-	})
+  it('should return never for never', () => {
+    assert(isNever(delay(0, never())))
+  })
 
-	it('should delay value', () => {
-		const x = {}
-		const t = 10
-		const p = delay(t, x)
+  it('should delay value', () => {
+    const x = {}
+    const t = 10
+    const p = delay(t, x)
 
-		const now = Date.now()
-		return assertSame(fulfill(x), p)
-			.then(() => assert(lte(t, Date.now() - now)))
-	})
+    const now = Date.now()
+    return assertSame(fulfill(x), p)
+      .then(() => assert(lte(t, Date.now() - now)))
+  })
 
-	it('should delay fulfilled', () => {
-		const x = {}
-		const t = 10
-		const p = delay(t, fulfill(x))
+  it('should delay fulfilled', () => {
+    const x = {}
+    const t = 10
+    const p = delay(t, fulfill(x))
 
-		const now = Date.now()
-		return assertSame(fulfill(x), p)
-			.then(() => assert(lte(t, Date.now() - now)))
-	})
+    const now = Date.now()
+    return assertSame(fulfill(x), p)
+      .then(() => assert(lte(t, Date.now() - now)))
+  })
 })
