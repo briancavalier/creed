@@ -1,22 +1,15 @@
 import { describe, it } from 'mocha'
-import ErrorHandler from '../src/ErrorHandler'
-import { is, eq, fail } from '@briancavalier/assert'
-import { HANDLED } from '../src/state'
+import { eq, fail, is } from '@briancavalier/assert'
 
-function fakeError (value) {
-  return {
-    value: value,
-    _state: 0,
-    state () { return this._state },
-    _runAction () { this._state |= HANDLED }
-  }
-}
+import ErrorHandler from '../src/ErrorHandler'
+import { HANDLED } from '../src/state'
+import { reject } from '../src/Promise'
 
 describe('ErrorHandler', () => {
   describe('track', () => {
     it('should emit event immediately', () => {
       const value = {}
-      const expected = fakeError(value)
+      const expected = reject(value)
 
       function verify (event, e, error) {
         is(e, expected)
@@ -30,7 +23,7 @@ describe('ErrorHandler', () => {
 
     it('should report error later', done => {
       const value = {}
-      const expected = fakeError(value)
+      const expected = reject(value)
       function verify (e) {
         is(e, expected)
         is(e.value, value)
@@ -45,7 +38,7 @@ describe('ErrorHandler', () => {
   describe('untrack', () => {
     it('should emit event immediately', () => {
       const value = {}
-      const expected = fakeError(value)
+      const expected = reject(value)
 
       function verify (event, e) {
         is(e, expected)
@@ -59,12 +52,12 @@ describe('ErrorHandler', () => {
 
     it('should silence error', () => {
       const value = {}
-      const expected = fakeError(value)
+      const expected = reject(value)
 
       const eh = new ErrorHandler(() => true, fail)
       eh.untrack(expected)
 
-      eq(expected.state(), HANDLED)
+      eq(expected.state() & HANDLED, HANDLED)
     })
   })
 })
