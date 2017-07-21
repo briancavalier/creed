@@ -1,0 +1,168 @@
+// @flow
+
+type Res<A> = (A | Promise<A>) => void
+type Rej = (Error) => void
+
+type Resolver<A> = {
+  resolve: Res<A>,
+  promise: Promise<A>
+}
+
+type Action<A> = {
+  fulfilled (CreedFulfilled<A>): void,
+  rejected (CreedRejected<A>): ?boolean
+}
+
+type CreedPromiseState = number
+
+declare class CreedPromise<A> extends Promise<A> {
+  static empty (): CreedPromise<A>;
+
+  static of (a: A): CreedPromise<A>;
+
+  // Inherited: then, catch
+
+  map <B> ((A) => B): CreedPromise<B>;
+  // ['fantasy-land/map'] <B> ((A) => B): CreedPromise<B>
+
+  bimap <B, E: Error, F: Error> ((E) => F, (A) => B): CreedPromise<B>;
+  // ['fantasy-land/bimap'] <B, E: Error, F: Error> ((E) => F, (A) => B): CreedPromise<B>
+
+  ap <B> (Promise<B>): CreedPromise<*>;
+  // ['fantasy-land/ap'] <B> (Promise<(A) => B>): CreedPromise<B>
+
+  chain <B> ((A) => Promise<B>): CreedPromise<B>;
+
+  or (Promise<A>): CreedPromise<A>;
+
+  near (): CreedPromise<A>;
+
+  toString (): string;
+
+  inspect (): string;
+
+  state (): CreedPromiseState;
+
+  _when (Action<A>): void;
+
+  _runAction (Action<A>): void;
+}
+
+declare class CreedFulfilled<A> extends CreedPromise<A> {
+  value: A;
+}
+
+declare class CreedRejected<A, E: Error> extends CreedPromise<A> {
+  value: E;
+}
+
+declare export function never <A> (): CreedPromise<A>
+declare export function fulfill <A> (A): CreedFulfilled<A>
+declare export function reject <E: Error> (E): CreedRejected<*>
+declare export function resolve <A> (A | Promise<A>): CreedPromise<A>
+declare export function future <A> (): Resolver<A>
+
+declare export function all <A> (Iterable<A | Promise<A>>): CreedPromise<Array<A>>
+declare export function race <A> (Iterable<A | Promise<A>>): CreedPromise<A>
+declare export function any <A> (Iterable<A | Promise<A>>): CreedPromise<A>
+declare export function settle <A> (Iterable<A | Promise<A>>): CreedPromise<Array<CreedPromise<A>>>
+
+declare export function merge <A, B, Z> ((A, B) => Z, Promise<A>, Promise<B>): CreedPromise<Z>
+declare export function merge <A, B, C, Z> ((A, B, C) => Z, Promise<A>, Promise<B>, Promise<C>): CreedPromise<Z>
+declare export function merge <A, B, C, D, Z> ((A, B, C, D) => Z, Promise<A>, Promise<B>, Promise<C>, Promise<D>): CreedPromise<Z>
+declare export function merge <A, B, C, D, E, Z> ((A, B, C, D, E) => Z, Promise<A>, Promise<B>, Promise<C>, Promise<D>, Promise<E>): CreedPromise<Z>
+declare export function merge <A, B, C, D, E, F, Z> ((A, B, C, D, E, F) => Z, Promise<A>, Promise<B>, Promise<C>, Promise<D>, Promise<E>, Promise<F>): CreedPromise<Z>
+declare export function merge <Z> ((...Array<any>) => Z, ...Array<Promise<any>>): CreedPromise<Z>
+
+declare export function delay <A> (number, A | Promise<A>): CreedPromise<A>
+declare export function timeout <A> (number, A | Promise<A>): CreedPromise<A>
+
+type RunP0<Z> = (Res<Z>, Rej) => void
+type RunP1<A, Z> = (A, Res<Z>, Rej) => void
+type RunP2<A, B, Z> = (A, B, Res<Z>, Rej) => void
+type RunP3<A, B, C, Z> = (A, B, C, Res<Z>, Rej) => void
+type RunP4<A, B, C, D, Z> = (A, B, C, D, Res<Z>, Rej) => void
+type RunP5<A, B, C, D, E, Z> = (A, B, C, D, E, Res<Z>, Rej) => void
+type RunP6<A, B, C, D, E, F, Z> = (A, B, C, D, E, F, Res<Z>, Rej) => void
+
+declare export function runPromise <Z> (RunP0<Z>): CreedPromise<Z>
+declare export function runPromise <A, Z> (RunP1<A, Z>): CreedPromise<Z>
+declare export function runPromise <A, B, Z> (RunP2<A, B, Z>): CreedPromise<Z>
+declare export function runPromise <A, B, C, Z> (RunP3<A, B, C, Z>): CreedPromise<Z>
+declare export function runPromise <A, B, C, D, Z> (RunP4<A, B, C, D, Z>): CreedPromise<Z>
+declare export function runPromise <A, B, C, D, E, Z> (RunP5<A, B, C, D, E, Z>): CreedPromise<Z>
+declare export function runPromise <A, B, C, D, E, F, Z> (RunP6<A, B, C, D, E, F, Z>): CreedPromise<Z>
+
+type NodeCB<A> = (?Error, ?A) => void
+
+type NodeF0<Z> = (NodeCB<Z>) => void
+type NodeF1<A, Z> = (A, NodeCB<Z>) => void
+type NodeF2<A, B, Z> = (A, B, NodeCB<Z>) => void
+type NodeF3<A, B, C, Z> = (A, B, C, NodeCB<Z>) => void
+type NodeF4<A, B, C, D, Z> = (A, B, C, D, NodeCB<Z>) => void
+type NodeF5<A, B, C, D, E, Z> = (A, B, C, D, E, NodeCB<Z>) => void
+type NodeF6<A, B, C, D, E, F, Z> = (A, B, C, D, E, F, NodeCB<Z>) => void
+
+type AsyncF0<Z> = () => Promise<Z>
+type AsyncF1<A, Z> = (A) => Promise<Z>
+type AsyncF2<A, B, Z> = (A, B) => Promise<Z>
+type AsyncF3<A, B, C, Z> = (A, B, C) => Promise<Z>
+type AsyncF4<A, B, C, D, Z> = (A, B, C, D) => Promise<Z>
+type AsyncF5<A, B, C, D, E, Z> = (A, B, C, D, E) => Promise<Z>
+type AsyncF6<A, B, C, D, E, F, Z> = (A, B, C, D, E, F) => Promise<Z>
+
+declare export function fromNode <Z> (NodeF0<Z>): AsyncF0<Z>
+declare export function fromNode <A, Z> (NodeF1<A, Z>): AsyncF1<A, Z>
+declare export function fromNode <A, B, Z> (NodeF2<A, B, Z>): AsyncF2<A, B, Z>
+declare export function fromNode <A, B, C, Z> (NodeF3<A, B, C, Z>): AsyncF3<A, B, C, Z>
+declare export function fromNode <A, B, C, D, Z> (NodeF4<A, B, C, D, Z>): AsyncF4<A, B, C, D, Z>
+declare export function fromNode <A, B, C, D, E, Z> (NodeF5<A, B, C, D, E, Z>): AsyncF5<A, B, C, D, E, Z>
+declare export function fromNode <A, B, C, D, E, F, Z> (NodeF6<A, B, C, D, E, F, Z>): AsyncF6<A, B, C, D, E, F, Z>
+
+declare export function runNode <Z> (NodeF0<Z>): CreedPromise<Z>
+declare export function runNode <A, Z> (NodeF1<A, Z>, A): CreedPromise<Z>
+declare export function runNode <A, B, Z> (NodeF2<A, B, Z>, A, B): CreedPromise<Z>
+declare export function runNode <A, B, C, Z> (NodeF3<A, B, C, Z>, A, B, C): CreedPromise<Z>
+declare export function runNode <A, B, C, D, Z> (NodeF4<A, B, C, D, Z>, A, B, C, D): CreedPromise<Z>
+declare export function runNode <A, B, C, D, E, Z> (NodeF5<A, B, C, D, E, Z>, A, B, C, D, E): CreedPromise<Z>
+declare export function runNode <A, B, C, D, E, F, Z> (NodeF5<A, B, C, D, E, F, Z>, A, B, C, D, E, F): CreedPromise<Z>
+
+type GenF0<Y, R, T> = () => Generator<Y, R, T>
+type GenF1<A, Y, R, T> = (A) => Generator<Y, R, T>
+type GenF2<A, B, Y, R, T> = (A, B) => Generator<Y, R, T>
+type GenF3<A, B, C, Y, R, T> = (A, B, C) => Generator<Y, R, T>
+type GenF4<A, B, C, D, Y, R, T> = (A, B, C, D) => Generator<Y, R, T>
+type GenF5<A, B, C, D, E, Y, R, T> = (A, B, C, D, E) => Generator<Y, R, T>
+type GenF6<A, B, C, D, E, F, Y, R, T> = (A, B, C, D, E, F) => Generator<Y, R, T>
+
+declare export function coroutine <Y, R, T> (GenF0<Y, R, T>): AsyncF0<R>
+declare export function coroutine <A, Y, R, T> (GenF1<A, Y, R, T>): AsyncF1<A, R>
+declare export function coroutine <A, B, Y, R, T> (GenF2<A, B, Y, R, T>): AsyncF2<A, B, R>
+declare export function coroutine <A, B, C, Y, R, T> (GenF3<A, B, C, Y, R, T>): AsyncF3<A, B, C, R>
+declare export function coroutine <A, B, C, D, Y, R, T> (GenF4<A, B, C, D, Y, R, T>): AsyncF4<A, B, C, D, R>
+declare export function coroutine <A, B, C, D, E, Y, R, T> (GenF5<A, B, C, D, E, Y, R, T>): AsyncF5<A, B, C, D, E, R>
+declare export function coroutine <A, B, C, D, E, F, Y, R, T> (GenF6<A, B, C, D, E, F, Y, R, T>): AsyncF6<A, B, C, D, E, F, R>
+
+declare export function isFulfilled (CreedFulfilled<any>): true
+declare export function isFulfilled (CreedRejected<any>): false
+declare export function isFulfilled (CreedPromise<any>): boolean
+
+declare export function isRejected (CreedFulfilled<any>): false
+declare export function isRejected (CreedRejected<any>): true
+declare export function isRejected (CreedPromise<any>): boolean
+
+declare export function isPending (CreedFulfilled<any>): false
+declare export function isPending (CreedRejected<any>): false
+declare export function isPending (CreedPromise<any>): boolean
+
+declare export function isNever (CreedFulfilled<any>): false
+declare export function isNever (CreedRejected<any>): false
+declare export function isNever (CreedPromise<any>): boolean
+
+declare export function getValue <A> (CreedPromise<A>): A
+declare export function getReason (CreedPromise<any>): Error
+
+declare export function enableAsyncTraces (): void
+declare export function disableAsyncTraces (): void
+
+declare export function shim(): typeof Promise
