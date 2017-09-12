@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@briancavalier/assert": "^3.4.0",
-    "babel-eslint": "^7.2.1",
+    "babel-eslint": "^8.0.0",
     "buba": "^4.0.1",
     "buble": "^0.15.2",
     "coveralls": "^2.12.0",
