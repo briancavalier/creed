@@ -51,7 +51,7 @@
     "fantasy-land": "^3.1.0",
     "jsinspect": "^0.12.3",
     "mkdirp": "^0.5.1",
-    "mocha": "^3.1.2",
+    "mocha": "^4.0.1",
     "nyc": "^11.0.2",
     "promises-aplus-tests": "^2.1.1",
     "rollup": "^0.45.2",
