@@ -14,13 +14,14 @@ function fakeError (value) {
 
 describe('ErrorHandler', () => {
   describe('track', () => {
-    it('should emit event immediately', () => {
+    it('should emit event eventually', (done) => {
       const value = {}
       const expected = fakeError(value)
 
       function verify (event, e, error) {
         is(e, expected)
         is(error, value)
+        done()
         return true
       }
 
@@ -43,17 +44,19 @@ describe('ErrorHandler', () => {
   })
 
   describe('untrack', () => {
-    it('should emit event immediately', () => {
+    it.only('should emit event eventually', (done) => {
       const value = {}
       const expected = fakeError(value)
 
       function verify (event, e) {
         is(e, expected)
         is(e.value, value)
+        done()
         return true
       }
 
       const eh = new ErrorHandler(verify, fail)
+      eh.track(expected)
       eh.untrack(expected)
     })
 

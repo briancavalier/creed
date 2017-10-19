@@ -5,7 +5,7 @@ import { isNode, MutationObs } from './env'
 export default function (f) {
   return isNode ? createNodeScheduler(f) /* istanbul ignore next */
     : MutationObs ? createBrowserScheduler(f)
-    : createFallbackScheduler(f)
+      : createFallbackScheduler(f)
 }
 
 /* istanbul ignore next */

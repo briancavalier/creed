@@ -7,13 +7,13 @@ describe('toString', () => {
   it('should indicate fulfilled promise', () => {
     let p = fulfill('a')
     eq(`[object Promise { fulfilled: ${getValue(p)} }]`,
-            p.toString())
+      p.toString())
   })
 
   it('should indicate rejected promise', () => {
     let p = reject(new Error('a'))
     eq(`[object Promise { rejected: ${getReason(p)} }]`,
-            p.toString())
+      p.toString())
   })
 
   it('should indicate pending promise', () => {

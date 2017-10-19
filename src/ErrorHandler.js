@@ -6,43 +6,63 @@ const HANDLED_REJECTION = 'rejectionHandled'
 
 export default class ErrorHandler {
   constructor (emitEvent, reportError) {
-    this.rejections = []
+    this.unhandled = new Set()
+    this.handled = new Set()
     this.emit = emitEvent
     this.reportError = reportError
+    this.timer = null
   }
 
   track (rejected) {
-    const e = attachTrace(rejected.value, rejected.context)
-
-    if (!this.emit(UNHANDLED_REJECTION, rejected, e)) {
-      /* istanbul ignore else */
-      if (this.rejections.length === 0) {
-        setTimeout(reportErrors, 1, this.reportError, this.rejections)
-      }
-      this.rejections.push(rejected)
-    }
+    attachTrace(rejected.value, rejected.context)
+    this._schedule()
+    this.unhandled.add(rejected)
   }
 
   untrack (rejected) {
     silenceError(rejected)
-    this.emit(HANDLED_REJECTION, rejected)
+    this._schedule()
+    this.handled.add(rejected)
   }
-}
 
-function reportErrors (report, rejections) {
-  try {
-    reportAll(rejections, report)
-  } finally {
-    rejections.length = 0
-  }
-}
-
-function reportAll (rejections, report) {
-  for (let i = 0; i < rejections.length; ++i) {
-    const rejected = rejections[i]
+  _schedule () {
     /* istanbul ignore else */
-    if (!isHandled(rejected)) {
-      report(rejected)
+    if (this.timer === null) {
+      this.timer = setTimeout(reportErrors, 1, this)
     }
+  }
+}
+
+function reportErrors (errorHandler) {
+  errorHandler.timer = null
+
+  reportUnhandled(errorHandler.emit, errorHandler.reportError, errorHandler.unhandled)
+  errorHandler.unhandled.clear()
+
+  reportHandled(errorHandler.emit, errorHandler.handled)
+  errorHandler.handled.clear()
+}
+
+function reportUnhandled (emit, reportError, unhandled) {
+  forEach(r => {
+    if (!isHandled(r) && !emit(UNHANDLED_REJECTION, r, r.value)) {
+      reportError(r)
+    }
+  }, unhandled)
+}
+
+function reportHandled (emit, handled) {
+  forEach(r => emit(HANDLED_REJECTION, r, r.value), handled)
+}
+
+function forEach (f, s) {
+  const iter = s[Symbol.iterator]()
+
+  while (true) {
+    const step = iter.next()
+    if (step.done) {
+      break
+    }
+    f(step.value)
   }
 }

@@ -2,7 +2,7 @@ import { describe, it, afterEach } from 'mocha'
 import { is, eq, assert, fail } from '@briancavalier/assert'
 
 import { traceAsync, pushContext, swapContext, peekContext, formatContext, attachTrace, captureStackTrace,
-createContext, elideTrace, enableAsyncTraces, disableAsyncTraces, Context, formatTrace
+  createContext, elideTrace, enableAsyncTraces, disableAsyncTraces, Context, formatTrace
 } from '../src/trace'
 
 describe('trace', () => {
