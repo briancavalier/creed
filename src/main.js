@@ -1,20 +1,17 @@
-import { isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason } from './inspect'
-import { Future, resolve, reject, future, never, fulfill, all, race, iterablePromise, taskQueue } from './Promise'
-
-import _delay from './delay'
-import _timeout from './timeout'
+import { Future, all, fulfill, future, iterablePromise, never, race, reject, resolve, taskQueue } from './Promise'
+import { disableAsyncTraces, enableAsyncTraces, pushContext, swapContext } from './trace'
+import { getReason, getValue, isFulfilled, isNever, isPending, isRejected, isSettled } from './inspect'
 
 import Any from './Any'
 import Merge from './Merge'
 import Settle from './Settle'
-import { resultsArray } from './iterable'
-
-import _runPromise from './runPromise'
-import _runNode from './node'
+import _delay from './delay'
 import _runCoroutine from './coroutine.js'
-
+import _runNode from './node'
+import _runPromise from './runPromise'
+import _timeout from './timeout'
 import { isDebug } from './env'
-import { swapContext, pushContext, enableAsyncTraces, disableAsyncTraces } from './trace'
+import { resultsArray } from './iterable'
 
 export { enableAsyncTraces, disableAsyncTraces }
 
