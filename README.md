@@ -288,6 +288,8 @@ getUserProfile(123)
     .then(profile => console.log(profile))
 ```
 
+Note: In current implementations of JavaScript, it's not possible to detect with reasonable certainty if the function passed to `coroutine` is a generator function or not.  Creed can't know until the function is executed, causing creed to throw an exception synchronously at run-time.
+
 ### fromNode :: NodeApi e a &rarr; (...* &rarr; Promise e a)
 type NodeApi e a = ...* &rarr; Nodeback e a &rarr; ()<br/>
 type Nodeback e a = e &rarr; a &rarr; ()
