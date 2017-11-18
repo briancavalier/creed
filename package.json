@@ -40,7 +40,7 @@
     "@briancavalier/assert": "^3.4.0",
     "babel-eslint": "^7.2.1",
     "buba": "^4.0.1",
-    "buble": "^0.15.2",
+    "buble": "^0.18.0",
     "coveralls": "^2.12.0",
     "eslint": "^4.1.1",
     "eslint-config-standard": "^10.2.1",
