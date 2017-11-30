@@ -1,4 +1,4 @@
-import { isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason } from './inspect'
+import { isFulfilled, isRejected, isSettled, isPending, isNever, isHandled, getValue, getReason } from './inspect'
 import { Future, resolve, reject, future, never, fulfill, all, race, iterablePromise, taskQueue } from './Promise'
 
 import _delay from './delay'
@@ -29,7 +29,7 @@ if (isDebug) {
 
 export {
   resolve, reject, future, never, fulfill, all, race,
-  isFulfilled, isRejected, isSettled, isPending, isNever,
+  isFulfilled, isRejected, isSettled, isPending, isNever, isHandled,
   getValue, getReason
 }
 
