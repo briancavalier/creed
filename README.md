@@ -104,7 +104,7 @@ Promise { fulfilled: winner }
 # Errors & debugging
 
 By design, uncaught creed promise errors are fatal.  They will crash your program, forcing you to fix or [`.catch`](#catch--promise-e-a--e--bpromise-e-b--promise-e-b) them.  You can override this behavior by [registering your own error event listener](#debug-events).
-  
+
 Consider this small program, which contains a `ReferenceError`.
 
 ```js
@@ -125,7 +125,7 @@ readFilesP(process.argv.slice(2))
 ```
 
 Running this program (e.g. using `babel-node`) causes a fatal error, exiting the process with a stack trace:
- 
+
 ```
 > babel-node experiments/errors.js file1 file2 ...
 /Users/brian/Projects/creed/dist/creed.js:672
@@ -154,7 +154,7 @@ Fatal stack traces are helpful, but sometimes they aren't enough.  Enable _async
 **Note:** Enabling async traces is typically an application-level concern.  Libraries that use creed *should not* enable them in dist builds.
 
 Running the example above with async traces enabled yields a more helpful trace. Notably:
- 
+
 - asynchronous stack frames are shown: both the point at which map is called and the point in the mapping function (which is called asynchronous) are shown.
 - the Map operation is called out specifically
 - stack frames from within creed are omitted
@@ -185,7 +185,7 @@ Enable async traces by:
     * [`disableAsyncTraces()`](#disableasynctraces----) - programatically disable async traces.
 
 ### Performance impact
-    
+
 Async traces typically have about a 3-4x impact on performance.
 
 That may be just fine for some applications, while not for others.  Be sure to assess your application performance needs and budget before running with async traces enabled in production.
@@ -410,7 +410,7 @@ resolve(123)
 
 resolve(resolve(123))
     .then(x => console.log(x)) //=> 123
-    
+
 resolve(jQuery.get('http://...')) // coerce any thenable
     .then(x => console.log(x)) //=> 123
 ```
@@ -424,7 +424,7 @@ import { fulfill, resolve } from 'creed';
 
 fulfill(123)
     .then(x => console.log(x)) //=> 123
-    
+
 // Note the difference from resolve
 fulfill(fulfill(123))
     .then(x => console.log(x)) //=> '[object Promise { fulfilled: 123 }]'
@@ -456,7 +456,7 @@ never()
 ```
 
 Note: `never` consumes virtually no resources.  It does not hold references
-to any functions passed to `then`, `map`, `chain`, etc. 
+to any functions passed to `then`, `map`, `chain`, etc.
 
 ## Transform promises
 
@@ -832,6 +832,12 @@ Enable [async traces](#async-traces).  Can be called at any time, but will only 
 
 Disable [async traces](#async-traces).
 
+### isHandled :: Promise e a &rarr; boolean
+
+Returns true if the promise is rejected and the rejection has been "handled", that is, [`.catch`](#catch--promise-e-a--e--bpromise-e-b--promise-e-b) has been called on the promise at least once with an argument that is a Function.
+
+Note that if `.catch` is called with zero arguments or with an argument that isn't a Function, it _does not_ affect the "handled" state of the promise.
+
 ## Polyfill
 
 ### shim :: () &rarr; PromiseConstructor|undefined
@@ -865,4 +871,3 @@ Creed implements Fantasy Land 2.1:
 * [Monad](https://github.com/fantasyland/fantasy-land#monad)
 * [Semigroup](https://github.com/fantasyland/fantasy-land#semigroup)
 * [Monoid](https://github.com/fantasyland/fantasy-land#monoid)
-
