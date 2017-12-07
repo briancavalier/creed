@@ -82,7 +82,7 @@ var isDebug = getenv('CREED_DEBUG') ||
 var makeAsync = function (f) {
   return isNode ? createNodeScheduler(f) /* istanbul ignore next */
     : MutationObs ? createBrowserScheduler(f)
-    : createFallbackScheduler(f)
+      : createFallbackScheduler(f)
 };
 
 /* istanbul ignore next */
@@ -603,7 +603,7 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-var index = createCommonjsModule(function (module) {
+var fantasyLand = createCommonjsModule(function (module) {
 (function() {
 
   'use strict';
@@ -613,8 +613,12 @@ var index = createCommonjsModule(function (module) {
 
   var mapping = {
     equals: 'fantasy-land/equals',
+    lte: 'fantasy-land/lte',
+    compose: 'fantasy-land/compose',
+    id: 'fantasy-land/id',
     concat: 'fantasy-land/concat',
     empty: 'fantasy-land/empty',
+    invert: 'fantasy-land/invert',
     map: 'fantasy-land/map',
     contramap: 'fantasy-land/contramap',
     ap: 'fantasy-land/ap',
@@ -666,39 +670,39 @@ Core.of = function of (x) {
   return fulfill(x)
 };
 
-Core[index.empty] = function () {
+Core[fantasyLand.empty] = function () {
   return never()
 };
 
-Core[index.of] = function (x) {
+Core[fantasyLand.of] = function (x) {
   return fulfill(x)
 };
 
-Core.prototype[index.map] = function (f) {
+Core.prototype[fantasyLand.map] = function (f) {
   return this.map(f)
 };
 
-Core.prototype[index.bimap] = function (r, f) {
+Core.prototype[fantasyLand.bimap] = function (r, f) {
   return this.bimap(r, f)
 };
 
-Core.prototype[index.ap] = function (pf) {
+Core.prototype[fantasyLand.ap] = function (pf) {
   return pf.ap(this)
 };
 
-Core.prototype[index.chain] = function (f) {
+Core.prototype[fantasyLand.chain] = function (f) {
   return this.chain(f)
 };
 
-Core.prototype[index.concat] = function (p) {
+Core.prototype[fantasyLand.concat] = function (p) {
   return this.concat(p)
 };
 
-Core.prototype[index.alt] = function (p) {
+Core.prototype[fantasyLand.alt] = function (p) {
   return this.or(p)
 };
 
-Core[index.zero] = function () {
+Core[fantasyLand.zero] = function () {
   return never()
 };
 
@@ -775,7 +779,7 @@ var Future = (function (Core) {
 
     return isSettled(n) || isNever(bn) ? n
       : isSettled(bn) || isNever(n) ? bn
-      : race([n, bn])
+        : race([n, bn])
   };
 
   // toString :: Promise e a -> String
@@ -1085,7 +1089,7 @@ var Never = (function (Core) {
 function resolve (x) {
   return isPromise(x) ? x.near()
     : maybeThenable(x) ? refForMaybeThenable(fulfill, x)
-    : new Fulfilled(x)
+      : new Fulfilled(x)
 }
 
 // reject :: e -> Promise e a
@@ -1669,5 +1673,5 @@ if (typeof Promise !== 'function') {
   shim();
 }
 
-export { enableAsyncTraces, disableAsyncTraces, resolve, reject, future, never, fulfill, all, race, isFulfilled, isRejected, isSettled, isPending, isNever, getValue, getReason, coroutine, fromNode, runNode, runPromise, delay, timeout, any, settle, merge, shim, CreedPromise as Promise };
+export { enableAsyncTraces, disableAsyncTraces, resolve, reject, future, never, fulfill, all, race, isFulfilled, isRejected, isSettled, isPending, isNever, isHandled, getValue, getReason, coroutine, fromNode, runNode, runPromise, delay, timeout, any, settle, merge, shim, CreedPromise as Promise };
 //# sourceMappingURL=creed.es.js.map
