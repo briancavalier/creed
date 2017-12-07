@@ -39,8 +39,8 @@ class ArrayIterator {
 
   next () {
     return this.index < this.array.length
-            ? { done: false, value: this.array[this.index++] }
-            : { done: true, value: void 0 }
+      ? { done: false, value: this.array[this.index++] }
+      : { done: true, value: void 0 }
   }
 
   throw (e) {

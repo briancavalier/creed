@@ -4,7 +4,7 @@ import { is } from '@briancavalier/assert'
 
 /* global self */
 let g = typeof self !== 'undefined' ? self
-    : typeof global !== 'undefined' ? global
+  : typeof global !== 'undefined' ? global
     : undefined
 
 describe('shim', () => {

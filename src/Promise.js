@@ -153,7 +153,7 @@ export class Future extends Core {
 
     return isSettled(n) || isNever(bn) ? n
       : isSettled(bn) || isNever(n) ? bn
-      : race([n, bn])
+        : race([n, bn])
   }
 
   // toString :: Promise e a -> String
@@ -437,7 +437,7 @@ class Never extends Core {
 export function resolve (x) {
   return isPromise(x) ? x.near()
     : maybeThenable(x) ? refForMaybeThenable(fulfill, x)
-    : new Fulfilled(x)
+      : new Fulfilled(x)
 }
 
 // reject :: e -> Promise e a
