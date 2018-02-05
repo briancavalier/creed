@@ -52,11 +52,8 @@ export class Context {
   constructor (next, tag, at) {
     this.next = next
     this.tag = tag
+    this.name = tag ? ` from ${tag}:` : ' from previous context:'
     captureStackTrace(this, at)
-  }
-
-  toString () {
-    return this.tag ? ` from ${this.tag}:` : ' from previous context:'
   }
 }
 
@@ -88,7 +85,7 @@ export function formatContext (trace, context) {
 }
 
 export const elideTraceRx =
-  /\s*at\s.*(creed[\\/](src|dist)[\\/]|internal[\\/]process[\\/]|\((timers|module)\.js).+:\d.*/g
+  /\s*at\s.*(creed[\\/](src|dist)[\\/]|\([^\\/]+\.js).+:\d.*/g
 
 // Remove internal stack frames
 export const elideTrace = stack =>
