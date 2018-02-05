@@ -497,6 +497,46 @@ reject(new Error('oops!'))
     .then(x => console.log(x)) //=> 123
 ```
 
+### .finally :: Promise e a &rarr; (() &rarr; b|Promise e b) &rarr; Promise e a
+
+Perform cleanup side effects regardless of a Promise's outcome.  If a finally handler:
+
+1. returns a non-promise, it is discarded
+2. returns a promise that fulfills, it's fulfillment value is discarded
+3. throws, the thrown error will take precedence
+4. returns a rejected promise, the rejection will take precedence
+
+```js
+import { reject, resolve, delay } from 'creed'
+
+resolve(123)
+  .finally(() => resolve(456)) // do some cleanup
+  .then(x => console.log(x)) //=> 123
+
+reject(new Error('oops!'))
+  .finally(() => resolve(456)) // do some cleanup
+  .catch(e => console.log(e.message)) //=> oops!
+
+reject(new Error('oops!'))
+  .finally(() => delay(1000, 456)) // do some cleanup
+  .catch(e => console.log(e.message)) //=> oops! after 1 second
+```
+
+As mentioned above, errors from a finally handler take precedence:
+
+```js
+// Errors in finally handler take precedence
+reject(new Error('oops!'))
+  .finally(() => reject(new Error('finally error'))) // cleanup failed!
+  .catch(e => console.log(e.message)) //=> finally error
+
+reject(new Error('oops!'))
+  .finally(() => {
+    throw new Error('finally error') // cleanup failed!
+  })
+  .catch(e => console.log(e.message)) //=> finally error
+```
+
 ### .map :: Promise e a &rarr; (a &rarr; b) &rarr; Promise e b
 
 Transform a promise's value by applying a function.  The return

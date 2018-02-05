@@ -6,6 +6,7 @@ import { PENDING, FULFILLED, REJECTED, NEVER } from './state'
 import { isNever, isSettled } from './inspect'
 
 import then from './then'
+import _finally from './finally'
 import map from './map'
 import bimap from './bimap'
 import chain from './chain'
@@ -53,6 +54,12 @@ class Core {
 
   static [fl.of] (x) {
     return fulfill(x)
+  }
+
+  finally (f) {
+    return typeof f === 'function'
+      ? _finally(resolve, f, this.near(), new Future())
+      : this
   }
 
   [fl.map] (f) {
@@ -382,6 +389,10 @@ class Never extends Core {
   }
 
   catch () {
+    return this
+  }
+
+  finally () {
     return this
   }
 
