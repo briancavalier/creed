@@ -1,7 +1,6 @@
 import Action from './Action'
 import maybeThenable from './maybeThenable'
 import { isRejected } from './inspect'
-import { swapContext, peekContext } from './trace'
 
 export default function (resolve, f, p, promise) {
   p._when(new Finally(resolve, f, promise))
