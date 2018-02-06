@@ -3,6 +3,7 @@ import { isNode } from './env'
 const UNHANDLED_REJECTION = 'unhandledRejection'
 
 export default function () {
+  /* eslint complexity: [2, 5] */
   /* global process, self, CustomEvent */
   // istanbul ignore else */
   if (isNode && typeof process.emit === 'function') {
