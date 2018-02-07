@@ -4,7 +4,7 @@ import commonjs from 'rollup-plugin-commonjs'
 const pkg = require('./package.json')
 
 export default {
-  entry: 'src/main.js',
+  input: 'src/main.js',
   plugins: [
     buble(),
     node(),
@@ -12,17 +12,17 @@ export default {
       include: 'node_modules/**'
     })
   ],
-  targets: [
+  output: [
     {
       format: 'umd',
-      moduleName: 'creed',
-      dest: pkg['main'],
-      sourceMap: true
+      name: 'creed',
+      file: pkg['main'],
+      sourcemap: true
     },
     {
       format: 'es',
-      dest: pkg['jsnext:main'],
-      sourceMap: true
+      file: pkg['jsnext:main'],
+      sourcemap: true
     }
   ]
 }
