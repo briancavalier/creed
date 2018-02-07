@@ -10,4 +10,6 @@ branches:
     - master
     - /^greenkeeper-.*$/
     - /^greenkeeper/.*$/
-after_script: "npm run coverage"
+cache: yarn
+script: yarn test
+after_script: "yarn coverage"
