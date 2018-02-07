@@ -27,30 +27,22 @@
   ],
   "scripts": {
     "build": "npm run build:dist && npm run build:min",
-    "build:dist": "mkdirp dist && rollup -c",
+    "build:dist": "rollup -c",
     "build:min": "uglifyjs -c \"warnings=false\" -m -o dist/creed.min.js -- dist/creed.js",
     "preversion": "npm run build",
     "test": "npm run test:lint && npm run test:unit && npm run test:aplus",
-    "test:lint": "jsinspect src && eslint --fix src test",
+    "test:lint": "jsinspect src && standard --fix {src,test}/*.js",
     "test:unit": "nyc --check-coverage --statements 100 --branches 89 --lines 100 --functions 100 mocha",
     "test:aplus": "promises-aplus-tests test/aplus.js --reporter dot",
     "coverage": "nyc report --reporter=text-lcov | coveralls"
   },
   "devDependencies": {
     "@briancavalier/assert": "^3.4.0",
-    "babel-eslint": "^7.2.1",
     "buba": "^4.0.1",
     "buble": "^0.15.2",
     "coveralls": "^2.12.0",
-    "eslint": "^4.1.1",
-    "eslint-config-standard": "^10.2.1",
-    "eslint-plugin-import": "^2.2.0",
-    "eslint-plugin-node": "^5.0.0",
-    "eslint-plugin-promise": "^3.5.0",
-    "eslint-plugin-standard": "^3.0.1",
     "fantasy-land": "^3.1.0",
     "jsinspect": "^0.12.3",
-    "mkdirp": "^0.5.1",
     "mocha": "^3.1.2",
     "nyc": "^11.0.2",
     "promises-aplus-tests": "^2.1.1",
@@ -58,6 +50,7 @@
     "rollup-plugin-buble": "^0.15.0",
     "rollup-plugin-commonjs": "^8.0.2",
     "rollup-plugin-node-resolve": "^3.0.0",
+    "standard": "^10.0.3",
     "uglify-js": "^3.0.18"
   }
 }
