@@ -250,6 +250,7 @@ describe('trace', () => {
 
       const actual = new Context(next, tag, at)
       assert(actual.name.indexOf(tag) >= 0)
+      assert(actual.toString().indexOf(tag) >= 0)
     })
 
     it('should have default name when tag missing', () => {
@@ -260,6 +261,7 @@ describe('trace', () => {
       const actual = new Context(next, tag, at)
 
       assert(actual.name.length > 0)
+      assert(actual.toString().length > 0)
     })
   })
 
