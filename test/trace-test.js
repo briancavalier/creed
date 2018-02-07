@@ -243,22 +243,24 @@ describe('trace', () => {
       eq(tag, actual.tag)
     })
 
-    it('should have toString containing tag when tag present', () => {
+    it('should have name containing tag when tag present', () => {
       const next = {}
       const at = () => {}
       const tag = `${Math.random()}`
 
       const actual = new Context(next, tag, at)
+      assert(actual.name.indexOf(tag) >= 0)
       assert(actual.toString().indexOf(tag) >= 0)
     })
 
-    it('should have default toString when tag missing', () => {
+    it('should have default name when tag missing', () => {
       const next = {}
       const at = () => {}
       const tag = ''
 
       const actual = new Context(next, tag, at)
 
+      assert(actual.name.length > 0)
       assert(actual.toString().length > 0)
     })
   })
