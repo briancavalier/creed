@@ -1,6 +1,0 @@
-{
-  "extends": "standard",
-  "rules": {
-    "complexity": [2, 3]
-  }
-}
