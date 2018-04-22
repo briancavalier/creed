@@ -84,7 +84,7 @@ Note that although babel supports ES2015 `import` statements, [the `babel-node` 
 
 ```
 npm install creed
-npm install -g babel-node
+npm install -g babel-node-cli
 babel-node
 > let { resolve, delay, all, race } = require('creed')
 'use strict'
