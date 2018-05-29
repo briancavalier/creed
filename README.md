@@ -399,23 +399,6 @@ resolve(reject(new Error('oops')))
 promise.catch(e => console.log(e)) //=> [Error: oops]
 ```
 
-### resolve :: a|Thenable e a &rarr; Promise e a
-
-Coerce a value or Thenable to a promise.
-
-```js
-import { resolve } from 'creed';
-
-resolve(123)
-    .then(x => console.log(x)) //=> 123
-
-resolve(resolve(123))
-    .then(x => console.log(x)) //=> 123
-
-resolve(jQuery.get('http://...')) // coerce any thenable
-    .then(x => console.log(x)) //=> 123
-```
-
 ### fulfill :: a &rarr; Promise e a
 
 Lift a value into a promise.
@@ -461,80 +444,6 @@ to any functions passed to `then`, `map`, `chain`, etc.
 
 ## Transform promises
 
-### .then :: Promise e a &rarr; (a &rarr; b|Promise e b) &rarr; Promise e b
-
-[Promises/A+ then](http://promisesaplus.com/).
-Transform a promise's value by applying a function to the
-promise's fulfillment value. Returns a new promise for the
-transformed result.
-
-```js
-import { resolve } from 'creed';
-
-resolve(1)
-    .then(x => x + 1) // return a transformed value
-    .then(y => console.log(y)) //=> 2
-
-resolve(1)
-    .then(x => resolve(x + 1)) // return transformed promise
-    .then(y => console.log(y)) //=> 2
-```
-
-### .catch :: Promise e a &rarr; (e &rarr; b|Promise e b) &rarr; Promise e b
-
-Catch and handle a promise error.
-
-```js
-import { reject, resolve } from 'creed';
-
-reject(new Error('oops!'))
-    .catch(e => 123) // recover by returning a new value
-    .then(x => console.log(x)) //=> 123
-
-reject(new Error('oops!'))
-    .catch(e => resolve(123)) // recover by returning a promise
-    .then(x => console.log(x)) //=> 123
-```
-
-### .finally :: Promise e a &rarr; (() &rarr; b|Promise e b) &rarr; Promise e a
-
-Perform cleanup side effects regardless of a Promise's outcome.  If a finally handler:
-
-1. returns a non-promise, it is discarded
-2. returns a promise that fulfills, it's fulfillment value is discarded
-3. throws, the thrown error will take precedence
-4. returns a rejected promise, the rejection will take precedence
-
-```js
-import { reject, resolve, delay } from 'creed'
-
-resolve(123)
-  .finally(() => resolve(456)) // do some cleanup
-  .then(x => console.log(x)) //=> 123
-
-reject(new Error('oops!'))
-  .finally(() => resolve(456)) // do some cleanup
-  .catch(e => console.log(e.message)) //=> oops!
-
-reject(new Error('oops!'))
-  .finally(() => delay(1000, 456)) // do some cleanup
-  .catch(e => console.log(e.message)) //=> oops! after 1 second
-```
-
-As mentioned above, errors from a finally handler take precedence:
-
-```js
-// Errors in finally handler take precedence
-reject(new Error('oops!'))
-  .finally(() => reject(new Error('finally error'))) // cleanup failed!
-  .catch(e => console.log(e.message)) //=> finally error
-
-reject(new Error('oops!'))
-  .finally(() => {
-    throw new Error('finally error') // cleanup failed!
-  })
-  .catch(e => console.log(e.message)) //=> finally error
-```
 
 ### .map :: Promise e a &rarr; (a &rarr; b) &rarr; Promise e b
 
@@ -616,6 +525,64 @@ delay(200, 'bar').or(delay(100, 'foo'))
 
 fulfill(123).or(fulfill(456))
     .then(x => console.log(x)); //=> 123
+```
+
+## Flow control
+
+### .catch :: Promise e a &rarr; (e &rarr; b|Promise e b) &rarr; Promise e b
+
+Catch and handle a promise error.
+
+```js
+import { reject, resolve } from 'creed';
+
+reject(new Error('oops!'))
+    .catch(e => 123) // recover by returning a new value
+    .then(x => console.log(x)) //=> 123
+
+reject(new Error('oops!'))
+    .catch(e => resolve(123)) // recover by returning a promise
+    .then(x => console.log(x)) //=> 123
+```
+
+### .finally :: Promise e a &rarr; (() &rarr; b|Promise e b) &rarr; Promise e a
+
+Perform cleanup side effects regardless of a Promise's outcome.  If a finally handler:
+
+1. returns a non-promise, it is discarded
+2. returns a promise that fulfills, it's fulfillment value is discarded
+3. throws, the thrown error will take precedence
+4. returns a rejected promise, the rejection will take precedence
+
+```js
+import { reject, resolve, delay } from 'creed'
+
+resolve(123)
+  .finally(() => resolve(456)) // do some cleanup
+  .then(x => console.log(x)) //=> 123
+
+reject(new Error('oops!'))
+  .finally(() => resolve(456)) // do some cleanup
+  .catch(e => console.log(e.message)) //=> oops!
+
+reject(new Error('oops!'))
+  .finally(() => delay(1000, 456)) // do some cleanup
+  .catch(e => console.log(e.message)) //=> oops! after 1 second
+```
+
+As mentioned above, errors from a finally handler take precedence:
+
+```js
+// Errors in finally handler take precedence
+reject(new Error('oops!'))
+  .finally(() => reject(new Error('finally error'))) // cleanup failed!
+  .catch(e => console.log(e.message)) //=> finally error
+
+reject(new Error('oops!'))
+  .finally(() => {
+    throw new Error('finally error') // cleanup failed!
+  })
+  .catch(e => console.log(e.message)) //=> finally error
 ```
 
 ## Control time
@@ -861,6 +828,46 @@ import { getReason, resolve, reject, never } from 'creed';
 getReason(resolve(123))      //=> throws TypeError
 getReason(reject('because')) //=> 'because'
 getReason(never())           //=> throws TypeError
+```
+
+## ES Promise and Promises/A+ interop
+
+Creed promises interoperate with Promises/A+ and ES Promises via their `.then` method.  Creed also provides a `resolve` function, similar to ES Promise and many Promises/A+ implementations, to coerce values and any Thenable to Creed promises.
+
+### .then :: Promise e a &rarr; (a &rarr; b|Promise e b) &rarr; Promise e b
+
+[Promises/A+ then](http://promisesaplus.com/).
+Transform a promise's value by applying a function to the
+promise's fulfillment value. Returns a new promise for the
+transformed result.
+
+```js
+import { resolve } from 'creed';
+
+resolve(1)
+    .then(x => x + 1) // return a transformed value
+    .then(y => console.log(y)) //=> 2
+
+resolve(1)
+    .then(x => resolve(x + 1)) // return transformed promise
+    .then(y => console.log(y)) //=> 2
+```
+
+### resolve :: a|Thenable e a &rarr; Promise e a
+
+Coerce a value or Thenable to a promise.
+
+```js
+import { resolve } from 'creed';
+
+resolve(123)
+    .then(x => console.log(x)) //=> 123
+
+resolve(resolve(123))
+    .then(x => console.log(x)) //=> 123
+
+resolve(jQuery.get('http://...')) // coerce any thenable
+    .then(x => console.log(x)) //=> 123
 ```
 
 ## Debugging
